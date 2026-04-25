@@ -49,9 +49,12 @@ RUN mkdir -p storage/framework/{cache,sessions,views} storage/logs bootstrap/cac
 ENV PORT=8080
 EXPOSE 8080
 
-# Cache config + routes + views, then start PHP's built-in server.
-# (Sufficient for a demo. For production traffic, swap to nginx + php-fpm.)
+# Cache config + routes + views, then start PHP's built-in server using
+# Laravel's official router script (the same one `php artisan serve` uses).
+# This lets static files in /public — including /build/* CSS/JS — be served
+# directly without going through the Laravel router (which would 404 them
+# or redirect them to /login).
 CMD php artisan config:cache \
     && php artisan route:cache \
     && php artisan view:cache \
-    && php -S 0.0.0.0:${PORT} -t public public/index.php
+    && php -S 0.0.0.0:${PORT} -t public vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php
