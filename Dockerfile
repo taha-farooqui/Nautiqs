@@ -14,10 +14,15 @@ RUN npm run build
 # --------------------------------------------------------------------------
 FROM php:8.2-cli-alpine AS app
 
-# System deps + the mongodb PHP extension (the whole reason we use Docker)
+# System deps + the mongodb PHP extension.
+# `ca-certificates` is required for TLS to MongoDB Atlas — Alpine doesn't
+# ship the full root CA bundle by default and Atlas's TLS handshake fails
+# without it.
 RUN apk add --no-cache \
+        ca-certificates \
         git unzip libzip-dev openssl-dev curl-dev oniguruma-dev icu-dev libpng-dev \
         $PHPIZE_DEPS \
+    && update-ca-certificates \
     && docker-php-ext-install zip intl mbstring bcmath \
     && pecl install mongodb \
     && docker-php-ext-enable mongodb \
