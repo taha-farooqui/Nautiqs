@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nautiqs — Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --navy: #0d3d5c; --navy-mid: #1a5f8a; --blue: #2a8fc4;
+  --blue-light: #e8f4fb; --accent: #2ab0e8;
+  --green: #16a34a; --green-bg: #f0fdf4;
+  --orange: #ea580c; --orange-bg: #fff7ed;
+  --red: #dc2626; --red-bg: #fef2f2;
+  --gray-50: #f9fafb; --gray-100: #f3f4f6; --gray-200: #e5e7eb;
+  --gray-300: #d1d5db; --gray-400: #9ca3af; --gray-500: #6b7280;
+  --gray-600: #4b5563; --gray-700: #374151; --gray-800: #1f2937; --gray-900: #111827;
+  --sidebar-w: 220px; --radius: 10px;
+  --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.05);
+}
+body { font-family: 'DM Sans', sans-serif; background: var(--gray-50); color: var(--gray-800); display: flex; min-height: 100vh; font-size: 14px; }
+
+/* ── SIDEBAR ── */
+.sidebar { width: var(--sidebar-w); background: var(--navy); display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; z-index: 10; }
+.sidebar-logo { padding: 20px 20px 16px; border-bottom: 1px solid rgba(255,255,255,.08); display: flex; align-items: center; gap: 10px; }
+.logo-icon { width: 34px; height: 34px; flex-shrink: 0; }
+.logo-name { font-family: 'DM Serif Display', serif; font-size: 20px; color: #fff; letter-spacing: -.3px; }
+.sidebar-section { padding: 16px 12px 8px; }
+.sidebar-label { font-size: 10px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: rgba(255,255,255,.35); padding: 0 8px; margin-bottom: 4px; }
+.nav-item { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: 7px; color: rgba(255,255,255,.65); cursor: pointer; font-size: 13.5px; font-weight: 400; transition: all .15s; margin-bottom: 1px; }
+.nav-item:hover { background: rgba(255,255,255,.07); color: #fff; }
+.nav-item.active { background: rgba(42,176,232,.18); color: var(--accent); font-weight: 500; }
+.nav-icon { width: 16px; height: 16px; opacity: .8; flex-shrink: 0; }
+.nav-badge { margin-left: auto; background: var(--accent); color: #fff; font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 20px; }
+.sidebar-bottom { margin-top: auto; padding: 12px; border-top: 1px solid rgba(255,255,255,.08); }
+.user-card { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 7px; cursor: pointer; transition: background .15s; }
+.user-card:hover { background: rgba(255,255,255,.07); }
+.avatar { width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg, var(--blue), var(--accent)); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: #fff; flex-shrink: 0; }
+.user-info { flex: 1; min-width: 0; }
+.user-name { font-size: 12.5px; color: #fff; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.user-plan { font-size: 11px; color: rgba(255,255,255,.4); }
+
+/* ── MAIN ── */
+.main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; }
+
+/* ── TOPBAR ── */
+.topbar { background: #fff; border-bottom: 1px solid var(--gray-200); padding: 0 28px; height: 56px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 5; }
+.topbar-left { display: flex; align-items: center; gap: 8px; }
+.page-title { font-size: 15px; font-weight: 600; color: var(--gray-900); }
+.page-date { font-size: 12.5px; color: var(--gray-400); margin-left: 4px; }
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 7px; font-size: 13px; font-weight: 500; cursor: pointer; border: none; font-family: inherit; transition: all .15s; }
+.btn-primary { background: var(--navy); color: #fff; }
+.btn-primary:hover { background: var(--navy-mid); }
+.btn-ghost { background: transparent; color: var(--gray-600); border: 1px solid var(--gray-200); }
+.btn-ghost:hover { background: var(--gray-50); }
+.notif-btn { width: 34px; height: 34px; border-radius: 7px; border: 1px solid var(--gray-200); background: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; color: var(--gray-500); }
+.notif-dot { width: 7px; height: 7px; background: var(--accent); border-radius: 50%; position: absolute; top: 6px; right: 6px; border: 1.5px solid #fff; }
+
+/* ── CONTENT ── */
+.content { padding: 24px 28px; flex: 1; }
+
+/* ── UPDATE BANNER ── */
+.update-banner { background: linear-gradient(135deg, #0d3d5c, #1a5f8a); border-radius: var(--radius); padding: 14px 18px; display: flex; align-items: center; gap: 12px; margin-bottom: 20px; color: #fff; }
+.update-icon { width: 34px; height: 34px; background: rgba(42,176,232,.25); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 16px; }
+.update-text { flex: 1; }
+.update-title { font-size: 13.5px; font-weight: 600; }
+.update-sub { font-size: 12px; color: rgba(255,255,255,.65); margin-top: 1px; }
+.update-actions { display: flex; gap: 8px; }
+.btn-banner { background: rgba(255,255,255,.12); color: #fff; border: 1px solid rgba(255,255,255,.2); padding: 6px 12px; border-radius: 6px; font-size: 12.5px; font-weight: 500; cursor: pointer; font-family: inherit; transition: background .15s; }
+.btn-banner:hover { background: rgba(255,255,255,.2); }
+.btn-banner.solid { background: rgba(255,255,255,.9); color: var(--navy); }
+.btn-banner.solid:hover { background: #fff; }
+
+/* ── STATS ── */
+.stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+.stat-card { background: #fff; border: 1px solid var(--gray-200); border-radius: var(--radius); padding: 16px 18px; box-shadow: var(--shadow); }
+.stat-label { font-size: 12px; color: var(--gray-500); font-weight: 500; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+.stat-dot { width: 6px; height: 6px; border-radius: 50%; }
+.stat-value { font-size: 26px; font-weight: 600; color: var(--gray-900); letter-spacing: -.5px; line-height: 1; font-family: 'DM Serif Display', serif; }
+.stat-change { font-size: 11.5px; margin-top: 6px; display: flex; align-items: center; gap: 3px; }
+.up { color: var(--green); } .down { color: var(--red); } .neutral { color: var(--gray-400); }
+
+/* ── MAIN GRID ── */
+.main-grid { display: grid; grid-template-columns: 1fr 340px; gap: 16px; }
+.card { background: #fff; border: 1px solid var(--gray-200); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+.card-header { padding: 14px 18px; border-bottom: 1px solid var(--gray-100); display: flex; align-items: center; justify-content: space-between; }
+.card-title { font-size: 13.5px; font-weight: 600; color: var(--gray-800); }
+.card-action { font-size: 12px; color: var(--blue); cursor: pointer; font-weight: 500; }
+
+/* ── QUOTES TABLE ── */
+.quotes-table { width: 100%; border-collapse: collapse; }
+.quotes-table th { font-size: 11px; font-weight: 600; letter-spacing: .5px; text-transform: uppercase; color: var(--gray-400); padding: 10px 18px; text-align: left; background: var(--gray-50); border-bottom: 1px solid var(--gray-100); }
+.quotes-table td { padding: 12px 18px; border-bottom: 1px solid var(--gray-100); vertical-align: middle; }
+.quotes-table tr:last-child td { border-bottom: none; }
+.quotes-table tr:hover td { background: var(--gray-50); }
+.client-cell { display: flex; align-items: center; gap: 10px; }
+.client-av { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: #fff; flex-shrink: 0; }
+.client-name { font-size: 13.5px; font-weight: 500; color: var(--gray-800); }
+.client-email { font-size: 11.5px; color: var(--gray-400); }
+.quote-ref { font-size: 12.5px; color: var(--gray-500); font-family: 'Courier New', monospace; background: var(--gray-100); padding: 2px 7px; border-radius: 4px; }
+.quote-model { font-size: 13px; color: var(--gray-700); }
+.quote-brand { font-size: 11.5px; color: var(--gray-400); margin-top: 1px; }
+.quote-amount { font-size: 13.5px; font-weight: 600; color: var(--gray-900); }
+.status-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 20px; font-size: 11.5px; font-weight: 500; }
+.status-dot { width: 5px; height: 5px; border-radius: 50%; }
+.s-draft { background: var(--gray-100); color: var(--gray-500); }
+.s-draft .status-dot { background: var(--gray-400); }
+.s-sent { background: #eff6ff; color: #2563eb; }
+.s-sent .status-dot { background: #2563eb; }
+.s-won { background: var(--green-bg); color: var(--green); }
+.s-won .status-dot { background: var(--green); }
+.s-lost { background: var(--red-bg); color: var(--red); }
+.s-lost .status-dot { background: var(--red); }
+.eye-badge { display: inline-flex; align-items: center; gap: 4px; background: var(--blue-light); color: var(--navy-mid); padding: 2px 7px; border-radius: 20px; font-size: 11.5px; font-weight: 500; }
+.no-track { color: var(--gray-300); font-size: 12px; }
+
+/* ── RIGHT COLUMN ── */
+.right-col { display: flex; flex-direction: column; gap: 16px; }
+
+/* ── QUICK ACTIONS ── */
+.quick-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 14px; }
+.quick-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 14px 10px; background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 500; color: var(--gray-600); transition: all .15s; font-family: inherit; }
+.quick-btn:hover { background: var(--blue-light); border-color: var(--accent); color: var(--navy); }
+.quick-btn-icon { width: 28px; height: 28px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+
+/* ── TOP MODELS ── */
+.models-list { padding: 4px 18px 14px; }
+.model-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--gray-100); }
+.model-row:last-child { border-bottom: none; }
+.model-rank { font-size: 11px; font-weight: 700; color: var(--gray-300); width: 16px; }
+.model-info { flex: 1; }
+.model-name { font-size: 13px; font-weight: 500; color: var(--gray-700); }
+.model-brand { font-size: 11.5px; color: var(--gray-400); }
+.model-bar-wrap { width: 80px; }
+.model-bar-bg { height: 5px; background: var(--gray-100); border-radius: 3px; overflow: hidden; }
+.model-bar-fill { height: 100%; background: linear-gradient(90deg, var(--navy-mid), var(--accent)); border-radius: 3px; }
+.model-count { font-size: 12px; font-weight: 600; color: var(--gray-600); width: 28px; text-align: right; }
+
+/* ── CONVERSION ── */
+.conversion-body { padding: 16px 18px; }
+.big-rate { text-align: center; padding: 16px 0 8px; }
+.big-rate-value { font-size: 42px; font-family: 'DM Serif Display', serif; color: var(--navy); line-height: 1; }
+.big-rate-label { font-size: 12px; color: var(--gray-400); margin-top: 4px; }
+.conv-bar { height: 8px; background: var(--gray-100); border-radius: 4px; overflow: hidden; margin: 12px 0 16px; }
+.conv-bar-fill { height: 100%; background: linear-gradient(90deg, var(--navy), var(--accent)); border-radius: 4px; width: 43%; }
+.conv-stat { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--gray-100); }
+.conv-stat:last-child { border-bottom: none; }
+.conv-label { font-size: 13px; color: var(--gray-500); }
+.conv-value { font-size: 13.5px; font-weight: 600; color: var(--gray-800); }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <svg class="logo-icon" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+      <rect width="400" height="400" rx="80" fill="#0d4f78"/>
+      <clipPath id="c"><rect width="400" height="400" rx="80"/></clipPath>
+      <g clip-path="url(#c)">
+        <path d="M0,320 Q50,290 100,320 Q150,350 200,320 Q250,290 300,320 Q350,350 400,320 L400,400 L0,400 Z" fill="#2ab0e8" opacity=".3"/>
+        <path d="M0,335 Q55,308 110,335 Q165,362 220,335 Q275,308 330,335 Q365,352 400,340 L400,400 L0,400 Z" fill="#1a7ab5" opacity=".5"/>
+        <path d="M0,352 Q60,328 120,352 Q180,376 240,352 Q300,328 360,352 L400,368 L400,400 L0,400 Z" fill="#0d4f78"/>
+        <path d="M60,350 Q200,388 340,350 L328,370 Q200,405 72,370 Z" fill="#1a7ab5"/>
+        <line x1="200" y1="348" x2="200" y2="100" stroke="#e8f4fb" stroke-width="7" stroke-linecap="round"/>
+        <path d="M200,108 L200,328 L56,300 Z" fill="#2ab0e8" opacity=".95"/>
+        <path d="M200,125 L200,322 L348,280 Z" fill="#0a2d42" opacity=".85"/>
+        <circle cx="200" cy="92" r="14" fill="#2ab0e8"/>
+      </g>
+    </svg>
+    <span class="logo-name">Nautiqs</span>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-label">Main</div>
+    <div class="nav-item active">
+      <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Dashboard
+    </div>
+    <div class="nav-item">
+      <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12h6M9 16h6M9 8h6M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z"/></svg>
+      Quotes
+      <span class="nav-badge">3</span>
+    </div>
+    <div class="nav-item">
+      <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 20h5v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2h5M12 12a4 4 0 100-8 4 4 0 000 8z"/></svg>
+      Clients
+    </div>
+    <div class="nav-item">
+      <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 10h16M4 14h10"/></svg>
+      Catalogue
+    </div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-label">Analytics</div>
+    <div class="nav-item">
+      <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Performance
+    </div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-label">Settings</div>
+    <div class="nav-item">
+      <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      Company settings
+    </div>
+    <div class="nav-item">
+      <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+      Billing
+    </div>
+  </div>
+
+  <div class="sidebar-bottom">
+    <div class="user-card">
+      <div class="avatar">NC</div>
+      <div class="user-info">
+        <div class="user-name">Nautique Concept</div>
+        <div class="user-plan">Pro plan</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="page-title">Dashboard</div>
+      <div class="page-date">— Friday, April 24 2026</div>
+    </div>
+    <div class="topbar-right">
+      <div class="notif-btn">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>
+        <div class="notif-dot"></div>
+      </div>
+      <button class="btn btn-primary">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        New quote
+      </button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- CATALOGUE UPDATE BANNER -->
+    <div class="update-banner">
+      <div class="update-icon">⚓</div>
+      <div class="update-text">
+        <div class="update-title">Catalogue update available — Brig Boats</div>
+        <div class="update-sub">3 new options added to Navigator 610 · Price update on Commander 700</div>
+      </div>
+      <div class="update-actions">
+        <button class="btn-banner">Dismiss</button>
+        <button class="btn-banner solid">Review & apply</button>
+      </div>
+    </div>
+
+    <!-- KPI STATS -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-label"><div class="stat-dot" style="background:#2ab0e8"></div>Quotes this month</div>
+        <div class="stat-value">47</div>
+        <div class="stat-change up">↑ 12 vs last month</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label"><div class="stat-dot" style="background:#16a34a"></div>Total quoted (excl. VAT)</div>
+        <div class="stat-value">€824k</div>
+        <div class="stat-change up">↑ 18% vs last month</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label"><div class="stat-dot" style="background:#f59e0b"></div>Revenue won this month</div>
+        <div class="stat-value">€187k</div>
+        <div class="stat-change neutral">= Same as last month</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label"><div class="stat-dot" style="background:#dc2626"></div>Awaiting response</div>
+        <div class="stat-value">11</div>
+        <div class="stat-change down">↓ 2 expired this week</div>
+      </div>
+    </div>
+
+    <!-- MAIN GRID -->
+    <div class="main-grid">
+
+      <!-- RECENT QUOTES TABLE -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Recent quotes</div>
+          <div class="card-action">View all →</div>
+        </div>
+        <table class="quotes-table">
+          <thead>
+            <tr>
+              <th>Client</th>
+              <th>Ref.</th>
+              <th>Boat</th>
+              <th>Amount excl. VAT</th>
+              <th>Status</th>
+              <th>Opened</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><div class="client-cell"><div class="client-av" style="background:linear-gradient(135deg,#0d4f78,#2ab0e8)">JM</div><div><div class="client-name">Jean Martin</div><div class="client-email">j.martin@gmail.com</div></div></div></td>
+              <td><span class="quote-ref">Q-2026-047</span></td>
+              <td><div><div class="quote-model">Navigator 610 Sport</div><div class="quote-brand">Brig Boats</div></div></td>
+              <td><span class="quote-amount">€45,070</span></td>
+              <td><span class="status-badge s-sent"><span class="status-dot"></span>Sent</span></td>
+              <td><span class="eye-badge">👁 4×</span></td>
+            </tr>
+            <tr>
+              <td><div class="client-cell"><div class="client-av" style="background:linear-gradient(135deg,#16a34a,#4ade80)">SD</div><div><div class="client-name">Sophie Durand</div><div class="client-email">s.durand@pro.fr</div></div></div></td>
+              <td><span class="quote-ref">Q-2026-046</span></td>
+              <td><div><div class="quote-model">505 Open</div><div class="quote-brand">Quicksilver</div></div></td>
+              <td><span class="quote-amount">€15,750</span></td>
+              <td><span class="status-badge s-won"><span class="status-dot"></span>Won</span></td>
+              <td><span class="eye-badge">👁 7×</span></td>
+            </tr>
+            <tr>
+              <td><div class="client-cell"><div class="client-av" style="background:linear-gradient(135deg,#7c3aed,#a78bfa)">PL</div><div><div class="client-name">Pierre Leblanc</div><div class="client-email">p.leblanc@sail.com</div></div></div></td>
+              <td><span class="quote-ref">Q-2026-045</span></td>
+              <td><div><div class="quote-model">Cap Camarat 7.5 WA</div><div class="quote-brand">Jeanneau</div></div></td>
+              <td><span class="quote-amount">€56,000</span></td>
+              <td><span class="status-badge s-sent"><span class="status-dot"></span>Sent</span></td>
+              <td><span class="eye-badge">👁 2×</span></td>
+            </tr>
+            <tr>
+              <td><div class="client-cell"><div class="client-av" style="background:linear-gradient(135deg,#ea580c,#fb923c)">MR</div><div><div class="client-name">Marie Rousseau</div><div class="client-email">m.rousseau@free.fr</div></div></div></td>
+              <td><span class="quote-ref">Q-2026-044</span></td>
+              <td><div><div class="quote-model">Eagle 780</div><div class="quote-brand">Brig Boats</div></div></td>
+              <td><span class="quote-amount">€74,500</span></td>
+              <td><span class="status-badge s-draft"><span class="status-dot"></span>Draft</span></td>
+              <td><span class="no-track">Not sent</span></td>
+            </tr>
+            <tr>
+              <td><div class="client-cell"><div class="client-av" style="background:linear-gradient(135deg,#0891b2,#22d3ee)">TG</div><div><div class="client-name">Thomas Girard</div><div class="client-email">t.girard@yachting.fr</div></div></div></td>
+              <td><span class="quote-ref">Q-2026-043</span></td>
+              <td><div><div class="quote-model">Seagame 250 SF</div><div class="quote-brand">Pacific Craft</div></div></td>
+              <td><span class="quote-amount">€103,333</span></td>
+              <td><span class="status-badge s-lost"><span class="status-dot"></span>Lost</span></td>
+              <td><span class="eye-badge">👁 1×</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- RIGHT COLUMN -->
+      <div class="right-col">
+
+        <!-- QUICK ACTIONS -->
+        <div class="card">
+          <div class="card-header"><div class="card-title">Quick actions</div></div>
+          <div class="quick-actions">
+            <button class="quick-btn">
+              <div class="quick-btn-icon" style="background:#e8f4fb;color:#0d4f78">📝</div>
+              New quote
+            </button>
+            <button class="quick-btn">
+              <div class="quick-btn-icon" style="background:#f0fdf4;color:#16a34a">👤</div>
+              Add client
+            </button>
+            <button class="quick-btn">
+              <div class="quick-btn-icon" style="background:#fff7ed;color:#ea580c">📦</div>
+              Import catalogue
+            </button>
+            <button class="quick-btn">
+              <div class="quick-btn-icon" style="background:#faf5ff;color:#7c3aed">📄</div>
+              All quotes
+            </button>
+          </div>
+        </div>
+
+        <!-- TOP MODELS -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Top quoted models</div>
+            <div class="card-action">This month</div>
+          </div>
+          <div class="models-list">
+            <div class="model-row">
+              <div class="model-rank">#1</div>
+              <div class="model-info"><div class="model-name">Navigator 610</div><div class="model-brand">Brig Boats</div></div>
+              <div class="model-bar-wrap"><div class="model-bar-bg"><div class="model-bar-fill" style="width:100%"></div></div></div>
+              <div class="model-count">14</div>
+            </div>
+            <div class="model-row">
+              <div class="model-rank">#2</div>
+              <div class="model-info"><div class="model-name">Cap Camarat 7.5</div><div class="model-brand">Jeanneau</div></div>
+              <div class="model-bar-wrap"><div class="model-bar-bg"><div class="model-bar-fill" style="width:64%"></div></div></div>
+              <div class="model-count">9</div>
+            </div>
+            <div class="model-row">
+              <div class="model-rank">#3</div>
+              <div class="model-info"><div class="model-name">505 Open</div><div class="model-brand">Quicksilver</div></div>
+              <div class="model-bar-wrap"><div class="model-bar-bg"><div class="model-bar-fill" style="width:50%"></div></div></div>
+              <div class="model-count">7</div>
+            </div>
+            <div class="model-row">
+              <div class="model-rank">#4</div>
+              <div class="model-info"><div class="model-name">Seagame 250 SF</div><div class="model-brand">Pacific Craft</div></div>
+              <div class="model-bar-wrap"><div class="model-bar-bg"><div class="model-bar-fill" style="width:36%"></div></div></div>
+              <div class="model-count">5</div>
+            </div>
+            <div class="model-row">
+              <div class="model-rank">#5</div>
+              <div class="model-info"><div class="model-name">Eagle 780</div><div class="model-brand">Brig Boats</div></div>
+              <div class="model-bar-wrap"><div class="model-bar-bg"><div class="model-bar-fill" style="width:22%"></div></div></div>
+              <div class="model-count">3</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CONVERSION RATE -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Conversion rate</div>
+            <div class="card-action">April 2026</div>
+          </div>
+          <div class="conversion-body">
+            <div class="big-rate">
+              <div class="big-rate-value">43%</div>
+              <div class="big-rate-label">quotes sent → won</div>
+            </div>
+            <div class="conv-bar"><div class="conv-bar-fill"></div></div>
+            <div class="conv-stat"><span class="conv-label">Quotes sent</span><span class="conv-value">28</span></div>
+            <div class="conv-stat"><span class="conv-label">Won</span><span class="conv-value" style="color:var(--green)">12</span></div>
+            <div class="conv-stat"><span class="conv-label">Lost</span><span class="conv-value" style="color:var(--red)">5</span></div>
+            <div class="conv-stat"><span class="conv-label">Avg. time to close</span><span class="conv-value">8.4 days</span></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</main>
+</body>
+</html>

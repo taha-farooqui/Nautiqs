@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nautiqs — Quote Configurator</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --navy: #0d3d5c; --navy-mid: #1a5f8a; --blue: #2a8fc4;
+  --blue-light: #e8f4fb; --accent: #2ab0e8;
+  --green: #16a34a; --green-bg: #f0fdf4;
+  --orange: #ea580c; --orange-bg: #fff7ed;
+  --red: #dc2626;
+  --gray-50: #f9fafb; --gray-100: #f3f4f6; --gray-200: #e5e7eb;
+  --gray-300: #d1d5db; --gray-400: #9ca3af; --gray-500: #6b7280;
+  --gray-600: #4b5563; --gray-700: #374151; --gray-800: #1f2937; --gray-900: #111827;
+  --sidebar-w: 220px; --radius: 10px; --shadow: 0 1px 3px rgba(0,0,0,.08);
+}
+body { font-family: 'DM Sans', sans-serif; background: var(--gray-50); color: var(--gray-800); display: flex; min-height: 100vh; font-size: 14px; }
+
+/* SIDEBAR */
+.sidebar { width: var(--sidebar-w); background: var(--navy); display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; z-index: 10; }
+.sidebar-logo { padding: 20px 20px 16px; border-bottom: 1px solid rgba(255,255,255,.08); display: flex; align-items: center; gap: 10px; }
+.logo-icon { width: 34px; height: 34px; flex-shrink: 0; }
+.logo-name { font-family: 'DM Serif Display', serif; font-size: 20px; color: #fff; }
+.sidebar-section { padding: 16px 12px 8px; }
+.sidebar-label { font-size: 10px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: rgba(255,255,255,.35); padding: 0 8px; margin-bottom: 4px; }
+.nav-item { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: 7px; color: rgba(255,255,255,.65); cursor: pointer; font-size: 13.5px; margin-bottom: 1px; transition: all .15s; }
+.nav-item:hover { background: rgba(255,255,255,.07); color: #fff; }
+.nav-item.active { background: rgba(42,176,232,.18); color: var(--accent); font-weight: 500; }
+.nav-icon { width: 16px; height: 16px; flex-shrink: 0; }
+.nav-badge { margin-left: auto; background: var(--accent); color: #fff; font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 20px; }
+.sidebar-bottom { margin-top: auto; padding: 12px; border-top: 1px solid rgba(255,255,255,.08); }
+.user-card { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 7px; cursor: pointer; }
+.avatar { width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg, var(--blue), var(--accent)); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: #fff; flex-shrink: 0; }
+.user-name { font-size: 12.5px; color: #fff; font-weight: 500; }
+.user-plan { font-size: 11px; color: rgba(255,255,255,.4); }
+
+/* MAIN */
+.main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; }
+
+/* TOPBAR */
+.topbar { background: #fff; border-bottom: 1px solid var(--gray-200); padding: 0 24px; height: 56px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 5; }
+.topbar-left { display: flex; align-items: center; gap: 10px; }
+.breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 13.5px; }
+.breadcrumb-item { color: var(--gray-400); cursor: pointer; }
+.breadcrumb-item:hover { color: var(--gray-600); }
+.breadcrumb-sep { color: var(--gray-300); }
+.breadcrumb-current { color: var(--gray-800); font-weight: 600; }
+.draft-badge { background: var(--gray-100); color: var(--gray-500); font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 20px; }
+.topbar-right { display: flex; align-items: center; gap: 8px; }
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 7px; font-size: 13px; font-weight: 500; cursor: pointer; border: none; font-family: inherit; transition: all .15s; }
+.btn-ghost { background: transparent; color: var(--gray-600); border: 1px solid var(--gray-200); }
+.btn-ghost:hover { background: var(--gray-50); }
+.btn-success { background: var(--green); color: #fff; }
+.btn-success:hover { filter: brightness(1.1); }
+
+/* LAYOUT */
+.configurator { display: grid; grid-template-columns: 1fr 320px; min-height: calc(100vh - 56px); }
+
+/* LEFT PANEL */
+.left-panel { padding: 20px 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
+
+/* SECTION CARD */
+.section-card { background: #fff; border: 1px solid var(--gray-200); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+.section-header { padding: 13px 18px; border-bottom: 1px solid var(--gray-100); display: flex; align-items: center; gap: 10px; }
+.section-num { width: 22px; height: 22px; border-radius: 50%; background: var(--navy); color: #fff; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.section-num.done { background: var(--green); }
+.section-title { font-size: 13.5px; font-weight: 600; color: var(--gray-800); }
+.section-subtitle { font-size: 12px; color: var(--gray-400); margin-left: auto; }
+.section-body { padding: 16px 18px; }
+.change-link { font-size: 12px; color: var(--blue); cursor: pointer; font-weight: 500; }
+
+/* CLIENT */
+.client-selected { display: flex; align-items: center; gap: 12px; }
+.client-avatar-lg { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg,#0d4f78,#2ab0e8); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; color: #fff; flex-shrink: 0; }
+.client-name-lg { font-size: 14px; font-weight: 600; color: var(--gray-800); }
+.client-detail { font-size: 12px; color: var(--gray-400); }
+
+/* MODEL */
+.model-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.model-card { border: 2px solid var(--gray-200); border-radius: 8px; padding: 12px; cursor: pointer; transition: all .15s; text-align: center; }
+.model-card:hover { border-color: var(--accent); background: var(--blue-light); }
+.model-card.selected { border-color: var(--navy); background: var(--blue-light); }
+.model-thumb { width: 100%; height: 60px; border-radius: 6px; margin-bottom: 8px; display: flex; align-items: center; justify-content: center; font-size: 24px; }
+.model-card-name { font-size: 12.5px; font-weight: 600; color: var(--gray-700); }
+.model-card-brand { font-size: 11px; color: var(--gray-400); margin-top: 2px; }
+
+/* VARIANT */
+.variant-list { display: flex; flex-direction: column; gap: 8px; }
+.variant-item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 2px solid var(--gray-200); border-radius: 8px; cursor: pointer; transition: all .15s; }
+.variant-item:hover { border-color: var(--accent); }
+.variant-item.selected { border-color: var(--navy); background: var(--blue-light); }
+.variant-radio { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--gray-300); flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+.variant-item.selected .variant-radio { border-color: var(--navy); background: var(--navy); }
+.variant-radio-dot { width: 6px; height: 6px; border-radius: 50%; background: #fff; }
+.variant-info { flex: 1; }
+.variant-name { font-size: 13.5px; font-weight: 500; color: var(--gray-800); }
+.variant-desc { font-size: 12px; color: var(--gray-400); margin-top: 1px; }
+.variant-price { font-size: 14px; font-weight: 600; color: var(--navy); }
+
+/* EQUIPMENT */
+.equipment-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.equip-tag { display: inline-flex; align-items: center; gap: 5px; background: var(--green-bg); border: 1px solid #bbf7d0; color: var(--green); padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+
+/* OPTIONS */
+.options-category { margin-bottom: 16px; }
+.options-category:last-child { margin-bottom: 0; }
+.options-cat-title { font-size: 11px; font-weight: 600; letter-spacing: .8px; text-transform: uppercase; color: var(--gray-400); margin-bottom: 8px; }
+.option-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid var(--gray-200); border-radius: 8px; margin-bottom: 6px; cursor: pointer; transition: all .15s; }
+.option-row:hover { border-color: var(--accent); background: var(--gray-50); }
+.option-row.checked { border-color: var(--navy); background: var(--blue-light); }
+.option-row:last-child { margin-bottom: 0; }
+.checkbox { width: 16px; height: 16px; border-radius: 4px; border: 2px solid var(--gray-300); flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all .15s; }
+.option-row.checked .checkbox { background: var(--navy); border-color: var(--navy); }
+.checkmark { color: #fff; font-size: 10px; font-weight: 700; }
+.option-name { flex: 1; font-size: 13px; color: var(--gray-700); }
+.option-row.checked .option-name { color: var(--navy); font-weight: 500; }
+.option-discount { font-size: 11.5px; color: var(--orange); background: var(--orange-bg); padding: 2px 6px; border-radius: 4px; font-weight: 500; }
+.option-price { font-size: 13.5px; font-weight: 600; color: var(--gray-700); min-width: 70px; text-align: right; }
+.option-row.checked .option-price { color: var(--navy); }
+
+/* CUSTOM ITEMS */
+.custom-items-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.custom-item-row { display: flex; align-items: center; gap: 10px; }
+.custom-input { flex: 1; padding: 8px 12px; border: 1px solid var(--gray-200); border-radius: 7px; font-size: 13px; font-family: inherit; color: var(--gray-700); outline: none; transition: border .15s; }
+.custom-input:focus { border-color: var(--accent); }
+.custom-input.price { width: 110px; flex: none; text-align: right; }
+.remove-btn { width: 26px; height: 26px; border-radius: 5px; border: 1px solid var(--gray-200); background: #fff; color: var(--gray-400); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 14px; }
+.add-custom-btn { display: inline-flex; align-items: center; gap: 6px; color: var(--blue); font-size: 12.5px; font-weight: 500; cursor: pointer; padding: 4px 0; }
+
+/* DISCOUNTS */
+.discount-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--gray-100); }
+.discount-row:last-child { border-bottom: none; }
+.discount-label { font-size: 13px; color: var(--gray-600); flex: 1; }
+.discount-input-wrap { display: flex; align-items: center; gap: 4px; }
+.discount-input { width: 60px; padding: 6px 8px; border: 1px solid var(--gray-200); border-radius: 6px; font-size: 13px; font-family: inherit; text-align: center; outline: none; }
+.discount-input:focus { border-color: var(--accent); }
+.discount-pct { font-size: 12px; color: var(--gray-400); }
+.discount-amount { font-size: 13px; font-weight: 500; color: var(--red); min-width: 80px; text-align: right; }
+
+/* TRADE-IN */
+.tradein-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.field-group { display: flex; flex-direction: column; gap: 4px; }
+.field-label { font-size: 11.5px; font-weight: 500; color: var(--gray-500); }
+.field-input { padding: 8px 12px; border: 1px solid var(--gray-200); border-radius: 7px; font-size: 13px; font-family: inherit; color: var(--gray-700); outline: none; transition: border .15s; }
+.field-input:focus { border-color: var(--accent); }
+.tradein-value-row { margin-top: 10px; display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--orange-bg); border: 1px solid #fed7aa; border-radius: 8px; }
+.tradein-value-label { font-size: 13px; font-weight: 500; color: var(--orange); flex: 1; }
+.tradein-value-input { width: 130px; padding: 8px 12px; border: 1px solid #fed7aa; border-radius: 7px; font-size: 14px; font-weight: 600; color: var(--orange); background: #fff; font-family: inherit; outline: none; text-align: right; }
+
+/* NOTES */
+.notes-area { width: 100%; padding: 10px 12px; border: 1px solid var(--gray-200); border-radius: 7px; font-size: 13px; font-family: inherit; color: var(--gray-700); resize: none; height: 72px; outline: none; }
+.notes-area:focus { border-color: var(--accent); }
+
+/* RIGHT PANEL */
+.right-panel { background: var(--navy); border-left: 1px solid rgba(255,255,255,.08); display: flex; flex-direction: column; position: sticky; top: 56px; height: calc(100vh - 56px); overflow-y: auto; }
+.summary-header { padding: 18px 20px 14px; border-bottom: 1px solid rgba(255,255,255,.08); }
+.summary-title { font-family: 'DM Serif Display', serif; font-size: 18px; color: #fff; }
+.summary-ref { font-size: 11.5px; color: rgba(255,255,255,.4); margin-top: 2px; }
+.summary-client { display: flex; align-items: center; gap: 8px; margin-top: 12px; padding: 10px 12px; background: rgba(255,255,255,.06); border-radius: 8px; }
+.summary-client-name { font-size: 13px; color: #fff; font-weight: 500; }
+.summary-client-sub { font-size: 11.5px; color: rgba(255,255,255,.4); }
+.summary-boat { padding: 14px 20px; border-bottom: 1px solid rgba(255,255,255,.08); }
+.summary-boat-img { width: 100%; height: 110px; border-radius: 8px; background: linear-gradient(135deg, #0a2d42, #1a5f8a); display: flex; align-items: center; justify-content: center; font-size: 40px; margin-bottom: 10px; overflow: hidden; position: relative; }
+.boat-overlay { position: absolute; bottom: 0; left: 0; right: 0; padding: 8px 10px; background: linear-gradient(transparent, rgba(0,0,0,.5)); }
+.boat-name-overlay { font-size: 13px; font-weight: 600; color: #fff; }
+.boat-variant-overlay { font-size: 11px; color: rgba(255,255,255,.7); }
+
+/* VIEW TOGGLE */
+.view-toggle { display: flex; align-items: center; justify-content: space-between; padding: 10px 20px; border-bottom: 1px solid rgba(255,255,255,.08); }
+.view-toggle-label { font-size: 11.5px; color: rgba(255,255,255,.5); }
+.toggle-wrap { display: flex; align-items: center; gap: 6px; }
+.toggle-opt { font-size: 11px; color: rgba(255,255,255,.4); }
+.toggle-opt.active { color: var(--accent); font-weight: 500; }
+.toggle-switch { width: 32px; height: 18px; background: rgba(255,255,255,.15); border-radius: 9px; position: relative; cursor: pointer; }
+.toggle-knob { width: 12px; height: 12px; background: var(--accent); border-radius: 50%; position: absolute; top: 3px; left: 3px; transition: left .2s; }
+
+.summary-lines { padding: 14px 20px; flex: 1; }
+.summary-line { display: flex; justify-content: space-between; align-items: flex-start; padding: 6px 0; }
+.summary-line-label { font-size: 12.5px; color: rgba(255,255,255,.55); }
+.summary-line-val { font-size: 12.5px; color: rgba(255,255,255,.85); font-weight: 500; text-align: right; }
+.summary-line-val.negative { color: #f87171; }
+
+.summary-options { padding: 0 20px 10px; }
+.summary-opt-header { display: flex; justify-content: space-between; padding: 0 0 6px; }
+.summary-opt-label { font-size: 11px; font-weight: 600; letter-spacing: .5px; text-transform: uppercase; color: rgba(255,255,255,.35); }
+.summary-opt-total { font-size: 12px; color: rgba(255,255,255,.7); font-weight: 500; }
+.summary-option-item { display: flex; justify-content: space-between; padding: 4px 0; }
+.summary-option-name { font-size: 11.5px; color: rgba(255,255,255,.4); flex: 1; padding-right: 8px; }
+.summary-option-price { font-size: 11.5px; color: rgba(255,255,255,.55); }
+
+.summary-divider { height: 1px; background: rgba(255,255,255,.08); margin: 4px 20px; }
+
+.summary-totals { padding: 14px 20px; border-top: 1px solid rgba(255,255,255,.08); }
+.total-line { display: flex; justify-content: space-between; padding: 5px 0; }
+.total-label { font-size: 12.5px; color: rgba(255,255,255,.55); }
+.total-val { font-size: 12.5px; color: rgba(255,255,255,.8); font-weight: 500; }
+.total-line.main-total { padding: 10px 0 6px; border-top: 1px solid rgba(255,255,255,.12); margin-top: 4px; }
+.total-line.main-total .total-label { font-size: 14px; font-weight: 600; color: #fff; }
+.total-line.main-total .total-val { font-size: 18px; font-weight: 700; color: #fff; font-family: 'DM Serif Display', serif; }
+.total-line.tradein-line .total-val { color: #fb923c; }
+.total-line.net-line .total-label { font-size: 13px; color: rgba(255,255,255,.7); }
+.total-line.net-line .total-val { font-size: 15px; color: var(--accent); font-weight: 600; }
+
+.margin-block { margin: 10px 20px 0; padding: 10px 12px; background: rgba(255,255,255,.06); border-radius: 8px; }
+.margin-row { display: flex; justify-content: space-between; align-items: center; }
+.margin-label { font-size: 11.5px; color: rgba(255,255,255,.4); }
+.margin-value { font-size: 13px; font-weight: 600; }
+.margin-tag { font-size: 10px; padding: 1px 6px; border-radius: 10px; font-weight: 500; margin-left: 6px; }
+.margin-estimated { color: #fbbf24; }
+.margin-tag-estimated { background: rgba(251,191,36,.15); color: #fbbf24; }
+
+.summary-actions { padding: 14px 20px 20px; display: flex; flex-direction: column; gap: 8px; }
+.btn-full { width: 100%; justify-content: center; padding: 10px 14px; font-size: 13.5px; }
+.btn-generate { background: var(--accent); color: #fff; border: none; cursor: pointer; }
+.btn-generate:hover { filter: brightness(1.1); }
+.btn-save { background: rgba(255,255,255,.08); color: rgba(255,255,255,.8); border: 1px solid rgba(255,255,255,.12); cursor: pointer; }
+.btn-save:hover { background: rgba(255,255,255,.12); }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <svg class="logo-icon" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+      <rect width="400" height="400" rx="80" fill="#0d4f78"/>
+      <clipPath id="c"><rect width="400" height="400" rx="80"/></clipPath>
+      <g clip-path="url(#c)">
+        <path d="M0,320 Q50,290 100,320 Q150,350 200,320 Q250,290 300,320 Q350,350 400,320 L400,400 L0,400 Z" fill="#2ab0e8" opacity=".3"/>
+        <path d="M0,335 Q55,308 110,335 Q165,362 220,335 Q275,308 330,335 Q365,352 400,340 L400,400 L0,400 Z" fill="#1a7ab5" opacity=".5"/>
+        <path d="M0,352 Q60,328 120,352 Q180,376 240,352 Q300,328 360,352 L400,368 L400,400 L0,400 Z" fill="#0d4f78"/>
+        <path d="M60,350 Q200,388 340,350 L328,370 Q200,405 72,370 Z" fill="#1a7ab5"/>
+        <line x1="200" y1="348" x2="200" y2="100" stroke="#e8f4fb" stroke-width="7" stroke-linecap="round"/>
+        <path d="M200,108 L200,328 L56,300 Z" fill="#2ab0e8" opacity=".95"/>
+        <path d="M200,125 L200,322 L348,280 Z" fill="#0a2d42" opacity=".85"/>
+        <circle cx="200" cy="92" r="14" fill="#2ab0e8"/>
+      </g>
+    </svg>
+    <span class="logo-name">Nautiqs</span>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-label">Main</div>
+    <div class="nav-item">
+      <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Dashboard
+    </div>
+    <div class="nav-item active">
+      <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12h6M9 16h6M9 8h6M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z"/></svg>
+      Quotes
+      <span class="nav-badge">3</span>
+    </div>
+    <div class="nav-item">
+      <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 20h5v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2h5M12 12a4 4 0 100-8 4 4 0 000 8z"/></svg>
+      Clients
+    </div>
+    <div class="nav-item">
+      <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 10h16M4 14h10"/></svg>
+      Catalogue
+    </div>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-label">Analytics</div>
+    <div class="nav-item">
+      <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Performance
+    </div>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-label">Settings</div>
+    <div class="nav-item">
+      <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      Company settings
+    </div>
+    <div class="nav-item">
+      <svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+      Billing
+    </div>
+  </div>
+  <div class="sidebar-bottom">
+    <div class="user-card">
+      <div class="avatar">NC</div>
+      <div>
+        <div class="user-name">Nautique Concept</div>
+        <div class="user-plan">Pro plan</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="breadcrumb">
+        <span class="breadcrumb-item">Quotes</span>
+        <span class="breadcrumb-sep">/</span>
+        <span class="breadcrumb-current">New quote</span>
+      </div>
+      <span class="draft-badge">Draft</span>
+    </div>
+    <div class="topbar-right">
+      <button class="btn btn-ghost">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+        Cancel
+      </button>
+      <button class="btn btn-ghost">Save draft</button>
+      <button class="btn btn-success">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Generate PDF
+      </button>
+    </div>
+  </div>
+
+  <div class="configurator">
+
+    <!-- LEFT PANEL -->
+    <div class="left-panel">
+
+      <!-- STEP 1 — CLIENT -->
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-num done">✓</div>
+          <div class="section-title">Client</div>
+          <div class="section-subtitle"><span class="change-link">Change</span></div>
+        </div>
+        <div class="section-body">
+          <div class="client-selected">
+            <div class="client-avatar-lg">JM</div>
+            <div>
+              <div class="client-name-lg">Jean Martin</div>
+              <div class="client-detail">j.martin@gmail.com · +33 6 12 34 56 78</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 2 — MODEL -->
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-num done">✓</div>
+          <div class="section-title">Boat model</div>
+          <div class="section-subtitle"><span class="change-link">Change</span></div>
+        </div>
+        <div class="section-body">
+          <div class="model-grid">
+            <div class="model-card selected">
+              <div class="model-thumb" style="background:linear-gradient(135deg,#0d4f78,#2ab0e8)">🚤</div>
+              <div class="model-card-name">Navigator 610</div>
+              <div class="model-card-brand">Brig Boats</div>
+            </div>
+            <div class="model-card">
+              <div class="model-thumb" style="background:linear-gradient(135deg,#1a5f8a,#4ade80)">⛵</div>
+              <div class="model-card-name">Eagle 780</div>
+              <div class="model-card-brand">Brig Boats</div>
+            </div>
+            <div class="model-card">
+              <div class="model-thumb" style="background:linear-gradient(135deg,#374151,#9ca3af)">🛥️</div>
+              <div class="model-card-name">Cap Camarat 7.5</div>
+              <div class="model-card-brand">Jeanneau</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 3 — VARIANT -->
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-num done">✓</div>
+          <div class="section-title">Variant</div>
+        </div>
+        <div class="section-body">
+          <div class="variant-list">
+            <div class="variant-item selected">
+              <div class="variant-radio"><div class="variant-radio-dot"></div></div>
+              <div class="variant-info">
+                <div class="variant-name">Navigator 610 Sport</div>
+                <div class="variant-desc">Full sport — console + T-Top</div>
+              </div>
+              <div class="variant-price">€38,500</div>
+            </div>
+            <div class="variant-item">
+              <div class="variant-radio"></div>
+              <div class="variant-info">
+                <div class="variant-name">Navigator 610 Open</div>
+                <div class="variant-desc">Open deck configuration</div>
+              </div>
+              <div class="variant-price">€34,200</div>
+            </div>
+            <div class="variant-item">
+              <div class="variant-radio"></div>
+              <div class="variant-info">
+                <div class="variant-name">Navigator 610 Entry</div>
+                <div class="variant-desc">Base configuration</div>
+              </div>
+              <div class="variant-price">€31,000</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 4 — INCLUDED EQUIPMENT -->
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-num done">✓</div>
+          <div class="section-title">Included equipment</div>
+          <div class="section-subtitle">Auto-loaded from variant</div>
+        </div>
+        <div class="section-body">
+          <div class="equipment-list">
+            <span class="equip-tag">✓ Hydraulic steering</span>
+            <span class="equip-tag">✓ Navigation lights</span>
+            <span class="equip-tag">✓ Sport upholstery</span>
+            <span class="equip-tag">✓ Stainless steel fittings</span>
+            <span class="equip-tag">✓ T-Top structure</span>
+            <span class="equip-tag">✓ Automatic bilge pump</span>
+            <span class="equip-tag">✓ Anchor locker</span>
+            <span class="equip-tag">✓ Preparation included</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 5 — OPTIONS -->
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-num">5</div>
+          <div class="section-title">Options</div>
+          <div class="section-subtitle">3 selected · +€7,365</div>
+        </div>
+        <div class="section-body">
+          <div class="options-category">
+            <div class="options-cat-title">Navigation & Electronics</div>
+            <div class="option-row checked">
+              <div class="checkbox"><span class="checkmark">✓</span></div>
+              <div class="option-name">Electric windlass</div>
+              <div class="option-price">€1,950</div>
+            </div>
+            <div class="option-row">
+              <div class="checkbox"></div>
+              <div class="option-name">Hydraulic steering upgrade</div>
+              <div class="option-price">€1,650</div>
+            </div>
+            <div class="option-row checked">
+              <div class="checkbox"><span class="checkmark">✓</span></div>
+              <div class="option-name">Solar panel kit (400W)</div>
+              <div class="option-discount">-10%</div>
+              <div class="option-price">€3,465</div>
+            </div>
+          </div>
+          <div class="options-category">
+            <div class="options-cat-title">Comfort & Interior</div>
+            <div class="option-row checked">
+              <div class="checkbox"><span class="checkmark">✓</span></div>
+              <div class="option-name">Fusion stereo — 4 RGB speakers</div>
+              <div class="option-price">€1,950</div>
+            </div>
+            <div class="option-row">
+              <div class="checkbox"></div>
+              <div class="option-name">Chemical WC</div>
+              <div class="option-price">€385</div>
+            </div>
+            <div class="option-row">
+              <div class="checkbox"></div>
+              <div class="option-name">Freshwater system + shower</div>
+              <div class="option-price">€755</div>
+            </div>
+            <div class="option-row">
+              <div class="checkbox"></div>
+              <div class="option-name">Refrigerator</div>
+              <div class="option-price">€1,660</div>
+            </div>
+          </div>
+          <div class="options-category">
+            <div class="options-cat-title">Customisation</div>
+            <div class="option-row">
+              <div class="checkbox"></div>
+              <div class="option-name">Gelcoat colour (excl. metallic)</div>
+              <div class="option-price">€2,050</div>
+            </div>
+            <div class="option-row">
+              <div class="checkbox"></div>
+              <div class="option-name">Custom covering</div>
+              <div class="option-price">€5,481</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 6 — CUSTOM LINE ITEMS -->
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-num">6</div>
+          <div class="section-title">Custom line items</div>
+        </div>
+        <div class="section-body">
+          <div class="custom-items-list">
+            <div class="custom-item-row">
+              <input class="custom-input" type="text" value="Transport — Saint-Raphaël delivery">
+              <input class="custom-input price" type="text" value="€ 650">
+              <button class="remove-btn">×</button>
+            </div>
+            <div class="custom-item-row">
+              <input class="custom-input" type="text" value="Preparation & antifouling">
+              <input class="custom-input price" type="text" value="€ 480">
+              <button class="remove-btn">×</button>
+            </div>
+          </div>
+          <div class="add-custom-btn">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add a line item
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 7 — DISCOUNTS -->
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-num">7</div>
+          <div class="section-title">Discounts</div>
+        </div>
+        <div class="section-body">
+          <div class="discount-row">
+            <span class="discount-label">Boat discount</span>
+            <div class="discount-input-wrap"><input class="discount-input" value="5"><span class="discount-pct">%</span></div>
+            <span class="discount-amount">-€1,925</span>
+          </div>
+          <div class="discount-row">
+            <span class="discount-label">Options discount</span>
+            <div class="discount-input-wrap"><input class="discount-input" value="0"><span class="discount-pct">%</span></div>
+            <span class="discount-amount">—</span>
+          </div>
+          <div class="discount-row">
+            <span class="discount-label">Global discount</span>
+            <div class="discount-input-wrap"><input class="discount-input" value="0"><span class="discount-pct">%</span></div>
+            <span class="discount-amount">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 8 — TRADE-IN -->
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-num">8</div>
+          <div class="section-title">Trade-in</div>
+          <div class="section-subtitle">Optional</div>
+        </div>
+        <div class="section-body">
+          <div class="tradein-grid">
+            <div class="field-group"><div class="field-label">Brand</div><input class="field-input" type="text" value="Brig"></div>
+            <div class="field-group"><div class="field-label">Model</div><input class="field-input" type="text" value="Navigator 450"></div>
+            <div class="field-group"><div class="field-label">Year</div><input class="field-input" type="text" value="2018"></div>
+            <div class="field-group"><div class="field-label">Engine hours</div><input class="field-input" type="text" value="312 h"></div>
+          </div>
+          <div class="tradein-value-row">
+            <div class="tradein-value-label">🔄 Trade-in value</div>
+            <input class="tradein-value-input" type="text" value="€ 8,500">
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 9 — INTERNAL NOTES -->
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-num">9</div>
+          <div class="section-title">Internal notes</div>
+          <div class="section-subtitle">Not shown in PDF</div>
+        </div>
+        <div class="section-body">
+          <textarea class="notes-area">Client very motivated — seen boat at Grand Pavois. Flexible on delivery date. Follow up before May 24 expiry.</textarea>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT PANEL — LIVE SUMMARY -->
+    <div class="right-panel">
+      <div class="summary-header">
+        <div class="summary-title">Live summary</div>
+        <div class="summary-ref">Q-2026-048 · Draft</div>
+        <div class="summary-client">
+          <div class="avatar" style="width:28px;height:28px;font-size:11px">JM</div>
+          <div>
+            <div class="summary-client-name">Jean Martin</div>
+            <div class="summary-client-sub">j.martin@gmail.com</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- VENDOR / CLIENT VIEW TOGGLE -->
+      <div class="view-toggle">
+        <span class="view-toggle-label">View mode</span>
+        <div class="toggle-wrap">
+          <span class="toggle-opt active">Vendor</span>
+          <div class="toggle-switch"><div class="toggle-knob"></div></div>
+          <span class="toggle-opt">Client</span>
+        </div>
+      </div>
+
+      <div class="summary-boat">
+        <div class="summary-boat-img">
+          🚤
+          <div class="boat-overlay">
+            <div class="boat-name-overlay">Navigator 610 Sport</div>
+            <div class="boat-variant-overlay">Brig Boats</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="summary-lines">
+        <div class="summary-line">
+          <span class="summary-line-label">Base price (excl. VAT)</span>
+          <span class="summary-line-val">€38,500</span>
+        </div>
+        <div class="summary-line">
+          <span class="summary-line-label">Boat discount (-5%)</span>
+          <span class="summary-line-val negative">-€1,925</span>
+        </div>
+      </div>
+
+      <div class="summary-options">
+        <div class="summary-opt-header">
+          <span class="summary-opt-label">Options (3)</span>
+          <span class="summary-opt-total">+€7,365</span>
+        </div>
+        <div class="summary-option-item">
+          <span class="summary-option-name">Electric windlass</span>
+          <span class="summary-option-price">€1,950</span>
+        </div>
+        <div class="summary-option-item">
+          <span class="summary-option-name">Solar panel kit (-10%)</span>
+          <span class="summary-option-price">€3,465</span>
+        </div>
+        <div class="summary-option-item">
+          <span class="summary-option-name">Fusion stereo</span>
+          <span class="summary-option-price">€1,950</span>
+        </div>
+      </div>
+
+      <div class="summary-divider"></div>
+
+      <div class="summary-lines">
+        <div class="summary-line">
+          <span class="summary-line-label">Custom items</span>
+          <span class="summary-line-val">+€1,130</span>
+        </div>
+      </div>
+
+      <div class="summary-totals">
+        <div class="total-line">
+          <span class="total-label">Total excl. VAT</span>
+          <span class="total-val">€45,070</span>
+        </div>
+        <div class="total-line">
+          <span class="total-label">VAT 20%</span>
+          <span class="total-val">+€9,014</span>
+        </div>
+        <div class="total-line main-total">
+          <span class="total-label">Total incl. VAT</span>
+          <span class="total-val">€54,084</span>
+        </div>
+        <div class="total-line tradein-line">
+          <span class="total-label">Trade-in deduction</span>
+          <span class="total-val">-€8,500</span>
+        </div>
+        <div class="total-line net-line">
+          <span class="total-label">Net payable</span>
+          <span class="total-val">€45,584</span>
+        </div>
+      </div>
+
+      <!-- MARGIN — VENDOR VIEW ONLY -->
+      <div class="margin-block">
+        <div class="margin-row">
+          <span class="margin-label">Margin</span>
+          <span class="margin-value margin-estimated">€7,840 · 17.4% <span class="margin-tag margin-tag-estimated">estimated</span></span>
+        </div>
+        <div class="margin-row" style="margin-top:4px">
+          <span class="margin-label">Estimated cost</span>
+          <span class="margin-value" style="color:rgba(255,255,255,.4);font-size:12px">€37,230</span>
+        </div>
+      </div>
+
+      <div class="summary-actions">
+        <button class="btn btn-full btn-generate">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Generate PDF & send
+        </button>
+        <button class="btn btn-full btn-save">Save draft</button>
+      </div>
+    </div>
+
+  </div>
+</main>
+</body>
+</html>

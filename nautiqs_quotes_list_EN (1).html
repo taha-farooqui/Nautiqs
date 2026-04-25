@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nautiqs — Quotes</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --navy: #0d3d5c; --navy-mid: #1a5f8a; --blue: #2a8fc4;
+  --blue-light: #e8f4fb; --accent: #2ab0e8;
+  --green: #16a34a; --green-bg: #f0fdf4;
+  --orange: #ea580c; --orange-bg: #fff7ed;
+  --red: #dc2626; --red-bg: #fef2f2;
+  --gray-50: #f9fafb; --gray-100: #f3f4f6; --gray-200: #e5e7eb;
+  --gray-300: #d1d5db; --gray-400: #9ca3af; --gray-500: #6b7280;
+  --gray-600: #4b5563; --gray-700: #374151; --gray-800: #1f2937; --gray-900: #111827;
+  --sidebar-w: 220px; --radius: 10px; --shadow: 0 1px 3px rgba(0,0,0,.08);
+}
+body { font-family: 'DM Sans', sans-serif; background: var(--gray-50); color: var(--gray-800); display: flex; min-height: 100vh; font-size: 14px; }
+
+/* SIDEBAR */
+.sidebar { width: var(--sidebar-w); background: var(--navy); display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; z-index: 10; }
+.sidebar-logo { padding: 20px 20px 16px; border-bottom: 1px solid rgba(255,255,255,.08); display: flex; align-items: center; gap: 10px; }
+.logo-icon { width: 34px; height: 34px; flex-shrink: 0; }
+.logo-name { font-family: 'DM Serif Display', serif; font-size: 20px; color: #fff; }
+.sidebar-section { padding: 16px 12px 8px; }
+.sidebar-label { font-size: 10px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: rgba(255,255,255,.35); padding: 0 8px; margin-bottom: 4px; }
+.nav-item { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: 7px; color: rgba(255,255,255,.65); cursor: pointer; font-size: 13.5px; margin-bottom: 1px; transition: all .15s; }
+.nav-item:hover { background: rgba(255,255,255,.07); color: #fff; }
+.nav-item.active { background: rgba(42,176,232,.18); color: var(--accent); font-weight: 500; }
+.nav-icon { width: 16px; height: 16px; flex-shrink: 0; }
+.nav-badge { margin-left: auto; background: var(--accent); color: #fff; font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 20px; }
+.sidebar-bottom { margin-top: auto; padding: 12px; border-top: 1px solid rgba(255,255,255,.08); }
+.user-card { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 7px; cursor: pointer; }
+.avatar { width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg,var(--blue),var(--accent)); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: #fff; flex-shrink: 0; }
+.user-name { font-size: 12.5px; color: #fff; font-weight: 500; }
+.user-plan { font-size: 11px; color: rgba(255,255,255,.4); }
+
+/* MAIN */
+.main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; }
+.topbar { background: #fff; border-bottom: 1px solid var(--gray-200); padding: 0 28px; height: 56px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 5; }
+.page-title { font-size: 15px; font-weight: 600; color: var(--gray-900); }
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 7px; font-size: 13px; font-weight: 500; cursor: pointer; border: none; font-family: inherit; transition: all .15s; }
+.btn-primary { background: var(--navy); color: #fff; }
+.btn-primary:hover { background: var(--navy-mid); }
+.btn-ghost { background: transparent; color: var(--gray-600); border: 1px solid var(--gray-200); }
+.btn-ghost:hover { background: var(--gray-50); }
+.content { padding: 24px 28px; flex: 1; }
+
+/* STATS STRIP */
+.stats-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+.strip-card { background: #fff; border: 1px solid var(--gray-200); border-radius: var(--radius); padding: 12px 16px; display: flex; align-items: center; gap: 12px; box-shadow: var(--shadow); }
+.strip-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+.strip-val { font-size: 18px; font-weight: 700; color: var(--gray-900); font-family: 'DM Serif Display', serif; line-height: 1; }
+.strip-label { font-size: 11px; color: var(--gray-400); margin-top: 2px; }
+
+/* FILTERS */
+.filters-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+.search-wrap { position: relative; flex: 1; min-width: 220px; max-width: 340px; }
+.search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--gray-400); width: 15px; height: 15px; }
+.search-input { width: 100%; padding: 8px 12px 8px 34px; border: 1px solid var(--gray-200); border-radius: 8px; font-size: 13px; font-family: inherit; color: var(--gray-700); background: #fff; outline: none; }
+.search-input:focus { border-color: var(--accent); }
+.filter-select { padding: 7px 12px; border: 1px solid var(--gray-200); border-radius: 8px; font-size: 13px; font-family: inherit; color: var(--gray-600); background: #fff; outline: none; cursor: pointer; }
+.filter-tabs { display: flex; background: var(--gray-100); border-radius: 8px; padding: 3px; gap: 2px; margin-left: auto; }
+.filter-tab { padding: 5px 12px; border-radius: 6px; font-size: 12.5px; font-weight: 500; color: var(--gray-500); cursor: pointer; transition: all .15s; white-space: nowrap; display: flex; align-items: center; gap: 5px; }
+.filter-tab.active { background: #fff; color: var(--gray-800); box-shadow: 0 1px 3px rgba(0,0,0,.1); }
+.tab-count { font-size: 10.5px; padding: 1px 5px; border-radius: 10px; font-weight: 600; }
+
+/* TABLE */
+.table-card { background: #fff; border: 1px solid var(--gray-200); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+.table-header { padding: 14px 20px; border-bottom: 1px solid var(--gray-100); display: flex; align-items: center; justify-content: space-between; }
+.table-title { font-size: 13.5px; font-weight: 600; color: var(--gray-800); }
+.table-meta { font-size: 12px; color: var(--gray-400); }
+.quotes-table { width: 100%; border-collapse: collapse; }
+.quotes-table th { font-size: 11px; font-weight: 600; letter-spacing: .5px; text-transform: uppercase; color: var(--gray-400); padding: 10px 16px; text-align: left; background: var(--gray-50); border-bottom: 1px solid var(--gray-100); white-space: nowrap; cursor: pointer; }
+.quotes-table th:hover { color: var(--gray-600); }
+.sort-icon { color: var(--accent); margin-left: 3px; }
+.quotes-table td { padding: 13px 16px; border-bottom: 1px solid var(--gray-100); vertical-align: middle; }
+.quotes-table tr:last-child td { border-bottom: none; }
+.quotes-table tr:hover td { background: var(--gray-50); }
+.client-cell { display: flex; align-items: center; gap: 10px; }
+.client-av { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: #fff; flex-shrink: 0; }
+.client-name { font-size: 13.5px; font-weight: 500; color: var(--gray-800); }
+.client-email { font-size: 11.5px; color: var(--gray-400); margin-top: 1px; }
+.ref-chip { font-size: 12px; color: var(--gray-500); background: var(--gray-100); padding: 3px 8px; border-radius: 5px; font-family: 'Courier New', monospace; font-weight: 500; }
+.model-name { font-size: 13px; color: var(--gray-700); font-weight: 500; }
+.model-brand { font-size: 11.5px; color: var(--gray-400); margin-top: 1px; }
+.amount-val { font-size: 13.5px; font-weight: 600; color: var(--gray-900); }
+.amount-sub { font-size: 11px; color: var(--gray-400); margin-top: 1px; }
+.status-badge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px; border-radius: 20px; font-size: 11.5px; font-weight: 500; white-space: nowrap; }
+.status-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+.s-draft { background: var(--gray-100); color: var(--gray-500); } .s-draft .status-dot { background: var(--gray-400); }
+.s-sent { background: #eff6ff; color: #2563eb; } .s-sent .status-dot { background: #2563eb; }
+.s-won { background: var(--green-bg); color: var(--green); } .s-won .status-dot { background: var(--green); }
+.s-lost { background: var(--red-bg); color: var(--red); } .s-lost .status-dot { background: var(--red); }
+.eye-badge { display: inline-flex; align-items: center; gap: 4px; background: var(--blue-light); color: var(--navy-mid); padding: 3px 7px; border-radius: 20px; font-size: 11.5px; font-weight: 500; }
+.no-track { color: var(--gray-300); font-size: 12px; }
+.date-val { font-size: 12.5px; color: var(--gray-600); }
+.date-ago { font-size: 11px; color: var(--gray-400); margin-top: 1px; }
+.expiry-ok { font-size: 12px; color: var(--gray-400); }
+.expiry-warn { font-size: 12px; color: var(--orange); font-weight: 500; }
+.expiry-overdue { font-size: 12px; color: var(--red); font-weight: 500; }
+.actions-cell { display: flex; align-items: center; gap: 4px; }
+.action-btn { width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--gray-200); background: #fff; color: var(--gray-500); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all .15s; }
+.action-btn:hover { background: var(--blue-light); border-color: var(--accent); color: var(--navy); }
+.action-btn svg { width: 13px; height: 13px; }
+.more-btn { position: relative; }
+.dropdown { position: absolute; right: 0; top: 32px; background: #fff; border: 1px solid var(--gray-200); border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,.1); min-width: 170px; z-index: 20; display: none; }
+.more-btn:hover .dropdown { display: block; }
+.dropdown-item { display: flex; align-items: center; gap: 8px; padding: 8px 12px; font-size: 12.5px; color: var(--gray-600); cursor: pointer; transition: background .1s; }
+.dropdown-item:hover { background: var(--gray-50); }
+.dropdown-item svg { width: 13px; height: 13px; color: var(--gray-400); }
+.dropdown-item.danger { color: var(--red); }
+.dropdown-item.danger svg { color: var(--red); }
+.dropdown-divider { height: 1px; background: var(--gray-100); margin: 4px 0; }
+.pagination { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; border-top: 1px solid var(--gray-100); }
+.pagination-info { font-size: 12.5px; color: var(--gray-500); }
+.pagination-btns { display: flex; gap: 4px; }
+.page-btn { width: 30px; height: 30px; border-radius: 6px; border: 1px solid var(--gray-200); background: #fff; display: flex; align-items: center; justify-content: center; font-size: 12.5px; color: var(--gray-600); cursor: pointer; transition: all .15s; }
+.page-btn:hover { background: var(--blue-light); border-color: var(--accent); color: var(--navy); }
+.page-btn.active { background: var(--navy); border-color: var(--navy); color: #fff; }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <svg class="logo-icon" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+      <rect width="400" height="400" rx="80" fill="#0d4f78"/>
+      <clipPath id="c"><rect width="400" height="400" rx="80"/></clipPath>
+      <g clip-path="url(#c)">
+        <path d="M0,320 Q50,290 100,320 Q150,350 200,320 Q250,290 300,320 Q350,350 400,320 L400,400 L0,400 Z" fill="#2ab0e8" opacity=".3"/>
+        <path d="M0,335 Q55,308 110,335 Q165,362 220,335 Q275,308 330,335 Q365,352 400,340 L400,400 L0,400 Z" fill="#1a7ab5" opacity=".5"/>
+        <path d="M0,352 Q60,328 120,352 Q180,376 240,352 Q300,328 360,352 L400,368 L400,400 L0,400 Z" fill="#0d4f78"/>
+        <path d="M60,350 Q200,388 340,350 L328,370 Q200,405 72,370 Z" fill="#1a7ab5"/>
+        <line x1="200" y1="348" x2="200" y2="100" stroke="#e8f4fb" stroke-width="7" stroke-linecap="round"/>
+        <path d="M200,108 L200,328 L56,300 Z" fill="#2ab0e8" opacity=".95"/>
+        <path d="M200,125 L200,322 L348,280 Z" fill="#0a2d42" opacity=".85"/>
+        <circle cx="200" cy="92" r="14" fill="#2ab0e8"/>
+      </g>
+    </svg>
+    <span class="logo-name">Nautiqs</span>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-label">Main</div>
+    <div class="nav-item"><svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</div>
+    <div class="nav-item active"><svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12h6M9 16h6M9 8h6M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z"/></svg>Quotes<span class="nav-badge">3</span></div>
+    <div class="nav-item"><svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 20h5v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2h5M12 12a4 4 0 100-8 4 4 0 000 8z"/></svg>Clients</div>
+    <div class="nav-item"><svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 10h16M4 14h10"/></svg>Catalogue</div>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-label">Analytics</div>
+    <div class="nav-item"><svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Performance</div>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-label">Settings</div>
+    <div class="nav-item"><svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>Company settings</div>
+    <div class="nav-item"><svg class="nav-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>Billing</div>
+  </div>
+  <div class="sidebar-bottom">
+    <div class="user-card">
+      <div class="avatar">NC</div>
+      <div><div class="user-name">Nautique Concept</div><div class="user-plan">Pro plan</div></div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="topbar">
+    <div class="page-title">Quotes</div>
+    <div class="topbar-right">
+      <button class="btn btn-ghost">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+        Export CSV
+      </button>
+      <button class="btn btn-primary">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        New quote
+      </button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- STATS STRIP -->
+    <div class="stats-strip">
+      <div class="strip-card">
+        <div class="strip-icon" style="background:#e8f4fb">📝</div>
+        <div><div class="strip-val">47</div><div class="strip-label">Quotes this month</div></div>
+      </div>
+      <div class="strip-card">
+        <div class="strip-icon" style="background:#eff6ff">📤</div>
+        <div><div class="strip-val">28</div><div class="strip-label">Sent — awaiting reply</div></div>
+      </div>
+      <div class="strip-card">
+        <div class="strip-icon" style="background:#f0fdf4">✅</div>
+        <div><div class="strip-val">12</div><div class="strip-label">Won this month</div></div>
+      </div>
+      <div class="strip-card">
+        <div class="strip-icon" style="background:#fff7ed">⏰</div>
+        <div><div class="strip-val" style="color:#ea580c">3</div><div class="strip-label">Expiring in 3 days</div></div>
+      </div>
+    </div>
+
+    <!-- FILTERS -->
+    <div class="filters-bar">
+      <div class="search-wrap">
+        <svg class="search-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input class="search-input" type="text" placeholder="Search client, ref, model...">
+      </div>
+      <select class="filter-select">
+        <option>All brands</option>
+        <option>Brig Boats</option>
+        <option>Jeanneau</option>
+        <option>Quicksilver</option>
+        <option>Pacific Craft</option>
+      </select>
+      <select class="filter-select">
+        <option>All models</option>
+        <option>Navigator 610</option>
+        <option>Eagle 780</option>
+        <option>Cap Camarat 7.5</option>
+      </select>
+      <select class="filter-select">
+        <option>April 2026</option>
+        <option>March 2026</option>
+        <option>February 2026</option>
+      </select>
+      <div class="filter-tabs">
+        <div class="filter-tab active">All <span class="tab-count" style="background:var(--gray-200);color:var(--gray-600)">47</span></div>
+        <div class="filter-tab">Draft <span class="tab-count" style="background:var(--gray-200);color:var(--gray-500)">7</span></div>
+        <div class="filter-tab">Sent <span class="tab-count" style="background:#dbeafe;color:#2563eb">28</span></div>
+        <div class="filter-tab">Won <span class="tab-count" style="background:#dcfce7;color:#16a34a">12</span></div>
+        <div class="filter-tab">Lost <span class="tab-count" style="background:#fee2e2;color:#dc2626">5</span></div>
+      </div>
+    </div>
+
+    <!-- TABLE -->
+    <div class="table-card">
+      <div class="table-header">
+        <div class="table-title">All quotes</div>
+        <div class="table-meta">47 quotes · sorted by date ↓</div>
+      </div>
+      <table class="quotes-table">
+        <thead>
+          <tr>
+            <th>Client</th>
+            <th>Ref.</th>
+            <th>Boat</th>
+            <th>Amount excl. VAT <span class="sort-icon">↓</span></th>
+            <th>Status</th>
+            <th>Opened</th>
+            <th>Date</th>
+            <th>Expires</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+
+          <tr>
+            <td><div class="client-cell"><div class="client-av" style="background:linear-gradient(135deg,#0d4f78,#2ab0e8)">JM</div><div><div class="client-name">Jean Martin</div><div class="client-email">j.martin@gmail.com</div></div></div></td>
+            <td><span class="ref-chip">Q-2026-047</span></td>
+            <td><div><div class="model-name">Navigator 610 Sport</div><div class="model-brand">Brig Boats</div></div></td>
+            <td><div><div class="amount-val">€45,070</div><div class="amount-sub">incl. VAT: €54,084</div></div></td>
+            <td><span class="status-badge s-sent"><span class="status-dot"></span>Sent</span></td>
+            <td><span class="eye-badge">👁 4×</span></td>
+            <td><div><div class="date-val">24 Apr 2026</div><div class="date-ago">Today</div></div></td>
+            <td><span class="expiry-warn">⚠ 3 days</span></td>
+            <td>
+              <div class="actions-cell">
+                <div class="action-btn" title="Edit"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>
+                <div class="action-btn" title="Duplicate"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></div>
+                <div class="action-btn" title="Send email"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div>
+                <div class="action-btn more-btn" title="More"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+                  <div class="dropdown">
+                    <div class="dropdown-item"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/></svg>Download PDF</div>
+                    <div class="dropdown-item"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Mark as Won</div>
+                    <div class="dropdown-item"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>Mark as Lost</div>
+                    <div class="dropdown-divider"></div>
+                    <div class="dropdown-item danger"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>Delete</div>
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td><div class="client-cell"><div class="client-av" style="background:linear-gradient(135deg,#16a34a,#4ade80)">SD</div><div><div class="client-name">Sophie Durand</div><div class="client-email">s.durand@pro.fr</div></div></div></td>
+            <td><span class="ref-chip">Q-2026-046</span></td>
+            <td><div><div class="model-name">505 Open</div><div class="model-brand">Quicksilver</div></div></td>
+            <td><div><div class="amount-val">€15,750</div><div class="amount-sub">incl. VAT: €18,900</div></div></td>
+            <td><span class="status-badge s-won"><span class="status-dot"></span>Won</span></td>
+            <td><span class="eye-badge">👁 7×</span></td>
+            <td><div><div class="date-val">22 Apr 2026</div><div class="date-ago">2 days ago</div></div></td>
+            <td><span class="expiry-ok">—</span></td>
+            <td><div class="actions-cell">
+              <div class="action-btn"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>
+              <div class="action-btn"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></div>
+              <div class="action-btn" style="background:#f0fdf4;border-color:#bbf7d0;color:#16a34a" title="Generate order confirmation"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+              <div class="action-btn more-btn"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg></div>
+            </div></td>
+          </tr>
+
+          <tr>
+            <td><div class="client-cell"><div class="client-av" style="background:linear-gradient(135deg,#7c3aed,#a78bfa)">PL</div><div><div class="client-name">Pierre Leblanc</div><div class="client-email">p.leblanc@sail.com</div></div></div></td>
+            <td><span class="ref-chip">Q-2026-045</span></td>
+            <td><div><div class="model-name">Cap Camarat 7.5 WA</div><div class="model-brand">Jeanneau</div></div></td>
+            <td><div><div class="amount-val">€56,000</div><div class="amount-sub">incl. VAT: €67,200</div></div></td>
+            <td><span class="status-badge s-sent"><span class="status-dot"></span>Sent</span></td>
+            <td><span class="eye-badge">👁 2×</span></td>
+            <td><div><div class="date-val">20 Apr 2026</div><div class="date-ago">4 days ago</div></div></td>
+            <td><span class="expiry-warn">⚠ 5 days</span></td>
+            <td><div class="actions-cell">
+              <div class="action-btn"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>
+              <div class="action-btn"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></div>
+              <div class="action-btn"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div>
+              <div class="action-btn more-btn"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg></div>
+            </div></td>
+          </tr>
+
+          <tr>
+            <td><div class="client-cell"><div class="client-av" style="background:linear-gradient(135deg,#ea580c,#fb923c)">MR</div><div><div class="client-name">Marie Rousseau</div><div class="client-email">m.rousseau@free.fr</div></div></div></td>
+            <td><span class="ref-chip">Q-2026-044</span></td>
+            <td><div><div class="model-name">Eagle 780</div><div class="model-brand">Brig Boats</div></div></td>
+            <td><div><div class="amount-val">€74,500</div><div class="amount-sub">incl. VAT: €89,400</div></div></td>
+            <td><span class="status-badge s-draft"><span class="status-dot"></span>Draft</span></td>
+            <td><span class="no-track">Not sent</span></td>
+            <td><div><div class="date-val">19 Apr 2026</div><div class="date-ago">5 days ago</div></div></td>
+            <td><span class="expiry-ok">—</span></td>
+            <td><div class="actions-cell">
+              <div class="action-btn"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>
+              <div class="action-btn"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></div>
+              <div class="action-btn"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div>
+              <div class="action-btn more-btn"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg></div>
+            </div></td>
+          </tr>
+
+          <tr>
+            <td><div class="client-cell"><div class="client-av" style="background:linear-gradient(135deg,#0891b2,#22d3ee)">TG</div><div><div class="client-name">Thomas Girard</div><div class="client-email">t.girard@yachting.fr</div></div></div></td>
+            <td><span class="ref-chip">Q-2026-043</span></td>
+            <td><div><div class="model-name">Seagame 250 SF</div><div class="model-brand">Pacific Craft</div></div></td>
+            <td><div><div class="amount-val">€103,333</div><div class="amount-sub">incl. VAT: €124,000</div></div></td>
+            <td><span class="status-badge s-lost"><span class="status-dot"></span>Lost</span></td>
+            <td><span class="eye-badge">👁 1×</span></td>
+            <td><div><div class="date-val">15 Apr 2026</div><div class="date-ago">9 days ago</div></div></td>
+            <td><span class="expiry-overdue">Expired</span></td>
+            <td><div class="actions-cell">
+              <div class="action-btn"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>
+              <div class="action-btn"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></div>
+              <div class="action-btn more-btn"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg></div>
+            </div></td>
+          </tr>
+
+          <tr>
+            <td><div class="client-cell"><div class="client-av" style="background:linear-gradient(135deg,#be185d,#f472b6)">AL</div><div><div class="client-name">Alice Lambert</div><div class="client-email">a.lambert@gmail.com</div></div></div></td>
+            <td><span class="ref-chip">Q-2026-042</span></td>
+            <td><div><div class="model-name">Navigator 610 Open</div><div class="model-brand">Brig Boats</div></div></td>
+            <td><div><div class="amount-val">€29,800</div><div class="amount-sub">incl. VAT: €35,760</div></div></td>
+            <td><span class="status-badge s-sent"><span class="status-dot"></span>Sent</span></td>
+            <td><span class="eye-badge">👁 6×</span></td>
+            <td><div><div class="date-val">14 Apr 2026</div><div class="date-ago">10 days ago</div></div></td>
+            <td><span class="expiry-warn">⚠ 4 days</span></td>
+            <td><div class="actions-cell">
+              <div class="action-btn"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>
+              <div class="action-btn"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></div>
+              <div class="action-btn"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div>
+              <div class="action-btn more-btn"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg></div>
+            </div></td>
+          </tr>
+
+        </tbody>
+      </table>
+
+      <div class="pagination">
+        <div class="pagination-info">Showing 1–6 of 47 quotes</div>
+        <div class="pagination-btns">
+          <div class="page-btn">‹</div>
+          <div class="page-btn active">1</div>
+          <div class="page-btn">2</div>
+          <div class="page-btn">3</div>
+          <div class="page-btn">...</div>
+          <div class="page-btn">8</div>
+          <div class="page-btn">›</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+</body>
+</html>
