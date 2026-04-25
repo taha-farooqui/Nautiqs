@@ -9,7 +9,7 @@
 # The `'...'` syntax means "keep all of Nixpacks' defaults, append to them."
 
 [phases.setup]
-nixPkgs = ['...', 'php82Extensions.mongodb', 'nodejs_20']
+nixPkgs = ['...', 'php82Extensions.mongodb']
 
 [phases.install]
 cmds = [
