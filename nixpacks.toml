@@ -1,23 +1,8 @@
-# Railway build config — Nixpacks reads this to build the deploy image.
-# We need the mongodb PHP extension (not in the default PHP image) so Laravel
-# can talk to MongoDB Atlas.
+# Railway build config — Nixpacks reads this on top of its automatic PHP detector.
+# We only declare what's missing from the default PHP image: the MongoDB extension
+# (no default PHP build ships it). Everything else — composer install, npm ci,
+# npm run build, the start command — is handled by Nixpacks' built-in PHP provider.
 
 [phases.setup]
-nixPkgs = ['php82', 'php82Extensions.mongodb', 'php82Packages.composer', 'nodejs_20']
-
-[phases.install]
-cmds = [
-    'composer install --no-dev --optimize-autoloader --no-interaction',
-    'npm ci',
-]
-
-[phases.build]
-cmds = [
-    'npm run build',
-    'php artisan config:cache',
-    'php artisan route:cache',
-    'php artisan view:cache',
-]
-
-[start]
-cmd = 'php -S 0.0.0.0:${PORT:-8000} -t public public/index.php'
+aptPkgs = ['...']
+nixPkgs = ['...', 'php82Extensions.mongodb']
