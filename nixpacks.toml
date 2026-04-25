@@ -1,19 +1,23 @@
 # Railway / Nixpacks build config.
 #
-# Two things this file does on top of Nixpacks' default PHP detector:
-#   1. Adds the `mongodb` PHP extension (Atlas can't be reached without it).
-#   2. Forces `npm ci && npm run build` so Vite compiles Tailwind + Livewire JS
-#      into public/build/ — that directory is gitignored, so it MUST be built
-#      on the server every deploy.
+# Nixpacks' PHP provider builds a custom `php-with-extensions` binary at build
+# time. To get the mongodb extension into that binary we set the
+# NIXPACKS_PHP_EXTENSIONS env var BEFORE the setup phase runs.
 #
-# The `'...'` syntax means "keep all of Nixpacks' defaults, append to them."
+# We also override the install/build commands so:
+#   1. composer install uses --ignore-platform-req=ext-mongodb (the extension
+#      is loaded at runtime, but composer's strict platform check at build time
+#      doesn't see it because of how Nixpacks composes the binary).
+#   2. npm ci + npm run build always run, so Vite compiles the assets into
+#      public/build/ (which is gitignored).
 
-[phases.setup]
-nixPkgs = ['...', 'php82Extensions.mongodb']
+[variables]
+NIXPACKS_PHP_VERSION = '8.2'
+NIXPACKS_PHP_EXTENSIONS = 'mongodb'
 
 [phases.install]
 cmds = [
-    'composer install --no-dev --optimize-autoloader --no-interaction',
+    'composer install --no-dev --optimize-autoloader --no-interaction --ignore-platform-req=ext-mongodb',
     'npm ci',
 ]
 
