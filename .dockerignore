@@ -1,0 +1,43 @@
+.git
+.github
+.idea
+.vscode
+.zed
+.fleet
+.nova
+.editorconfig
+
+# Local secrets and env
+.env
+.env.backup
+.env.production
+
+# Dependencies — installed inside the container
+vendor
+node_modules
+
+# Built artefacts — produced inside the container
+public/build
+public/hot
+public/storage
+
+# Logs and caches
+storage/logs/*.log
+storage/framework/cache/data/*
+storage/framework/sessions/*
+storage/framework/views/*
+
+# Tests / dev tooling
+tests
+phpunit.xml
+phpunit.result.cache
+.phpunit.cache
+.phpactor.json
+.phpunit.result.cache
+
+# Other
+README.md
+DEPLOY.md
+CLAUDE.md
+*.log
+*.md
