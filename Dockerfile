@@ -57,4 +57,5 @@ EXPOSE 8080
 CMD php artisan config:cache \
     && php artisan route:cache \
     && php artisan view:cache \
-    && php -S 0.0.0.0:${PORT} -t public vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php
+    && cd public \
+    && php -S 0.0.0.0:${PORT} ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php
