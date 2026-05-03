@@ -18,6 +18,62 @@ Route::get('/', function () {
         : redirect()->route('login');
 });
 
+/*
+ * One-shot mail diagnostic gated by DIAG_TOKEN env var. Designed for hosts
+ * (Railway etc.) that don't expose an SSH/shell. Hit:
+ *
+ *   GET /_diag/mail?token=YOUR_TOKEN&to=you@email.com
+ *
+ * Returns JSON with: the active mail config, whether the test send raised
+ * an exception, and the exception message if any. The token guard means
+ * leaving the route enabled is OK as long as DIAG_TOKEN stays secret. To
+ * disable entirely, unset DIAG_TOKEN in production.
+ */
+Route::get('/_diag/mail', function (\Illuminate\Http\Request $request) {
+    $expected = env('DIAG_TOKEN');
+    if (! $expected || ! hash_equals($expected, (string) $request->query('token', ''))) {
+        abort(404);
+    }
+
+    $to = $request->query('to') ?: config('mail.from.address');
+
+    $config = [
+        'MAIL_MAILER'       => config('mail.default'),
+        'MAIL_HOST'         => config('mail.mailers.smtp.host'),
+        'MAIL_PORT'         => config('mail.mailers.smtp.port'),
+        'MAIL_USERNAME'     => config('mail.mailers.smtp.username'),
+        'MAIL_PASSWORD_SET' => (bool) config('mail.mailers.smtp.password'),
+        'MAIL_TIMEOUT_S'    => config('mail.mailers.smtp.timeout'),
+        'MAIL_FROM_ADDRESS' => config('mail.from.address'),
+        'MAIL_FROM_NAME'    => config('mail.from.name'),
+        'APP_ENV'           => config('app.env'),
+        'APP_URL'           => config('app.url'),
+    ];
+
+    $start = microtime(true);
+    try {
+        \Illuminate\Support\Facades\Mail::raw(
+            'Diagnostic ping from Nautiqs at ' . now()->toDateTimeString(),
+            fn ($m) => $m->to($to)->subject('Nautiqs · /_diag/mail')
+        );
+        return response()->json([
+            'ok'         => true,
+            'sent_to'    => $to,
+            'duration_ms' => round((microtime(true) - $start) * 1000),
+            'config'     => $config,
+            'next_step'  => 'Symfony Mailer accepted the message. Check Brevo → Transactional → Logs to confirm it arrived at Brevo.',
+        ]);
+    } catch (\Throwable $e) {
+        return response()->json([
+            'ok'           => false,
+            'duration_ms'  => round((microtime(true) - $start) * 1000),
+            'config'       => $config,
+            'error_class'  => get_class($e),
+            'error_message'=> $e->getMessage(),
+        ], 500);
+    }
+})->name('diag.mail');
+
 Route::middleware(['auth', 'verified'])->group(function () {
 
     // Dashboard — §16.3
