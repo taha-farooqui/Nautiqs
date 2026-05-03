@@ -64,6 +64,13 @@ return [
             'transport' => 'resend',
         ],
 
+        // Brevo HTTPS API (port 443) — required when SMTP egress is blocked
+        // (e.g. Railway). Wired up by AppServiceProvider via Mail::extend.
+        'brevo' => [
+            'transport' => 'brevo',
+            'key'       => env('BREVO_KEY'),
+        ],
+
         'sendmail' => [
             'transport' => 'sendmail',
             'path' => env('MAIL_SENDMAIL_PATH', '/usr/sbin/sendmail -bs -i'),

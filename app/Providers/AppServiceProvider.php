@@ -9,9 +9,12 @@ use App\Observers\ClientObserver;
 use App\Observers\EmailTemplateObserver;
 use App\Observers\QuoteObserver;
 use App\Services\NotificationService;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use Symfony\Component\Mailer\Bridge\Brevo\Transport\BrevoTransportFactory;
+use Symfony\Component\Mailer\Transport\Dsn;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -33,6 +36,19 @@ class AppServiceProvider extends ServiceProvider
         Quote::observe(QuoteObserver::class);
         Client::observe(ClientObserver::class);
         EmailTemplate::observe(EmailTemplateObserver::class);
+
+        // Register the Brevo HTTPS API transport so MAIL_MAILER=brevo works.
+        // Required on hosts that block outbound SMTP (Railway, Fly, etc.) —
+        // the API runs on 443 which never gets blocked. BREVO_KEY env var
+        // is the v3 API key from Brevo → SMTP & API → API keys.
+        Mail::extend('brevo', function (array $config = []) {
+            $key = $config['key'] ?? env('BREVO_KEY');
+            return (new BrevoTransportFactory)->create(new Dsn(
+                scheme: 'brevo+api',
+                host:   'default',
+                user:   $key,
+            ));
+        });
 
         // Share recent notifications + unread count with the header AND
         // sidebar on every authenticated request — saves wiring this into
