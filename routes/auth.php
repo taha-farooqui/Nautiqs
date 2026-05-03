@@ -50,10 +50,21 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::get('verify-email', EmailVerificationPromptController::class)
         ->name('verification.notice');
+});
 
+// Verify-email link — handled OUTSIDE the 'auth' middleware so clicking the
+// link from an email works even when the browser session isn't logged in
+// (different device, expired session, incognito, etc.). The signed URL itself
+// is sufficient proof: it embeds the user id and a hash that only Laravel
+// can produce. Our controller looks the user up by {id} and logs them in
+// before redirecting to the dashboard.
+Route::middleware('throttle:6,1')->group(function () {
     Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)
-        ->middleware(['signed', 'throttle:6,1'])
+        ->middleware('signed')
         ->name('verification.verify');
+});
+
+Route::middleware('auth')->group(function () {
 
     Route::post('email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
         ->middleware('throttle:6,1')
