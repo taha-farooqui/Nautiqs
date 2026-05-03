@@ -228,34 +228,32 @@ HTML,
     }
 
     /**
-     * Sentinel that callers can str_replace with a CID after Symfony Mailer
-     * embeds the logo as an inline attachment. Used by QuoteController so
-     * the logo renders in the recipient's inbox without needing a public URL.
+     * Legacy placeholder kept for backwards compatibility with already-saved
+     * email bodies that contain it. New code should not introduce it.
      */
     public const LOGO_PLACEHOLDER = '__NAUTIQS_LOGO_SRC__';
 
     /**
-     * Wrap the rendered body with a logo header so every email shows the
-     * brand.
+     * Wrap the rendered body with a branded text-only header. We don't
+     * inline a logo image because:
+     *   - cid: attachments don't work via Brevo's HTTPS API
+     *   - data: URIs are blocked by Gmail / Outlook for anti-phishing
+     *   - public asset URLs only work when APP_URL is publicly reachable
+     * A bold company name in primary navy reads as a brand header in every
+     * client and never breaks. If/when a public CDN URL is available later,
+     * we can re-introduce the <img>.
      *
-     * @param  string  $body
-     * @param  Company $company
-     * @param  string|null $logoSrc Override the <img src>. Pass an absolute
-     *   URL for in-browser previews (the email log + edit-template page),
-     *   or LOGO_PLACEHOLDER and replace later with a CID for the actual send.
-     *   When null, defaults to the absolute asset() URL — fine for previews,
-     *   broken in real inboxes if APP_URL points at localhost.
+     * The optional $logoSrc argument is unused now but kept in the signature
+     * so existing callers don't need to change.
      */
     public function wrapWithLogo(string $body, Company $company, ?string $logoSrc = null): string
     {
-        $logoUrl     = $logoSrc ?? asset('nautiqs_logo.png');
         $companyName = e($company->name ?? config('app.name', 'Nautiqs'));
 
         return <<<HTML
 <div style="font-family: Inter, Arial, sans-serif; color: #1f2937; max-width: 600px; margin: 0 auto;">
     <div style="text-align: left; padding: 16px 0; border-bottom: 3px solid #0e4f79; margin-bottom: 24px;">
-        <img src="{$logoUrl}" alt="{$companyName}" width="56" height="56" style="border-radius: 8px; vertical-align: middle;" />
-        <span style="font-size: 18px; font-weight: 700; color: #0e4f79; margin-left: 12px; vertical-align: middle;">{$companyName}</span>
+        <span style="font-size: 22px; font-weight: 700; color: #0e4f79;">{$companyName}</span>
     </div>
     <div style="font-size: 14px; line-height: 1.6;">
         {$body}

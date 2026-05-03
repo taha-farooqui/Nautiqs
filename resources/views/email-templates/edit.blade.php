@@ -167,10 +167,8 @@
                     {{-- Mirrors EmailTemplateService::wrapWithLogo so the preview
                          matches what the recipient actually sees. --}}
                     <div class="border-t border-gray-100 pt-3">
-                        <div class="flex items-center gap-3 pb-3 mb-4 border-b-[3px] border-primary-800">
-                            <img src="{{ asset('nautiqs_logo.png') }}" alt="{{ $previewCompanyName }}"
-                                class="w-12 h-12 rounded-lg object-contain shrink-0" />
-                            <span class="font-bold text-primary-800 text-base">{{ $previewCompanyName }}</span>
+                        <div class="pb-3 mb-4 border-b-[3px] border-primary-800">
+                            <span class="font-bold text-primary-800 text-xl">{{ $previewCompanyName }}</span>
                         </div>
                         <div class="prose prose-sm max-w-none text-gray-800" x-html="renderedBody()"></div>
                         <div class="mt-6 pt-3 border-t border-gray-200 text-xs text-gray-500">

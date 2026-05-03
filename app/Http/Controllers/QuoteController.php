@@ -338,27 +338,9 @@ class QuoteController extends Controller
         }
         $pdfBytes = $pdf->output();
 
-        // Inline-embed the logo so it renders in the recipient's inbox even
-        // when APP_URL points at localhost (or any host the recipient can't
-        // reach). Symfony Mailer's $msg->embed() returns a cid: URL string;
-        // we swap the absolute logo URL for that CID just before sending.
-        // The Email log row keeps the absolute-URL version so the in-browser
-        // log preview can still load the image normally.
-        $absoluteLogoUrl = asset('nautiqs_logo.png');
-        $logoPath        = public_path('nautiqs_logo.png');
-
         $sendError = null;
         try {
-            \Illuminate\Support\Facades\Mail::html($bodyHtml, function ($msg) use ($to, $subject, $pdfBytes, $attachmentFilename, $company, $logoPath, $absoluteLogoUrl, $bodyHtml) {
-                if (is_file($logoPath)) {
-                    $cid = $msg->embed($logoPath);
-                    $msg->html(str_replace(
-                        [$absoluteLogoUrl, \App\Services\EmailTemplateService::LOGO_PLACEHOLDER],
-                        $cid,
-                        $bodyHtml
-                    ));
-                }
-
+            \Illuminate\Support\Facades\Mail::html($bodyHtml, function ($msg) use ($to, $subject, $pdfBytes, $attachmentFilename, $company) {
                 $msg->to($to)
                     ->subject($subject)
                     ->attachData($pdfBytes, $attachmentFilename, ['mime' => 'application/pdf']);
