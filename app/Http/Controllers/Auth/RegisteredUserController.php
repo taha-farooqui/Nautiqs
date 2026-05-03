@@ -47,7 +47,18 @@ class RegisteredUserController extends Controller
 
         $provisioner->forNewUser($user);
 
-        event(new Registered($user));
+        // Fire Registered → triggers Laravel's verification-email listener.
+        // We swallow any SMTP failure so a slow/down mail provider can't 500
+        // the signup. The user is still created and logged in; if the email
+        // never arrives they can hit "Resend" on /email/verify.
+        try {
+            event(new Registered($user));
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Verification email send failed at signup', [
+                'user_id' => (string) $user->_id,
+                'error'   => $e->getMessage(),
+            ]);
+        }
 
         Auth::login($user);
 

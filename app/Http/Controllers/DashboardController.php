@@ -16,6 +16,27 @@ class DashboardController extends Controller
 {
     public function __invoke(): View
     {
+        // Heavy aggregation across MongoDB Atlas — 20+ round-trips per render.
+        // Cache the KPI scalars for 60s per company so a refresh doesn't
+        // re-hammer Atlas. Recent quotes are fetched fresh (single quick
+        // query, and we want them up-to-date right after a save).
+        $companyId = auth()->user()->company_id ?? 'guest';
+        $cacheKey  = "dashboard:v1:{$companyId}:" . now()->format('YmdHi');
+
+        $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, 60, function () {
+            return $this->buildData();
+        });
+
+        // Always-fresh: most recent 5 quotes (cheap query, expected current).
+        $data['recent'] = Quote::orderBy('created_at', 'desc')
+            ->limit(5)
+            ->get(['number', 'client_snapshot', 'model_snapshot', 'totals', 'status', 'tracking', 'sent_at', 'created_at']);
+
+        return view('dashboard', $data);
+    }
+
+    private function buildData(): array
+    {
         $now            = Carbon::now();
         $startOfMonth   = $now->copy()->startOfMonth();
         $startLastMonth = $now->copy()->subMonthNoOverflow()->startOfMonth();
@@ -105,18 +126,13 @@ class DashboardController extends Controller
             ];
         }
 
-        // ── Recent quotes (last 5) ─────────────────────────────────────
-        $recent = Quote::orderBy('created_at', 'desc')
-            ->limit(5)
-            ->get(['number', 'client_snapshot', 'model_snapshot', 'totals', 'status', 'tracking', 'sent_at', 'created_at']);
-
         // ── Pending catalogue updates (banner trigger) ─────────────────
         // For now, just a placeholder count — populated when the
         // catalogue notification module is built.
         $pendingUpdatesCount = 0;
         $pendingUpdatesBrand = null;
 
-        return view('dashboard', [
+        return [
             'quotesThisMonth'       => $quotesThisMonth,
             'quotesDelta'           => $quotesDelta,
 
@@ -138,11 +154,10 @@ class DashboardController extends Controller
             'lostThisMonth'         => $lostThisMonth,
             'avgDaysToClose'        => $avgDaysToClose,
 
-            'recent'                => $recent,
             'trend'                 => $trend,
 
             'pendingUpdatesCount'   => $pendingUpdatesCount,
             'pendingUpdatesBrand'   => $pendingUpdatesBrand,
-        ]);
+        ];
     }
 }
