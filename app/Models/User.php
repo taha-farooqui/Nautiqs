@@ -41,6 +41,11 @@ class User extends Authenticatable implements MustVerifyEmail
         ];
     }
 
+    public function company()
+    {
+        return $this->belongsTo(Company::class, 'company_id');
+    }
+
     public function isSuperadmin(): bool
     {
         return $this->role === self::ROLE_SUPERADMIN;

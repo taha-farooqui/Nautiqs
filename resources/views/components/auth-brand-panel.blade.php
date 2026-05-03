@@ -2,13 +2,8 @@
 <div class="h-full w-full grid grid-cols-4 grid-rows-6 gap-2">
     {{-- row 1 --}}
     <div class="rounded-lg bg-primary-700/80"></div>
-    <div class="rounded-lg bg-primary-500/90 col-span-2 flex items-center justify-center p-4">
-        {{-- big sailboat --}}
-        <svg viewBox="0 0 64 64" class="w-24 h-24 text-white" fill="currentColor">
-            <path d="M32 10 L32 40 L14 40 Z" fill="currentColor"/>
-            <path d="M34 16 L34 40 L48 40 Z" fill="currentColor" opacity="0.85"/>
-            <path d="M8 44 L56 44 L50 54 L14 54 Z" fill="currentColor"/>
-        </svg>
+    <div class="rounded-lg bg-white col-span-2 flex items-center justify-center p-4">
+        <img src="{{ asset('nautiqs_logo.png') }}" alt="{{ config('app.name', 'Nautiqs') }}" class="w-24 h-24 object-contain" />
     </div>
     <div class="rounded-lg bg-primary-700/80"></div>
 
@@ -76,12 +71,9 @@
         {{-- mountains --}}
         <svg class="w-10 h-10" fill="currentColor" viewBox="0 0 24 24"><path d="M14 6l-4.5 6.5-3.5-4L2 18h20z"/></svg>
     </div>
-    <div class="rounded-lg bg-primary-500/90 flex items-center justify-center text-white">
-        <svg viewBox="0 0 64 64" class="w-10 h-10" fill="currentColor">
-            <path d="M32 14 L32 40 L18 40 Z"/>
-            <path d="M34 18 L34 40 L46 40 Z" opacity="0.85"/>
-            <path d="M12 44 L52 44 L46 52 L18 52 Z"/>
-        </svg>
+    <div class="rounded-lg bg-white flex items-center justify-center">
+        <img src="{{ asset('nautiqs_logo.png') }}" alt="" class="w-10 h-10 object-contain" />
+        <svg viewBox="0 0 64 64" class="hidden" fill="currentColor"></svg>
     </div>
 
     {{-- row 6 --}}

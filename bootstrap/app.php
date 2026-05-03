@@ -15,6 +15,12 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => \App\Http\Middleware\EnsureUserHasRole::class,
         ]);
 
+        // Apply the dealership's configured timezone (§17.3) to every web
+        // request so dates render in the dealer's local TZ.
+        $middleware->web(append: [
+            \App\Http\Middleware\SetCompanyTimezone::class,
+        ]);
+
         // Trust Railway's edge proxy so generated URLs use https://, cookies
         // get the secure flag, and OAuth callbacks match the production URL.
         $middleware->trustProxies(at: '*', headers:

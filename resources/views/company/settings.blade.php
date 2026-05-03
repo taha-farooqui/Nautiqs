@@ -90,6 +90,32 @@
                     </select>
                 </div>
             </div>
+
+            <div class="mt-4">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Timezone</label>
+                @php
+                    $currentTz = old('timezone', $company->timezone ?? config('app.timezone', 'UTC'));
+                    // Group IANA zones by their region prefix (Africa, America, Asia, …)
+                    // so the dropdown stays scannable.
+                    $zones = collect(timezone_identifiers_list())
+                        ->groupBy(fn ($z) => str_contains($z, '/') ? explode('/', $z)[0] : 'Other')
+                        ->sortKeys();
+                @endphp
+                <select name="timezone" required
+                    class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800">
+                    @foreach ($zones as $region => $list)
+                        <optgroup label="{{ $region }}">
+                            @foreach ($list as $tz)
+                                <option value="{{ $tz }}" @selected($currentTz === $tz)>{{ $tz }}</option>
+                            @endforeach
+                        </optgroup>
+                    @endforeach
+                </select>
+                <p class="text-xs text-gray-500 mt-1">
+                    All dates and times shown in the app render in this timezone. Stored as UTC; display only.
+                </p>
+                <x-input-error :messages="$errors->get('timezone')" class="mt-1" />
+            </div>
         </div>
 
         {{-- §17.4 Margin presets --}}

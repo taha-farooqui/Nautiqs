@@ -36,6 +36,7 @@ class CompanySettingsController extends Controller
             'default_vat_rate'     => ['required', 'numeric', 'min:0', 'max:100'],
             'default_margin_pct'   => ['required', 'numeric', 'min:0', 'max:100'],
             'default_display_mode' => ['required', 'in:HT,TTC'],
+            'timezone'             => ['required', 'timezone'],
             // §17.4
             'margin_presets.hull'         => ['nullable', 'numeric', 'min:0', 'max:100'],
             'margin_presets.engine'       => ['nullable', 'numeric', 'min:0', 'max:100'],

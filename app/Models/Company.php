@@ -32,6 +32,7 @@ class Company extends Model
         'default_vat_rate',      // e.g. 20.0
         'default_margin_pct',    // fallback margin
         'default_display_mode',  // HT | TTC
+        'timezone',              // IANA tz, e.g. Europe/Paris — overrides app TZ for date display
 
         // §17.4 Margin Presets
         'margin_presets',        // ['hull' => 12, 'engine' => 8, 'options' => 15, 'custom_items' => 10]

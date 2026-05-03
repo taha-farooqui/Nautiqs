@@ -58,9 +58,11 @@ class Quote extends Model
         // §8.1 step 5: custom line items (transport, preparation, fees)
         'custom_items',      // [ { label, category, amount, discount_pct, ... }, ... ]
 
-        // §9 Discounts
-        'category_discounts', // ['CC Configuration' => 5.0, ...]
-        'global_discount_pct',
+        // §9 Discounts — split into three explicit levels per client mockup
+        'category_discounts',   // ['CC Configuration' => 5.0, ...] (still supported)
+        'boat_discount_pct',    // discount on hull / base price only
+        'options_discount_pct', // discount applied across all options
+        'global_discount_pct',  // discount on the entire quote
 
         // §10 Trade-in
         'trade_in',          // [brand, model, year, engine, engine_hours, description, value]
@@ -77,6 +79,12 @@ class Quote extends Model
 
         // Internal
         'internal_notes',     // §11.4 — never in PDF
+
+        // Validity (mockup-driven)
+        'expires_at',         // when the quote offer expires; defaults to created_at + 30d
+
+        // Email open-tracking (mockup-driven; populated when email module fires)
+        'tracking',           // [open_count: int, first_opened_at, last_opened_at]
 
         // Lifecycle
         'sent_at',
@@ -97,10 +105,14 @@ class Quote extends Model
         'category_discounts' => 'array',
         'trade_in'           => 'array',
         'totals'             => 'array',
-        'global_discount_pct' => 'float',
+        'tracking'           => 'array',
+        'boat_discount_pct'    => 'float',
+        'options_discount_pct' => 'float',
+        'global_discount_pct'  => 'float',
         'vat_rate'           => 'float',
         'exchange_rate'      => 'float',
         'exchange_rate_date' => 'datetime',
+        'expires_at'         => 'datetime',
         'sent_at'            => 'datetime',
         'won_at'             => 'datetime',
         'lost_at'            => 'datetime',
@@ -125,5 +137,31 @@ class Quote extends Model
     public function canGenerateOrderConfirmation(): bool
     {
         return $this->status === self::STATUS_WON && empty($this->order_confirmation_number);
+    }
+
+    /**
+     * Days until expiry (negative if already expired). Null if no expires_at.
+     */
+    public function daysUntilExpiry(): ?int
+    {
+        if (! $this->expires_at) return null;
+        return now()->diffInDays($this->expires_at, false);
+    }
+
+    public function isExpired(): bool
+    {
+        $d = $this->daysUntilExpiry();
+        return $d !== null && $d < 0;
+    }
+
+    public function isExpiringSoon(int $threshold = 3): bool
+    {
+        $d = $this->daysUntilExpiry();
+        return $d !== null && $d >= 0 && $d <= $threshold;
+    }
+
+    public function openCount(): int
+    {
+        return (int) ($this->tracking['open_count'] ?? 0);
     }
 }

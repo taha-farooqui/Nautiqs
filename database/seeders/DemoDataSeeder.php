@@ -153,19 +153,24 @@ class DemoDataSeeder extends Seeder
                     ]]
                     : [];
 
-                $globalDiscount = $status === Quote::STATUS_WON ? random_int(0, 3) : 0;
+                // Realistic discount mix per status
+                $boatDiscount    = $status === Quote::STATUS_WON ? random_int(0, 5) : 0;
+                $optionsDiscount = random_int(0, 1) === 1 ? random_int(5, 15) : 0;
+                $globalDiscount  = $status === Quote::STATUS_WON ? random_int(0, 3) : 0;
 
                 $totals = $calculator->compute([
-                    'base_price'          => (float) $variant->base_price,
-                    'base_cost'           => (float) $variant->cost,
-                    'variant_currency'    => $variant->currency ?? 'EUR',
-                    'exchange_rate'       => null,
-                    'options'             => $chosenOptions,
-                    'custom_items'        => $customItems,
-                    'category_discounts'  => [],
-                    'global_discount_pct' => $globalDiscount,
-                    'trade_in_value'      => $status === Quote::STATUS_WON && random_int(0, 1) ? random_int(5000, 25000) : 0,
-                    'vat_rate'            => 20.0,
+                    'base_price'           => (float) $variant->base_price,
+                    'base_cost'            => (float) $variant->cost,
+                    'variant_currency'     => $variant->currency ?? 'EUR',
+                    'exchange_rate'        => null,
+                    'options'              => $chosenOptions,
+                    'custom_items'         => $customItems,
+                    'category_discounts'   => [],
+                    'boat_discount_pct'    => $boatDiscount,
+                    'options_discount_pct' => $optionsDiscount,
+                    'global_discount_pct'  => $globalDiscount,
+                    'trade_in_value'       => $status === Quote::STATUS_WON && random_int(0, 1) ? random_int(5000, 25000) : 0,
+                    'vat_rate'             => 20.0,
                 ], $company);
 
                 $createdAt = now()->subDays(random_int(0, 90))->subHours(random_int(0, 23));
@@ -204,27 +209,36 @@ class DemoDataSeeder extends Seeder
                         'currency'   => $variant->currency ?? 'EUR',
                     ],
 
-                    'included_equipment'  => $variant->included_equipment ?? [],
-                    'options'             => $chosenOptions,
-                    'custom_items'        => $customItems,
-                    'category_discounts'  => [],
-                    'global_discount_pct' => $globalDiscount,
-                    'trade_in'            => $totals['trade_in_deduction'] > 0
+                    'included_equipment'   => $variant->included_equipment ?? [],
+                    'options'              => $chosenOptions,
+                    'custom_items'         => $customItems,
+                    'category_discounts'   => [],
+                    'boat_discount_pct'    => $boatDiscount,
+                    'options_discount_pct' => $optionsDiscount,
+                    'global_discount_pct'  => $globalDiscount,
+                    'trade_in'             => $totals['trade_in_deduction'] > 0
                         ? ['brand' => 'Bayliner', 'model' => '175', 'year' => '2018', 'engine' => '135HP', 'engine_hours' => 420, 'description' => 'Well maintained', 'value' => $totals['trade_in_deduction']]
                         : null,
-                    'currency'            => 'EUR',
-                    'exchange_rate'       => null,
-                    'exchange_rate_date'  => null,
-                    'vat_rate'            => 20.0,
-                    'display_mode'        => 'TTC',
-                    'totals'              => $totals,
-                    'internal_notes'      => null,
-                    'sent_at'             => in_array($status, [Quote::STATUS_SENT, Quote::STATUS_WON, Quote::STATUS_LOST]) ? $createdAt->copy()->addHours(2) : null,
-                    'won_at'              => $status === Quote::STATUS_WON ? $createdAt->copy()->addDays(5) : null,
-                    'lost_at'             => $status === Quote::STATUS_LOST ? $createdAt->copy()->addDays(7) : null,
+                    'currency'             => 'EUR',
+                    'exchange_rate'        => null,
+                    'exchange_rate_date'   => null,
+                    'vat_rate'             => 20.0,
+                    'display_mode'         => 'TTC',
+                    'totals'               => $totals,
+                    'internal_notes'       => null,
+                    'expires_at'           => $createdAt->copy()->addDays(random_int(1, 45)),
+                    'tracking'             => match ($status) {
+                        Quote::STATUS_DRAFT => null,
+                        Quote::STATUS_SENT  => ['open_count' => random_int(0, 8), 'first_opened_at' => random_int(0, 1) ? $createdAt->copy()->addHours(random_int(2, 36)) : null, 'last_opened_at' => null],
+                        Quote::STATUS_WON   => ['open_count' => random_int(2, 12), 'first_opened_at' => $createdAt->copy()->addHours(random_int(2, 36)), 'last_opened_at' => $createdAt->copy()->addDays(2)],
+                        Quote::STATUS_LOST  => ['open_count' => random_int(0, 3), 'first_opened_at' => null, 'last_opened_at' => null],
+                    },
+                    'sent_at'              => in_array($status, [Quote::STATUS_SENT, Quote::STATUS_WON, Quote::STATUS_LOST]) ? $createdAt->copy()->addHours(2) : null,
+                    'won_at'               => $status === Quote::STATUS_WON ? $createdAt->copy()->addDays(5) : null,
+                    'lost_at'              => $status === Quote::STATUS_LOST ? $createdAt->copy()->addDays(7) : null,
                     'order_confirmation_number' => null,
                     'order_confirmation_at'     => null,
-                    'duplicated_from'     => null,
+                    'duplicated_from'      => null,
                 ]);
 
                 // Backdate created_at for dashboard charts

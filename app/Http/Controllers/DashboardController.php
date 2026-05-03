@@ -2,53 +2,63 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Client;
 use App\Models\Quote;
 use Illuminate\Support\Carbon;
 use Illuminate\View\View;
 
 /**
- * Dashboard KPIs per spec §16.3. Every query is transparently filtered by
- * the authenticated user's company_id via the TenantScope global scope.
+ * Dashboard KPIs aligned with the client reference mockup
+ * (nautiqs_dashboard_EN.html).
+ *
+ * Every query is filtered by company_id via TenantScope.
  */
 class DashboardController extends Controller
 {
     public function __invoke(): View
     {
-        $today = Carbon::today();
-        $startOfMonth = Carbon::now()->startOfMonth();
+        $now            = Carbon::now();
+        $startOfMonth   = $now->copy()->startOfMonth();
+        $startLastMonth = $now->copy()->subMonthNoOverflow()->startOfMonth();
+        $endLastMonth   = $now->copy()->subMonthNoOverflow()->endOfMonth();
 
-        // §16.3 Quotes today
-        $quotesTodayCount = Quote::whereBetween('created_at', [$today, $today->copy()->endOfDay()])->count();
+        // ── KPI 1: Quotes this month ───────────────────────────────────
+        $quotesThisMonth = Quote::where('created_at', '>=', $startOfMonth)->count();
+        $quotesLastMonth = Quote::whereBetween('created_at', [$startLastMonth, $endLastMonth])->count();
+        $quotesDelta     = $quotesThisMonth - $quotesLastMonth;
 
-        // Won this month
-        $wonThisMonth = Quote::where('status', Quote::STATUS_WON)
+        // ── KPI 2: Total quoted (excl. VAT) this month ──────────────────
+        $totalQuotedThisMonth = (float) Quote::where('created_at', '>=', $startOfMonth)
+            ->get(['totals'])
+            ->sum(fn ($q) => (float) ($q->totals['total_ht'] ?? 0));
+        $totalQuotedLastMonth = (float) Quote::whereBetween('created_at', [$startLastMonth, $endLastMonth])
+            ->get(['totals'])
+            ->sum(fn ($q) => (float) ($q->totals['total_ht'] ?? 0));
+        $totalQuotedDeltaPct = $totalQuotedLastMonth > 0
+            ? round((($totalQuotedThisMonth - $totalQuotedLastMonth) / $totalQuotedLastMonth) * 100, 1)
+            : null;
+
+        // ── KPI 3: Revenue won this month ──────────────────────────────
+        $revenueWonThisMonth = (float) Quote::where('status', Quote::STATUS_WON)
             ->where('won_at', '>=', $startOfMonth)
+            ->get(['totals'])
+            ->sum(fn ($q) => (float) ($q->totals['total_ht'] ?? 0));
+        $revenueWonLastMonth = (float) Quote::where('status', Quote::STATUS_WON)
+            ->whereBetween('won_at', [$startLastMonth, $endLastMonth])
+            ->get(['totals'])
+            ->sum(fn ($q) => (float) ($q->totals['total_ht'] ?? 0));
+        $revenueWonDeltaPct = $revenueWonLastMonth > 0
+            ? round((($revenueWonThisMonth - $revenueWonLastMonth) / $revenueWonLastMonth) * 100, 1)
+            : null;
+
+        // ── KPI 4: Awaiting response (sent quotes not yet won/lost) ────
+        $awaitingResponse = Quote::where('status', Quote::STATUS_SENT)->count();
+        $expiredThisWeek  = Quote::where('status', Quote::STATUS_SENT)
+            ->where('expires_at', '<', $now)
+            ->where('expires_at', '>=', $now->copy()->subWeek())
             ->count();
 
-        // Conversion rate (won ÷ sent+won+lost, all closed-or-received quotes)
-        $totalOut = Quote::whereIn('status', [Quote::STATUS_SENT, Quote::STATUS_WON, Quote::STATUS_LOST])->count();
-        $wonCount = Quote::where('status', Quote::STATUS_WON)->count();
-        $conversionRate = $totalOut > 0 ? round(($wonCount / $totalOut) * 100, 1) : 0;
-
-        // Active clients = clients who've had at least one quote in the last 90 days
-        $ninetyDaysAgo = Carbon::now()->subDays(90);
-        $activeClientIds = Quote::where('created_at', '>=', $ninetyDaysAgo)
-            ->pluck('client_id')
-            ->unique()
-            ->filter();
-        $activeClientsCount = $activeClientIds->count();
-
-        // §16.3 Quotes by status bar chart
-        $statusCounts = [
-            Quote::STATUS_DRAFT => Quote::where('status', Quote::STATUS_DRAFT)->count(),
-            Quote::STATUS_SENT  => Quote::where('status', Quote::STATUS_SENT)->count(),
-            Quote::STATUS_WON   => Quote::where('status', Quote::STATUS_WON)->count(),
-            Quote::STATUS_LOST  => Quote::where('status', Quote::STATUS_LOST)->count(),
-        ];
-
-        // §16.3 Most quoted models (top 5 this month)
-        $mostQuoted = Quote::where('created_at', '>=', $startOfMonth)
+        // ── Top quoted models (this month) ─────────────────────────────
+        $topModels = Quote::where('created_at', '>=', $startOfMonth)
             ->get(['model_snapshot'])
             ->groupBy(fn ($q) => $q->model_snapshot['code'] ?? 'UNKNOWN')
             ->map(fn ($group) => [
@@ -60,45 +70,79 @@ class DashboardController extends Controller
             ->sortByDesc('count')
             ->take(5)
             ->values();
+        $topModelMax = $topModels->max('count') ?: 1;
 
-        // Recent quotes (last 5)
-        $recent = Quote::orderBy('created_at', 'desc')
-            ->limit(5)
-            ->get(['number', 'client_snapshot', 'model_snapshot', 'totals', 'status', 'created_at']);
+        // ── Conversion rate (this month) ───────────────────────────────
+        $sentThisMonth = Quote::where('sent_at', '>=', $startOfMonth)->count();
+        $wonThisMonth  = Quote::where('status', Quote::STATUS_WON)
+            ->where('won_at', '>=', $startOfMonth)
+            ->count();
+        $lostThisMonth = Quote::where('status', Quote::STATUS_LOST)
+            ->where('lost_at', '>=', $startOfMonth)
+            ->count();
+        $closedThisMonth   = $wonThisMonth + $lostThisMonth;
+        $conversionRate    = $closedThisMonth > 0 ? round(($wonThisMonth / $closedThisMonth) * 100) : 0;
 
-        // 30-day quote volume for the line chart (created per day).
-        $volume = [];
-        for ($i = 29; $i >= 0; $i--) {
-            $day = Carbon::today()->subDays($i);
-            $volume[] = [
-                'label' => $day->format('M j'),
-                'count' => Quote::whereBetween('created_at', [$day, $day->copy()->endOfDay()])->count(),
+        // Avg time to close (sent → won, this month)
+        $closedQuotes = Quote::where('status', Quote::STATUS_WON)
+            ->where('won_at', '>=', $startOfMonth)
+            ->whereNotNull('sent_at')
+            ->get(['sent_at', 'won_at']);
+        $avgDaysToClose = $closedQuotes->isEmpty() ? null : round($closedQuotes->avg(
+            fn ($q) => $q->sent_at->diffInDays($q->won_at)
+        ), 1);
+
+        // ── Pipeline trend (last 6 months: sent / won / lost per month) ─
+        $trend = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $monthStart = $now->copy()->subMonthsNoOverflow($i)->startOfMonth();
+            $monthEnd   = $monthStart->copy()->endOfMonth();
+            $trend[] = [
+                'label' => $monthStart->format('M y'),
+                'sent'  => Quote::whereBetween('created_at', [$monthStart, $monthEnd])->count(),
+                'won'   => Quote::where('status', Quote::STATUS_WON)->whereBetween('won_at', [$monthStart, $monthEnd])->count(),
+                'lost'  => Quote::where('status', Quote::STATUS_LOST)->whereBetween('lost_at', [$monthStart, $monthEnd])->count(),
             ];
         }
 
-        // Average quote value (last 30 days) — replaces the removed Total MTD card
-        $avgValue = Quote::where('created_at', '>=', Carbon::now()->subDays(30))
-            ->get(['totals'])
-            ->avg(fn ($q) => (float) ($q->totals['total_ttc'] ?? 0));
-        $avgValue = $avgValue ? round($avgValue) : 0;
+        // ── Recent quotes (last 5) ─────────────────────────────────────
+        $recent = Quote::orderBy('created_at', 'desc')
+            ->limit(5)
+            ->get(['number', 'client_snapshot', 'model_snapshot', 'totals', 'status', 'tracking', 'sent_at', 'created_at']);
 
-        $totalQuotes = Quote::count();
-        $hasAnyVolume = collect($volume)->sum('count') > 0;
-        $hasAnyStatus = array_sum($statusCounts) > 0;
+        // ── Pending catalogue updates (banner trigger) ─────────────────
+        // For now, just a placeholder count — populated when the
+        // catalogue notification module is built.
+        $pendingUpdatesCount = 0;
+        $pendingUpdatesBrand = null;
 
         return view('dashboard', [
-            'quotesTodayCount'   => $quotesTodayCount,
-            'wonThisMonth'       => $wonThisMonth,
-            'conversionRate'     => $conversionRate,
-            'activeClientsCount' => $activeClientsCount,
-            'statusCounts'       => $statusCounts,
-            'mostQuoted'         => $mostQuoted,
-            'recent'             => $recent,
-            'volume'             => $volume,
-            'avgValue'           => $avgValue,
-            'totalQuotes'        => $totalQuotes,
-            'hasAnyVolume'       => $hasAnyVolume,
-            'hasAnyStatus'       => $hasAnyStatus,
+            'quotesThisMonth'       => $quotesThisMonth,
+            'quotesDelta'           => $quotesDelta,
+
+            'totalQuotedThisMonth'  => $totalQuotedThisMonth,
+            'totalQuotedDeltaPct'   => $totalQuotedDeltaPct,
+
+            'revenueWonThisMonth'   => $revenueWonThisMonth,
+            'revenueWonDeltaPct'    => $revenueWonDeltaPct,
+
+            'awaitingResponse'      => $awaitingResponse,
+            'expiredThisWeek'       => $expiredThisWeek,
+
+            'topModels'             => $topModels,
+            'topModelMax'           => $topModelMax,
+
+            'conversionRate'        => $conversionRate,
+            'sentThisMonth'         => $sentThisMonth,
+            'wonThisMonth'          => $wonThisMonth,
+            'lostThisMonth'         => $lostThisMonth,
+            'avgDaysToClose'        => $avgDaysToClose,
+
+            'recent'                => $recent,
+            'trend'                 => $trend,
+
+            'pendingUpdatesCount'   => $pendingUpdatesCount,
+            'pendingUpdatesBrand'   => $pendingUpdatesBrand,
         ]);
     }
 }
