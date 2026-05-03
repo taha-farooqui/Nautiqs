@@ -224,7 +224,6 @@
                                 <th class="px-5 py-3 text-left font-semibold">Boat</th>
                                 <th class="px-5 py-3 text-right font-semibold">Amount excl. VAT</th>
                                 <th class="px-5 py-3 text-left font-semibold">Status</th>
-                                <th class="px-5 py-3 text-left font-semibold">Opened</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
@@ -234,9 +233,10 @@
                                     $last  = $q->client_snapshot['last_name']  ?? '';
                                     $clientName = trim($first . ' ' . $last) ?: 'Guest';
                                     $initials = strtoupper(mb_substr($first, 0, 1) . mb_substr($last, 0, 1)) ?: 'G';
-                                    $opens = (int) ($q->tracking['open_count'] ?? 0);
                                 @endphp
-                                <tr class="hover:bg-gray-50">
+                                <tr class="hover:bg-gray-50 cursor-pointer"
+                                    data-href="{{ route('quotes.show', $q->_id) }}"
+                                    onclick="if (!event.target.closest('a, button, form, input')) window.location = this.dataset.href">
                                     <td class="px-5 py-3">
                                         <div class="flex items-center gap-2">
                                             <span class="w-8 h-8 rounded-full bg-primary-50 text-primary-800 text-xs font-bold flex items-center justify-center shrink-0">
@@ -267,17 +267,6 @@
                                         </div>
                                     </td>
                                     <td class="px-5 py-3"><x-app.status-pill :status="$q->status" /></td>
-                                    <td class="px-5 py-3">
-                                        @if (! $q->sent_at)
-                                            <span class="text-xs text-gray-400">Not sent</span>
-                                        @elseif ($opens > 0)
-                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold">
-                                                <i class="ri-eye-line"></i> {{ $opens }}×
-                                            </span>
-                                        @else
-                                            <span class="text-xs text-gray-400">0×</span>
-                                        @endif
-                                    </td>
                                 </tr>
                             @endforeach
                         </tbody>
@@ -345,38 +334,6 @@
                 @endif
             </div>
 
-            {{-- Conversion rate --}}
-            <div class="bg-white rounded-2xl border border-gray-200 p-5">
-                <div class="flex items-center justify-between mb-3">
-                    <h3 class="font-semibold text-gray-900">Conversion rate</h3>
-                    <span class="text-xs text-gray-500">{{ now()->format('F Y') }}</span>
-                </div>
-                <p class="text-4xl font-bold text-primary-900">{{ $conversionRate }}%</p>
-                <p class="text-xs text-gray-500 mb-3">quotes sent → won</p>
-                <div class="h-2 rounded-full bg-gray-100 overflow-hidden mb-4">
-                    <div class="h-full bg-emerald-500" style="width: {{ $conversionRate }}%"></div>
-                </div>
-                <dl class="space-y-1.5 text-sm">
-                    <div class="flex justify-between">
-                        <dt class="text-gray-500">Quotes sent</dt>
-                        <dd class="font-semibold text-gray-900">{{ $sentThisMonth }}</dd>
-                    </div>
-                    <div class="flex justify-between">
-                        <dt class="text-gray-500">Won</dt>
-                        <dd class="font-semibold text-emerald-600">{{ $wonThisMonth }}</dd>
-                    </div>
-                    <div class="flex justify-between">
-                        <dt class="text-gray-500">Lost</dt>
-                        <dd class="font-semibold text-red-600">{{ $lostThisMonth }}</dd>
-                    </div>
-                    @if ($avgDaysToClose !== null)
-                        <div class="flex justify-between pt-2 border-t border-gray-100 mt-2">
-                            <dt class="text-gray-500">Avg. time to close</dt>
-                            <dd class="font-semibold text-gray-900">{{ $avgDaysToClose }} days</dd>
-                        </div>
-                    @endif
-                </dl>
-            </div>
         </div>
     </section>
 </x-app-layout>

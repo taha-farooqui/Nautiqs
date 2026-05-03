@@ -129,7 +129,6 @@
                             <th class="px-4 py-3 text-left font-semibold">Boat</th>
                             <th class="px-4 py-3 text-right font-semibold">Amount excl. VAT</th>
                             <th class="px-4 py-3 text-left font-semibold">Status</th>
-                            <th class="px-4 py-3 text-left font-semibold">Opened</th>
                             <th class="px-4 py-3 text-left font-semibold">Date</th>
                             <th class="px-4 py-3 text-left font-semibold">Expires</th>
                             <th class="px-4 py-3"></th>
@@ -142,10 +141,11 @@
                                 $last  = $quote->client_snapshot['last_name']  ?? '';
                                 $clientName = trim($first . ' ' . $last) ?: 'Guest';
                                 $initials = strtoupper(mb_substr($first, 0, 1) . mb_substr($last, 0, 1)) ?: 'G';
-                                $opens = (int) ($quote->tracking['open_count'] ?? 0);
                                 $daysToExpiry = $quote->daysUntilExpiry();
                             @endphp
-                            <tr class="hover:bg-gray-50">
+                            <tr class="hover:bg-gray-50 cursor-pointer"
+                                data-href="{{ route('quotes.show', $quote->_id) }}"
+                                onclick="if (!event.target.closest('a, button, form, input')) window.location = this.dataset.href">
                                 {{-- Client --}}
                                 <td class="px-4 py-3">
                                     <div class="flex items-center gap-2">
@@ -183,19 +183,6 @@
 
                                 {{-- Status --}}
                                 <td class="px-4 py-3"><x-app.status-pill :status="$quote->status" /></td>
-
-                                {{-- Opened --}}
-                                <td class="px-4 py-3">
-                                    @if (! $quote->sent_at)
-                                        <span class="text-xs text-gray-400">Not sent</span>
-                                    @elseif ($opens > 0)
-                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold">
-                                            <i class="ri-eye-line"></i> {{ $opens }}×
-                                        </span>
-                                    @else
-                                        <span class="text-xs text-gray-400">0×</span>
-                                    @endif
-                                </td>
 
                                 {{-- Date --}}
                                 <td class="px-4 py-3 text-gray-700">
