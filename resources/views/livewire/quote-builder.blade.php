@@ -54,11 +54,74 @@
                     @endforeach
                 </select>
                 @error('client_id') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
+
+                {{-- Inline "add new client" — expands right inside the card so
+                     all in-progress builder state is preserved. --}}
                 <p class="text-xs text-gray-500 mt-2">
-                    <a href="{{ route('clients.create') }}" target="_blank" class="text-primary-800 hover:underline">
-                        <i class="ri-add-line"></i> Add new client
-                    </a> (opens in a new tab)
+                    @if (! $quickClientOpen)
+                        <button type="button" wire:click="openQuickClient"
+                            class="text-primary-800 hover:underline">
+                            <i class="ri-add-line"></i> Add new client
+                        </button>
+                    @else
+                        <button type="button" wire:click="closeQuickClient"
+                            class="text-gray-500 hover:underline">
+                            <i class="ri-close-line"></i> Cancel adding client
+                        </button>
+                    @endif
                 </p>
+
+                @if ($quickClientOpen)
+                    <div class="mt-3 rounded-lg border border-primary-200 bg-primary-50/30 p-4 space-y-3">
+                        <p class="text-xs font-semibold text-primary-900 uppercase tracking-wide">New client</p>
+
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 mb-1">First name *</label>
+                                <input type="text" wire:model="quickClientFirstName"
+                                    class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
+                                @error('quickClientFirstName') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 mb-1">Last name *</label>
+                                <input type="text" wire:model="quickClientLastName"
+                                    class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
+                                @error('quickClientLastName') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Email</label>
+                            <input type="email" wire:model="quickClientEmail"
+                                class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
+                            @error('quickClientEmail') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 mb-1">Phone</label>
+                                <input type="text" wire:model="quickClientPhone"
+                                    class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 mb-1">Company</label>
+                                <input type="text" wire:model="quickClientCompany" placeholder="Optional"
+                                    class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-end gap-2 pt-1">
+                            <button type="button" wire:click="closeQuickClient"
+                                class="px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-100 rounded-lg">
+                                Cancel
+                            </button>
+                            <button type="button" wire:click="saveQuickClient" wire:loading.attr="disabled" wire:target="saveQuickClient"
+                                class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold bg-primary-800 hover:bg-primary-900 text-white rounded-lg disabled:opacity-50">
+                                <i class="ri-save-line" wire:loading.remove wire:target="saveQuickClient"></i>
+                                <i class="ri-loader-4-line animate-spin" wire:loading wire:target="saveQuickClient"></i>
+                                Save &amp; select
+                            </button>
+                        </div>
+                    </div>
+                @endif
             @else
                 <div class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-3 text-sm text-amber-800">
                     <p class="flex items-center gap-2 font-medium">
@@ -204,6 +267,67 @@
                         </div>
                     </div>
                 @endforeach
+            @endif
+        </div>
+
+        {{-- Step 5b: Engines (global options independent of the boat).
+             Even though engines aren't tied to a specific variant, we still
+             gate them behind variant selection — totals can't render until
+             a variant exists, and adding engines first would be confusing. --}}
+        <div class="rounded-2xl border border-gray-200 p-5 {{ $hasVariant ? $cardEnabled : $cardDisabled }}">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="font-semibold text-gray-900 flex items-center gap-2">
+                    <span class="w-6 h-6 rounded-full {{ $hasVariant ? $stepActive : $stepInactive }} text-xs font-bold flex items-center justify-center">
+                        <i class="ri-settings-3-line text-xs"></i>
+                    </span>
+                    Engines &amp; global options
+                    @if (count($selectedEngines) > 0)
+                        <span class="text-xs text-gray-400 font-normal ml-1">{{ count($selectedEngines) }} selected</span>
+                    @endif
+                </h3>
+                <a href="{{ route('engines.index') }}" target="_blank" class="text-xs text-primary-800 hover:underline">
+                    <i class="ri-external-link-line"></i> Manage engines
+                </a>
+            </div>
+
+            @if ($this->engines->isEmpty())
+                <p class="text-sm text-gray-500 italic">
+                    No engines in your library yet.
+                    <a href="{{ route('engines.create') }}" class="text-primary-800 hover:underline">Add your first engine</a>
+                    so you can attach it to quotes.
+                </p>
+            @else
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    @foreach ($this->engines as $engine)
+                        @php $eid = $engine->id; $checked = isset($selectedEngines[$eid]); @endphp
+                        <label class="flex items-center gap-3 p-2.5 rounded-lg border {{ $checked ? 'border-primary-200 bg-primary-50/40' : 'border-gray-200 hover:bg-gray-50' }} cursor-pointer transition">
+                            <input type="checkbox" wire:click="toggleEngine('{{ $eid }}')" @checked($checked)
+                                class="rounded border-gray-300 text-primary-800 focus:ring-primary-800" />
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-medium text-gray-900 truncate flex items-center gap-2">
+                                    {{ $engine->brand }} <span class="text-gray-500 font-mono text-xs">{{ $engine->code }}</span>
+                                    @if ($engine->source === 'library')
+                                        <span class="px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 text-[10px] font-semibold uppercase tracking-wide">Library</span>
+                                    @else
+                                        <span class="px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 text-[10px] font-semibold uppercase tracking-wide">Yours</span>
+                                    @endif
+                                </p>
+                                <p class="text-xs text-gray-500">
+                                    {{ $engine->horsepower ? number_format($engine->horsepower, 0) . ' HP' : '' }}
+                                    @if ($engine->fuel) · {{ ucfirst($engine->fuel) }} @endif
+                                </p>
+                            </div>
+                            @if ($checked)
+                                <input type="number" min="1" value="{{ $selectedEngines[$eid] ?? 1 }}"
+                                    wire:model.live.debounce.300ms="selectedEngines.{{ $eid }}"
+                                    class="w-14 rounded border-gray-300 text-xs text-center focus:border-primary-800 focus:ring-primary-800" />
+                            @endif
+                            <div class="text-right shrink-0 text-sm font-semibold text-gray-900">
+                                €{{ number_format($engine->price, 0, ',', ' ') }}
+                            </div>
+                        </label>
+                    @endforeach
+                </div>
             @endif
         </div>
 
@@ -458,4 +582,5 @@
             @endif
         </div>
     </div>
+
 </div>

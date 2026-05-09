@@ -88,6 +88,40 @@ class CatalogueController extends Controller
             ->with('status', "Private brand «{$brand->name}» created. Add your first model →");
     }
 
+    /**
+     * Inline brand picker — JSON list of active brands for the catalogue
+     * form's autocomplete. Optional ?q= filter for live search.
+     */
+    public function brandLookup(Request $request)
+    {
+        $q = trim((string) $request->query('q', ''));
+        $brands = CompanyBrand::where('is_active', true)
+            ->when($q !== '', fn ($w) => $w->where('name', 'like', "%{$q}%"))
+            ->orderBy('name')
+            ->limit(50)
+            ->get(['_id', 'name'])
+            ->map(fn ($b) => ['id' => (string) $b->_id, 'name' => $b->name])
+            ->values();
+        return response()->json($brands);
+    }
+
+    /**
+     * Create a new private brand from the catalogue form's inline picker.
+     * Returns JSON so the form can append the new brand and pre-select it
+     * without a page reload.
+     */
+    public function storeInlineBrand(Request $request)
+    {
+        $data = $request->validate([
+            'name' => 'required|string|max:200',
+        ]);
+        $brand = $this->catalogue->createPrivateBrand(auth()->user()->company_id, $data);
+        return response()->json([
+            'id'   => (string) $brand->_id,
+            'name' => $brand->name,
+        ], 201);
+    }
+
     public function destroyPrivateBrand(string $companyBrandId)
     {
         $brand = CompanyBrand::findOrFail($companyBrandId);
@@ -109,28 +143,56 @@ class CatalogueController extends Controller
     /* -------------------------------------------------- MODELS / VARIANTS */
 
     /**
-     * Models & variants page. Two tabs:
-     *   - "Available" → global catalogue (read-only, with checkboxes to add
-     *                   variants to the workspace from brands not yet activated)
-     *   - "My workspace" → company tier (editable prices + per-variant toggles)
+     * Catalogue list — flat one-row-per-variant table matching the old
+     * software's "Catalogues" screen. Each row links to the tabbed editor
+     * for the parent boat (model). The dealer manages their own catalogue;
+     * we no longer surface a "global" tab.
      */
     public function models(Request $request)
     {
-        $tab = $request->query('tab', 'workspace'); // workspace | available
-
-        // Shared brand list for the filter dropdown (global brands only).
-        $globalBrands = GlobalBrand::where('is_active', true)->orderBy('name')->get();
         $brandFilter  = $request->query('brand');
+        $q            = trim((string) $request->query('q', ''));
 
-        // Workspace count is shown on both tabs' "My workspace (N)" pill, so
-        // compute it once and pass through.
-        $workspaceCount = $this->countWorkspaceVariants();
+        $companyBrandsActive = CompanyBrand::where('is_active', true)
+            ->orderBy('name')
+            ->get();
 
-        if ($tab === 'available') {
-            return $this->renderAvailableTab($globalBrands, $brandFilter, $workspaceCount);
+        $brandIds = $companyBrandsActive
+            ->when($brandFilter, fn ($c) => $c->where('_id', $brandFilter))
+            ->pluck('_id')->map(fn ($i) => (string) $i)->all();
+
+        $modelsQuery = CompanyBoatModel::whereIn('company_brand_id', $brandIds)
+            ->where('is_archived', false);
+
+        if ($q !== '') {
+            $modelsQuery->where(function ($w) use ($q) {
+                $w->where('name', 'like', "%{$q}%")
+                  ->orWhere('code', 'like', "%{$q}%");
+            });
         }
 
-        return $this->renderWorkspaceTab($globalBrands, $brandFilter, $workspaceCount);
+        $models = $modelsQuery->orderBy('name')->get();
+
+        $modelIds = $models->pluck('_id')->map(fn ($i) => (string) $i)->all();
+        $variants = CompanyBoatVariant::whereIn('company_model_id', $modelIds)
+            ->where('is_archived', false)
+            ->orderBy('name')
+            ->get();
+
+        $brandsById = $companyBrandsActive->keyBy(fn ($b) => (string) $b->_id);
+        $modelsById = $models->keyBy(fn ($m) => (string) $m->_id);
+
+        $rows = $variants->map(function ($v) use ($brandsById, $modelsById) {
+            $model = $modelsById[(string) $v->company_model_id] ?? null;
+            $brand = $model ? ($brandsById[(string) $model->company_brand_id] ?? null) : null;
+            return ['variant' => $v, 'model' => $model, 'brand' => $brand];
+        });
+
+        return view('catalogue.models', [
+            'rows'        => $rows,
+            'brands'      => $companyBrandsActive,
+            'brandFilter' => $brandFilter,
+        ]);
     }
 
     /**
@@ -399,14 +461,41 @@ class CatalogueController extends Controller
 
     /* ------------------------------------------- PRIVATE MODEL CRUD */
 
+    /**
+     * Render the boat editor in "new" mode — same view as edit, but the
+     * model is an unsaved instance and the form posts to storeModel(). Once
+     * the dealer hits Save, they're redirected to the real editor URL with
+     * the saved id and the Versions / Options / Equipment tabs become
+     * available. This unifies the UX so the dealer never sees a different
+     * "Add" form.
+     */
     public function createModel(Request $request)
     {
-        $brands = CompanyBrand::where('is_active', true)->orderBy('name')->get();
-        return view('catalogue.model-form', [
-            'brands'      => $brands,
-            'model'       => null,
-            'preselected' => $request->query('brand'),
+        $brands   = CompanyBrand::where('is_active', true)->orderBy('name')->get();
+        $variants = collect();
+        $options  = collect();
+
+        $libraryEquipment = \App\Models\GlobalEquipment::where('is_active', true)
+            ->orderBy('category')->orderBy('label')->get()
+            ->groupBy('category');
+        $libraryOptions = \App\Models\GlobalOptionItem::where('is_active', true)
+            ->orderBy('category')->orderBy('label')->get();
+        $libraryEngines = \App\Models\GlobalEngine::where('is_active', true)
+            ->orderBy('brand')->orderBy('code')->get();
+
+        // Empty placeholder — the view detects $model->exists === false and
+        // hides the tabs that don't apply yet.
+        $model = new CompanyBoatModel([
+            'company_brand_id' => $request->query('brand'),
+            'is_active'        => true,
+            'year'             => (int) date('Y'),
+            'default_margin_pct' => 20,
         ]);
+
+        return view('catalogue.model-edit', compact(
+            'model', 'brands', 'variants', 'options',
+            'libraryEquipment', 'libraryOptions', 'libraryEngines'
+        ));
     }
 
     public function storeModel(Request $request)
@@ -414,26 +503,104 @@ class CatalogueController extends Controller
         $data = $request->validate([
             'company_brand_id'    => 'required',
             'code'                => 'required|string|max:60',
+            'internal_code'       => 'nullable|string|max:60',
             'name'                => 'required|string|max:200',
+            'complement'          => 'nullable|string|max:120',
+            'year'                => 'nullable|integer|min:1900|max:2100',
+            'type'                => 'nullable|in:open,cabin,semi-rigid,day-cruiser,fishing,sail,unknown',
+            'propulsion'          => 'nullable|in:outboard,inboard,sail,unknown',
+            'length_total'        => 'nullable|numeric|min:0',
+            'length_hull'         => 'nullable|numeric|min:0',
+            'length_waterline'    => 'nullable|numeric|min:0',
+            'draft_min'           => 'nullable|numeric|min:0',
+            'draft_max'           => 'nullable|numeric|min:0',
+            'beam'                => 'nullable|numeric|min:0',
+            'weight'              => 'nullable|numeric|min:0',
+            'capacity'            => 'nullable|array',
+            'supplier'            => 'nullable|string|max:200',
+            'notes'               => 'nullable|string|max:5000',
             'default_margin_pct'  => 'nullable|numeric|min:0|max:100',
+            'is_active'           => 'nullable|boolean',
+
+            // Nested arrays — when the dealer fills versions / options /
+            // equipment on the same Add-boat page they all post together.
+            'versions'                => 'nullable|array',
+            'versions.*.name'         => 'required_with:versions|string|max:200',
+            'versions.*.base_price'   => 'required_with:versions|numeric|min:0',
+            'versions.*.cost'         => 'nullable|numeric|min:0',
+            'versions.*.currency'     => 'nullable|in:EUR,USD',
+
+            'new_options'                  => 'nullable|array',
+            'new_options.*.category'       => 'required_with:new_options|string|max:100',
+            'new_options.*.label'          => 'required_with:new_options|string|max:200',
+            'new_options.*.price'          => 'required_with:new_options|numeric|min:0',
+            'new_options.*.cost'           => 'nullable|numeric|min:0',
+
+            'library_option_ids'      => 'nullable|array',
+            'library_option_ids.*'    => 'string',
+
+            'included_equipment_refs' => 'nullable|array',
+            'included_equipment_refs.*' => 'string',
         ]);
 
-        // Ensure the brand belongs to the current tenant
         CompanyBrand::findOrFail($data['company_brand_id']);
 
-        $model = CompanyBoatModel::create([
-            'company_id'         => auth()->user()->company_id,
-            'company_brand_id'   => $data['company_brand_id'],
-            'global_model_id'    => null,
-            'source'             => CompanyBoatModel::SOURCE_PRIVATE,
-            'code'               => $data['code'],
-            'name'               => $data['name'],
-            'default_margin_pct' => $data['default_margin_pct'] ?? null,
-            'is_archived'        => false,
-        ]);
+        // Pull nested arrays out of the boat payload before persisting.
+        $versions       = $data['versions'] ?? [];
+        $newOptions     = $data['new_options'] ?? [];
+        $libraryOptIds  = $data['library_option_ids'] ?? [];
+        unset($data['versions'], $data['new_options'], $data['library_option_ids']);
+        $data['is_active'] = (bool) ($data['is_active'] ?? true);
+
+        $model = CompanyBoatModel::create(array_merge($data, [
+            'company_id'      => auth()->user()->company_id,
+            'global_model_id' => null,
+            'source'          => CompanyBoatModel::SOURCE_PRIVATE,
+            'is_archived'     => false,
+        ]));
+
+        // Versions
+        foreach ($versions as $v) {
+            CompanyBoatVariant::create([
+                'company_id'         => auth()->user()->company_id,
+                'company_model_id'   => (string) $model->_id,
+                'global_variant_id'  => null,
+                'source'             => 'private',
+                'name'               => $v['name'],
+                'base_price'         => (float) $v['base_price'],
+                'cost'               => (float) ($v['cost'] ?? 0),
+                'currency'           => $v['currency'] ?? 'EUR',
+                'included_equipment' => [],
+                'is_active'          => true,
+                'is_archived'        => false,
+            ]);
+        }
+
+        // Custom options
+        foreach ($newOptions as $o) {
+            CompanyOption::create([
+                'company_id'        => auth()->user()->company_id,
+                'company_model_id'  => (string) $model->_id,
+                'global_option_id'  => null,
+                'source'            => 'private',
+                'category'          => $o['category'],
+                'label'             => $o['label'],
+                'price'             => (float) $o['price'],
+                'cost'              => (float) ($o['cost'] ?? 0),
+                'currency'          => $o['currency'] ?? 'EUR',
+                'position'          => 0,
+                'is_archived'       => false,
+            ]);
+        }
+
+        // Library options copied onto this boat
+        if (! empty($libraryOptIds)) {
+            $request->merge(['option_ids' => $libraryOptIds]);
+            $this->importGlobalOptions((string) $model->_id, $request);
+        }
 
         return redirect()->route('catalogue.models.edit', $model->_id)
-            ->with('status', "Model «{$model->name}» created — now add variants and options.");
+            ->with('status', "Boat «{$model->name}» created.");
     }
 
     public function editModel(string $modelId)
@@ -443,19 +610,63 @@ class CatalogueController extends Controller
         $variants = CompanyBoatVariant::where('company_model_id', $modelId)->where('is_archived', false)->get();
         $options  = CompanyOption::where('company_model_id', $modelId)->where('is_archived', false)->orderBy('position')->get();
 
-        return view('catalogue.model-edit', compact('model', 'brands', 'variants', 'options'));
+        // Global library merged into the editor for one-click picking.
+        $libraryEquipment = \App\Models\GlobalEquipment::where('is_active', true)
+            ->orderBy('category')->orderBy('label')->get()
+            ->groupBy('category');
+
+        $libraryOptions = \App\Models\GlobalOptionItem::where('is_active', true)
+            ->orderBy('category')->orderBy('label')->get();
+
+        $libraryEngines = \App\Models\GlobalEngine::where('is_active', true)
+            ->orderBy('brand')->orderBy('code')->get();
+
+        return view('catalogue.model-edit', compact(
+            'model', 'brands', 'variants', 'options',
+            'libraryEquipment', 'libraryOptions', 'libraryEngines'
+        ));
     }
 
     public function updateModel(string $modelId, Request $request)
     {
         $model = CompanyBoatModel::findOrFail($modelId);
         $data = $request->validate([
+            'company_brand_id'    => 'nullable',
             'code'                => 'required|string|max:60',
+            'internal_code'       => 'nullable|string|max:60',
             'name'                => 'required|string|max:200',
+            'complement'          => 'nullable|string|max:120',
+            'year'                => 'nullable|integer|min:1900|max:2100',
+            'type'                => 'nullable|in:open,cabin,semi-rigid,day-cruiser,fishing,sail,unknown',
+            'propulsion'          => 'nullable|in:outboard,inboard,sail,unknown',
+            'length_total'        => 'nullable|numeric|min:0',
+            'length_hull'         => 'nullable|numeric|min:0',
+            'length_waterline'    => 'nullable|numeric|min:0',
+            'draft_min'           => 'nullable|numeric|min:0',
+            'draft_max'           => 'nullable|numeric|min:0',
+            'beam'                => 'nullable|numeric|min:0',
+            'weight'              => 'nullable|numeric|min:0',
+            'capacity'            => 'nullable|array',
+            'included_equipment_refs' => 'nullable|array',
+            'included_equipment_refs.*' => 'string',
+            'supplier'            => 'nullable|string|max:200',
+            'notes'               => 'nullable|string|max:5000',
             'default_margin_pct'  => 'nullable|numeric|min:0|max:100',
+            'is_active'           => 'nullable|boolean',
         ]);
+
+        // Equipment refs come from the form as "source:id" strings; store as is.
+        $data['is_active'] = (bool) ($data['is_active'] ?? false);
+
+        // If the brand changed, validate that the new brand belongs to this tenant.
+        if (! empty($data['company_brand_id'])) {
+            CompanyBrand::findOrFail($data['company_brand_id']);
+        } else {
+            unset($data['company_brand_id']);
+        }
+
         $model->update($data);
-        return back()->with('status', 'Model updated.');
+        return back()->with('status', 'Boat saved.');
     }
 
     public function destroyModel(string $modelId)
@@ -598,6 +809,50 @@ class CatalogueController extends Controller
     }
 
     /* ---------------------------------------------- OPTION EDITS */
+
+    /**
+     * Copy a platform-global option onto this specific boat. Once copied
+     * the dealer can adjust price/cost/etc. per-boat without affecting
+     * the original library item or other boats.
+     */
+    public function importGlobalOptions(string $modelId, Request $request)
+    {
+        $model = CompanyBoatModel::findOrFail($modelId);
+        $ids = $request->input('option_ids', []);
+        if (empty($ids) || ! is_array($ids)) {
+            return back()->withErrors(['options' => 'Pick at least one option from the library.']);
+        }
+
+        $count = 0;
+        foreach ($ids as $globalId) {
+            $g = \App\Models\GlobalOptionItem::find($globalId);
+            if (! $g) continue;
+
+            // Skip if this boat already has this exact label+category.
+            $dup = CompanyOption::where('company_model_id', $modelId)
+                ->where('label', $g->label)
+                ->where('category', $g->category)
+                ->exists();
+            if ($dup) continue;
+
+            CompanyOption::create([
+                'company_id'        => auth()->user()->company_id,
+                'company_model_id'  => $modelId,
+                'global_option_id'  => null,  // we don't link — it's a snapshot
+                'source'            => 'global', // imported from global library
+                'category'          => $g->category,
+                'label'             => $g->label,
+                'price'             => (float) $g->price,
+                'cost'              => 0.0,
+                'currency'          => $g->currency ?? 'EUR',
+                'position'          => 0,
+                'is_archived'       => false,
+            ]);
+            $count++;
+        }
+
+        return back()->with('status', "{$count} option(s) added from the library.");
+    }
 
     public function storeOption(string $modelId, Request $request)
     {

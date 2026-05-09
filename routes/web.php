@@ -6,6 +6,7 @@ use App\Http\Controllers\CompanySettingsController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmailLogController;
 use App\Http\Controllers\EmailTemplateController;
+use App\Http\Controllers\EngineController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\QuoteController;
@@ -141,6 +142,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         // Option CRUD on a model
         Route::post('/models/{modelId}/options',                 [CatalogueController::class, 'storeOption'])->name('options.store');
+        Route::post('/models/{modelId}/options/import',          [CatalogueController::class, 'importGlobalOptions'])->name('options.import');
         Route::patch('/options/{optionId}',                      [CatalogueController::class, 'updateOption'])->name('options.update');
         Route::delete('/options/{optionId}',                     [CatalogueController::class, 'destroyOption'])->name('options.destroy');
     });
@@ -154,6 +156,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Email log — append-only audit of every outbound email (§3 EMAIL_LOG)
     Route::get('/email-log',           [EmailLogController::class, 'index'])->name('email-log.index');
     Route::get('/email-log/{id}',      [EmailLogController::class, 'show'])->name('email-log.show');
+
+    // Engines — per-company library of motor SKUs (Suzuki DF200, Yamaha
+    // F300, etc.) referenced from the catalogue and the quote builder.
+    Route::resource('engines', EngineController::class)->except(['show']);
+
+    // Inline brand picker for the catalogue form — used by the autocomplete
+    // dropdown when adding a new model. Returns active CompanyBrand rows.
+    Route::get('/catalogue/brands/lookup', [CatalogueController::class, 'brandLookup'])->name('catalogue.brands.lookup');
+    Route::post('/catalogue/brands/inline', [CatalogueController::class, 'storeInlineBrand'])->name('catalogue.brands.inline');
 
     // Profile (Breeze default)
     Route::get('/profile',    [ProfileController::class, 'edit'])->name('profile.edit');

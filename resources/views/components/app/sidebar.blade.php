@@ -26,9 +26,8 @@
         [
             'section' => 'Catalogue',
             'items' => [
-                ['label' => 'Models & variants', 'icon' => 'ri-sailboat-line',           'route' => 'catalogue.models',  'active' => 'catalogue.models'],
-                ['label' => 'Brands',            'icon' => 'ri-building-4-line',         'route' => 'catalogue.brands',  'active' => 'catalogue.brands'],
-                ['label' => 'Catalogue updates', 'icon' => 'ri-notification-badge-line', 'route' => 'catalogue.updates', 'active' => 'catalogue.updates'],
+                ['label' => 'Catalogue',         'icon' => 'ri-sailboat-line',           'route' => 'catalogue.models',  'active' => 'catalogue.models'],
+                ['label' => 'Engines',           'icon' => 'ri-settings-3-line',         'route' => 'engines.index',     'active' => 'engines.*'],
             ],
         ],
         [

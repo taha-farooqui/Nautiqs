@@ -1,5 +1,7 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" data-theme="nautiqs">
+{{-- lang="en" tells Google Translate the source language. The displayed
+     language is driven by the googtrans cookie set in <x-app.google-translate />. --}}
+<html lang="en" data-theme="nautiqs">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -36,5 +38,7 @@
         <p class="text-center text-xs text-gray-500 mt-6 pb-6">
             © {{ date('Y') }} {{ config('app.name', 'Nautiqs') }}. All rights reserved.
         </p>
+
+        <x-app.google-translate />
     </body>
 </html>

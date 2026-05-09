@@ -4,7 +4,9 @@
 ])
 
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" data-theme="nautiqs">
+{{-- lang="en" tells Google Translate the source language. The displayed
+     language is driven by the googtrans cookie set in <x-app.google-translate />. --}}
+<html lang="en" data-theme="nautiqs">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -47,6 +49,8 @@
 
         {{-- Global ⌘K command palette --}}
         <x-app.search-palette />
+
+        <x-app.google-translate />
 
         @livewireScripts
         @stack('scripts')

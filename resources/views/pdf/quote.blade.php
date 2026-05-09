@@ -7,249 +7,298 @@
 </head>
 <body>
 
-@php $t = $quote->totals ?? []; @endphp
+@php
+    $t        = $quote->totals ?? [];
+    $clientFn = trim(($quote->client_snapshot['first_name'] ?? '') . ' ' . ($quote->client_snapshot['last_name'] ?? ''));
+    $clientCo = $quote->client_snapshot['company_name'] ?? '';
+    $clientAddrLine = $quote->client_snapshot['address_line'] ?? '';
+    $clientCityLine = trim(($quote->client_snapshot['postal_code'] ?? '') . ' ' . ($quote->client_snapshot['city'] ?? ''));
+    if (! empty($quote->client_snapshot['country'])) {
+        $clientCityLine = trim($clientCityLine . ', ' . $quote->client_snapshot['country']);
+    }
 
-{{-- ════════ Header: Company info  /  QUOTATION + reference grid ════════ --}}
-<table class="doc-header">
+    // Group options by category for the table
+    $optionRows = collect($quote->options ?? [])->groupBy(fn ($o) => $o['category'] ?? 'Options');
+
+    // Salesperson initials for the avatar tile (text-only fallback for the
+    // template's coloured circle)
+    $spName = $company->salesperson_name ?? '';
+    $spInitials = strtoupper(collect(preg_split('/\s+/', $spName))
+        ->filter()
+        ->map(fn ($p) => mb_substr($p, 0, 1))
+        ->take(2)
+        ->join(''));
+@endphp
+
+{{-- ════════════════════════════ HEADER ════════════════════════════ --}}
+<table class="qhead">
     <tr>
-        <td class="company-block" style="width:55%;">
-            <div class="company-name">{{ $company->name ?? '[Company Name]' }}</div>
-            <div class="meta">
-                {{ $company->address ?? '' }}<br>
-                @if ($company->salesperson_phone) Phone: {{ $company->salesperson_phone }}<br> @endif
-                @if ($company->salesperson_email) Email: {{ $company->salesperson_email }} @endif
+        <td style="width:55%;">
+            <div class="qhead-name">{{ $company->name ?? 'Nautiqs' }}</div>
+            <div class="qhead-sub">
+                @if ($company->address) {{ $company->address }}<br> @endif
+                @if ($company->salesperson_phone) {{ $company->salesperson_phone }} @endif
+                @if ($company->salesperson_phone && $company->salesperson_email) · @endif
+                @if ($company->salesperson_email) {{ $company->salesperson_email }} @endif
             </div>
         </td>
-        <td style="width:45%;">
-            <div class="doc-title">QUOTATION</div>
-            <table class="ref">
-                <tr>
-                    <th style="width:50%;">Quote #</th>
-                    <th style="width:50%;">Date</th>
+        <td style="width:45%; text-align:right;">
+            <div class="qhead-doctype">Quotation</div>
+            <div class="qhead-ref">{{ $quote->number }}</div>
+            <div class="qhead-date">{{ $quote->created_at?->format('F j, Y') }}</div>
+            @if ($quote->expires_at)
+                <div class="qhead-validity">Valid until {{ $quote->expires_at->format('F j, Y') }}</div>
+            @endif
+        </td>
+    </tr>
+</table>
+<div class="qhead-strip"></div>
+
+{{-- ════════════════════════════ META ROW ═════════════════════════ --}}
+<table class="qmeta">
+    <tr>
+        <td>
+            <div class="qmeta-label">Client</div>
+            <div class="qmeta-name">{{ $clientFn ?: 'Guest' }}</div>
+            <div class="qmeta-detail">
+                @if ($clientCo) {{ $clientCo }}<br> @endif
+                @if (! empty($quote->client_snapshot['email'])){{ $quote->client_snapshot['email'] }}<br>@endif
+                @if (! empty($quote->client_snapshot['phone'])){{ $quote->client_snapshot['phone'] }}<br>@endif
+                @if ($clientAddrLine) {{ $clientAddrLine }}<br> @endif
+                @if ($clientCityLine) {{ $clientCityLine }} @endif
+            </div>
+        </td>
+        <td>
+            <div class="qmeta-label">Your contact</div>
+            <div class="qmeta-name">{{ $spName ?: $company->name }}</div>
+            <div class="qmeta-detail">
+                @if ($company->salesperson_phone) {{ $company->salesperson_phone }}<br>@endif
+                @if ($company->salesperson_email) {{ $company->salesperson_email }} @endif
+            </div>
+        </td>
+    </tr>
+</table>
+
+{{-- ════════════════════════════ BOAT BAND ═══════════════════════ --}}
+<table class="qboat">
+    <tr>
+        <td style="width:60%;">
+            <div class="qboat-name">
+                @if (! empty($quote->model_snapshot['brand'])) {{ $quote->model_snapshot['brand'] }} @endif
+                {{ $quote->model_snapshot['name'] ?? '' }}
+            </div>
+            <div class="qboat-variant">
+                {{ $quote->variant_snapshot['name'] ?? '' }}
+                @if (! empty($quote->model_snapshot['code']))
+                    · {{ $quote->model_snapshot['code'] }}
+                @endif
+            </div>
+        </td>
+        <td style="width:40%; text-align:right;">
+            @if (! empty($quote->variant_snapshot['currency']))
+                <div class="qboat-spec">Currency</div>
+                <div class="qboat-spec-value">{{ $quote->variant_snapshot['currency'] }}</div>
+            @endif
+        </td>
+    </tr>
+</table>
+
+{{-- ════════════ INCLUDED EQUIPMENT ════════════ --}}
+@if (! empty($quote->included_equipment))
+    <div class="qsection">
+        <span class="qsection-title">Standard included equipment</span>
+        <span class="qsection-badge">Included in base price</span>
+    </div>
+    <table class="qincluded">
+        @php
+            $equip = collect($quote->included_equipment)->values();
+            $rows = $equip->chunk(2);
+        @endphp
+        @foreach ($rows as $row)
+            <tr>
+                @foreach ($row as $eq)
+                    <td><span class="qcheck">v</span>{{ $eq['label'] ?? '' }}</td>
+                @endforeach
+                @if ($row->count() < 2) <td></td> @endif
+            </tr>
+        @endforeach
+    </table>
+@endif
+
+{{-- ════════════ OPTIONS TABLE ════════════ --}}
+<div class="qsection">
+    <span class="qsection-title">Selected options &amp; services</span>
+</div>
+
+<table class="qoptions">
+    {{-- Base boat row --}}
+    <tr class="cat-row"><td colspan="4">Base boat</td></tr>
+    <tr class="item-row">
+        <td><span class="qopt-name">{{ $quote->model_snapshot['name'] ?? '' }} — {{ $quote->variant_snapshot['name'] ?? '' }}</span></td>
+        <td class="qopt-qty" style="width:12mm;">1</td>
+        <td class="qopt-unit" style="width:30mm;">€{{ number_format($t['base_price_gross'] ?? 0, 2, ',', ' ') }}</td>
+        <td class="qopt-total" style="width:32mm;">€{{ number_format($t['base_ht'] ?? 0, 2, ',', ' ') }}</td>
+    </tr>
+    @if (($t['boat_discount_pct'] ?? 0) > 0)
+        <tr class="item-row">
+            <td><span class="qopt-name" style="color:#9ca3af;">Boat discount ({{ number_format($t['boat_discount_pct'], 1) }}%)</span></td>
+            <td class="qopt-qty"></td>
+            <td class="qopt-unit"></td>
+            <td class="qopt-total discount-applied">−€{{ number_format($t['boat_discount_amount'] ?? 0, 2, ',', ' ') }}</td>
+        </tr>
+    @endif
+
+    {{-- Options grouped by category --}}
+    @foreach ($optionRows as $category => $items)
+        <tr class="cat-row"><td colspan="4">{{ $category }}</td></tr>
+        @foreach ($items as $opt)
+            @php
+                $itemDisc = (float) ($opt['item_discount_pct'] ?? 0);
+                $catDisc  = (float) ($opt['cat_discount_pct'] ?? 0);
+                $totalDisc = $itemDisc + $catDisc;
+                $unit = (float) ($opt['unit_price'] ?? 0);
+                $line = (float) ($opt['line_after_cat'] ?? 0);
+            @endphp
+            <tr class="item-row">
+                <td>
+                    <span class="qopt-name">{{ $opt['label'] ?? '' }}</span>
+                    @if ($itemDisc > 0)
+                        <span class="qopt-disc-badge">−{{ number_format($itemDisc, 0) }}%</span>
+                    @endif
+                </td>
+                <td class="qopt-qty">{{ $opt['quantity'] ?? 1 }}</td>
+                <td class="qopt-unit">
+                    @if ($totalDisc > 0)
+                        <span class="qopt-strike">€{{ number_format($unit, 2, ',', ' ') }}</span>
+                    @else
+                        €{{ number_format($unit, 2, ',', ' ') }}
+                    @endif
+                </td>
+                <td class="qopt-total {{ $totalDisc > 0 ? 'discount-applied' : '' }}">
+                    €{{ number_format($line, 2, ',', ' ') }}
+                </td>
+            </tr>
+        @endforeach
+    @endforeach
+
+    {{-- Custom items --}}
+    @if (! empty($quote->custom_items))
+        <tr class="cat-row"><td colspan="4">Services</td></tr>
+        @foreach ($quote->custom_items as $ci)
+            <tr class="item-row">
+                <td><span class="qopt-name">{{ $ci['label'] ?? '' }}</span></td>
+                <td class="qopt-qty">1</td>
+                <td class="qopt-unit">€{{ number_format($ci['amount'] ?? 0, 2, ',', ' ') }}</td>
+                <td class="qopt-total">€{{ number_format($ci['line_after_cat'] ?? $ci['amount'] ?? 0, 2, ',', ' ') }}</td>
+            </tr>
+        @endforeach
+    @endif
+</table>
+
+{{-- ════════════ CONDITIONS + TOTALS ════════════ --}}
+<table class="qbottom">
+    <tr>
+        {{-- Left: terms & conditions --}}
+        <td class="left">
+            <div class="qcond-title">Terms &amp; conditions</div>
+            <table class="qcond">
+                <tr><td class="label">Payment</td><td class="val">30% on order · 70% on delivery</td></tr>
+                <tr><td class="label">Delivery</td><td class="val">8 to 12 weeks depending on availability</td></tr>
+                <tr><td class="label">Quote valid</td>
+                    <td class="val">
+                        @if ($quote->expires_at)
+                            until {{ $quote->expires_at->format('F j, Y') }}
+                        @else
+                            30 days from issue
+                        @endif
+                    </td></tr>
+                <tr><td class="label">Warranty</td><td class="val">Manufacturer warranty + dealer prep</td></tr>
+            </table>
+
+            @if (! empty($quote->trade_in) && (($quote->trade_in['value'] ?? 0) > 0))
+                <div class="qtradein">
+                    <div class="qtradein-title">Trade-in included</div>
+                    <div class="qtradein-detail">
+                        @if (! empty($quote->trade_in['description']))
+                            {{ $quote->trade_in['description'] }}<br>
+                        @endif
+                        Trade-in value: <strong>€{{ number_format($quote->trade_in['value'], 2, ',', ' ') }}</strong>
+                    </div>
+                </div>
+            @endif
+        </td>
+
+        {{-- Right: totals box --}}
+        <td class="right">
+            <table class="qtotals">
+                <tr class="row-white">
+                    <td class="label">Subtotal excl. VAT</td>
+                    <td class="val">€{{ number_format($t['subtotal_ht'] ?? 0, 2, ',', ' ') }}</td>
                 </tr>
-                <tr>
-                    <td>{{ $quote->number }}</td>
-                    <td>{{ $quote->created_at?->format('j M Y') }}</td>
+                @if (($t['global_discount_amount'] ?? 0) > 0)
+                    <tr class="row-discount row-white">
+                        <td class="label">Global discount ({{ number_format($t['global_discount_pct'] ?? 0, 1) }}%)</td>
+                        <td class="val">−€{{ number_format($t['global_discount_amount'], 2, ',', ' ') }}</td>
+                    </tr>
+                @endif
+                <tr class="row-white">
+                    <td class="label">Total excl. VAT</td>
+                    <td class="val">€{{ number_format($t['total_ht'] ?? 0, 2, ',', ' ') }}</td>
                 </tr>
-                <tr>
-                    <th>Customer ID</th>
-                    <th>Valid until</th>
+                <tr class="row-white">
+                    <td class="label">VAT ({{ number_format($t['vat_rate'] ?? 20, 0) }}%)</td>
+                    <td class="val">+€{{ number_format($t['vat_amount'] ?? 0, 2, ',', ' ') }}</td>
                 </tr>
-                <tr>
-                    <td>{{ strtoupper(substr((string) ($quote->client_id ?? ''), -6)) ?: '—' }}</td>
-                    <td>{{ $quote->expires_at?->format('j M Y') ?? '—' }}</td>
+                <tr class="row-ttc">
+                    <td class="label">Total incl. VAT</td>
+                    <td class="val">€{{ number_format($t['total_ttc'] ?? 0, 2, ',', ' ') }}</td>
+                </tr>
+                @if (($t['trade_in_deduction'] ?? 0) > 0)
+                    <tr class="row-tradein">
+                        <td class="label">Trade-in deduction</td>
+                        <td class="val">−€{{ number_format($t['trade_in_deduction'], 2, ',', ' ') }}</td>
+                    </tr>
+                @endif
+                <tr class="row-net">
+                    <td class="label">Net payable</td>
+                    <td class="val">€{{ number_format($t['net_payable'] ?? $t['total_ttc'] ?? 0, 2, ',', ' ') }}</td>
                 </tr>
             </table>
         </td>
     </tr>
 </table>
 
-{{-- ════════ Customer info  /  Prepared by ════════ --}}
-<div class="section-label">Customer info</div>
-<div class="section-body">
-    <table class="two-col-block">
-        <tr>
-            <td class="col-left">
-                <strong>{{ trim(($quote->client_snapshot['first_name'] ?? '') . ' ' . ($quote->client_snapshot['last_name'] ?? '')) }}</strong><br>
-                @if (! empty($quote->client_snapshot['company_name']))
-                    {{ $quote->client_snapshot['company_name'] }}<br>
-                @endif
-                {{ $quote->client_snapshot['address_line'] ?? '' }}<br>
-                {{ trim(($quote->client_snapshot['postal_code'] ?? '') . ' ' . ($quote->client_snapshot['city'] ?? '')) }}
-                @if (! empty($quote->client_snapshot['country']))
-                    , {{ $quote->client_snapshot['country'] }}
-                @endif
-                <br>
-                @if (! empty($quote->client_snapshot['phone'])) {{ $quote->client_snapshot['phone'] }} · @endif
-                {{ $quote->client_snapshot['email'] ?? '' }}
-            </td>
-            <td class="col-right">
-                <em>Prepared by:</em><br>
-                <strong>{{ $company->salesperson_name ?? '' }}</strong>
-            </td>
-        </tr>
-    </table>
-</div>
-
-{{-- ════════ Description of work ════════ --}}
-<div class="section-label">Description of work</div>
-<div class="section-body">
-    <p>
-        Sale of <strong>{{ $quote->model_snapshot['name'] ?? '' }}</strong>
-        — {{ $quote->variant_snapshot['name'] ?? '' }}
-        @if (! empty($quote->model_snapshot['brand']))
-            ({{ $quote->model_snapshot['brand'] }})
-        @endif.
-    </p>
-    @if (! empty($quote->included_equipment))
-        <p class="small-meta" style="margin-top:2mm;">
-            <strong>Standard equipment included:</strong>
-            @foreach ($quote->included_equipment as $i => $eq)
-                {{ $eq['label'] ?? '' }}{{ $i < count($quote->included_equipment) - 1 ? ', ' : '.' }}
-            @endforeach
-        </p>
-    @endif
-</div>
-
-{{-- ════════ Itemized costs ════════ --}}
-<div class="section-label" style="margin-top:6mm;">Itemized costs</div>
-<table class="items">
-    <thead>
-        <tr>
-            <th>Item</th>
-            <th class="c" style="width:8%;">Qty</th>
-            <th class="r" style="width:18%;">Unit price</th>
-            <th class="r" style="width:12%;">Disc.</th>
-            <th class="r" style="width:18%;">Amount</th>
-        </tr>
-    </thead>
-    <tbody>
-        {{-- Boat hull row --}}
-        <tr>
-            <td>
-                <strong>{{ $quote->model_snapshot['name'] ?? '' }} — {{ $quote->variant_snapshot['name'] ?? '' }}</strong><br>
-                <span class="cat-tag">Hull · base price</span>
-            </td>
-            <td class="c">1</td>
-            <td class="r">€{{ number_format($t['base_price_gross'] ?? 0, 2, ',', ' ') }}</td>
-            <td class="r">
-                @if (($t['boat_discount_pct'] ?? 0) > 0)
-                    {{ number_format($t['boat_discount_pct'], 1) }}%
-                @else — @endif
-            </td>
-            <td class="r">€{{ number_format($t['base_ht'] ?? 0, 2, ',', ' ') }}</td>
-        </tr>
-
-        {{-- Options --}}
-        @foreach ($quote->options ?? [] as $opt)
-            <tr>
-                <td>
-                    {{ $opt['label'] ?? '' }}<br>
-                    <span class="cat-tag">{{ $opt['category'] ?? '' }}</span>
-                </td>
-                <td class="c">{{ $opt['quantity'] ?? 1 }}</td>
-                <td class="r">€{{ number_format($opt['unit_price'] ?? 0, 2, ',', ' ') }}</td>
-                <td class="r">
-                    @php $d = ($opt['item_discount_pct'] ?? 0) + ($opt['cat_discount_pct'] ?? 0); @endphp
-                    @if ($d > 0) {{ number_format($d, 1) }}% @else — @endif
-                </td>
-                <td class="r">€{{ number_format($opt['line_after_cat'] ?? 0, 2, ',', ' ') }}</td>
-            </tr>
-        @endforeach
-
-        {{-- Custom items --}}
-        @foreach ($quote->custom_items ?? [] as $ci)
-            <tr>
-                <td>
-                    {{ $ci['label'] ?? '' }}<br>
-                    <span class="cat-tag">Service</span>
-                </td>
-                <td class="c">1</td>
-                <td class="r">€{{ number_format($ci['amount'] ?? 0, 2, ',', ' ') }}</td>
-                <td class="r">
-                    @if (($ci['item_discount_pct'] ?? 0) > 0) {{ number_format($ci['item_discount_pct'], 1) }}% @else — @endif
-                </td>
-                <td class="r">€{{ number_format($ci['line_after_cat'] ?? $ci['amount'] ?? 0, 2, ',', ' ') }}</td>
-            </tr>
-        @endforeach
-
-        {{-- Trade-in row (if applicable) — shown as a credit line --}}
-        @if (! empty($quote->trade_in) && (($quote->trade_in['value'] ?? 0) > 0))
-            <tr>
-                <td>
-                    Trade-in credit<br>
-                    <span class="cat-tag">Deducted from total</span>
-                </td>
-                <td class="c">1</td>
-                <td class="r">−€{{ number_format($quote->trade_in['value'], 2, ',', ' ') }}</td>
-                <td class="r">—</td>
-                <td class="r">−€{{ number_format($quote->trade_in['value'], 2, ',', ' ') }}</td>
-            </tr>
-        @endif
-    </tbody>
-</table>
-
-{{-- ════════ Totals strip ════════ --}}
-<table class="totals">
+{{-- ════════════ SIGNATURES ════════════ --}}
+<table class="qsign">
     <tr>
-        <td class="filler" style="width:60%;"></td>
-        <td class="label" style="width:20%;">Subtotal HT</td>
-        <td class="val">€{{ number_format($t['subtotal_ht'] ?? 0, 2, ',', ' ') }}</td>
-    </tr>
-    @if (($t['global_discount_amount'] ?? 0) > 0)
-        <tr>
-            <td class="filler"></td>
-            <td class="label">Global discount ({{ $t['global_discount_pct'] }}%)</td>
-            <td class="val">−€{{ number_format($t['global_discount_amount'], 2, ',', ' ') }}</td>
-        </tr>
-    @endif
-    <tr>
-        <td class="filler"></td>
-        <td class="label">Total HT</td>
-        <td class="val">€{{ number_format($t['total_ht'] ?? 0, 2, ',', ' ') }}</td>
-    </tr>
-    <tr>
-        <td class="filler"></td>
-        <td class="label">VAT ({{ $t['vat_rate'] ?? 20 }}%)</td>
-        <td class="val">€{{ number_format($t['vat_amount'] ?? 0, 2, ',', ' ') }}</td>
-    </tr>
-    <tr>
-        <td class="filler"></td>
-        <td class="label">Total TTC</td>
-        <td class="val">€{{ number_format($t['total_ttc'] ?? 0, 2, ',', ' ') }}</td>
-    </tr>
-    @if (($t['trade_in_deduction'] ?? 0) > 0)
-        <tr>
-            <td class="filler"></td>
-            <td class="label">Trade-in deduction</td>
-            <td class="val">−€{{ number_format($t['trade_in_deduction'], 2, ',', ' ') }}</td>
-        </tr>
-    @endif
-    <tr class="grand">
-        <td class="filler"></td>
-        <td class="label">Net payable</td>
-        <td class="val">€{{ number_format($t['net_payable'] ?? 0, 2, ',', ' ') }}</td>
+        <td>
+            <div class="qsign-title">Client acceptance — signature</div>
+            <div class="qsign-area">
+                <div class="qsign-line">{{ $clientFn ?: 'Client name' }} &nbsp; · &nbsp; Date: __ / __ / ____</div>
+            </div>
+            <div class="qsign-meta">By signing, the client accepts all terms and conditions of this quotation.</div>
+        </td>
+        <td>
+            <div class="qsign-title">Salesperson signature</div>
+            <div class="qsign-area">
+                <div class="qsign-line">{{ $spName ?: $company->name }} &nbsp; · &nbsp; Date: __ / __ / ____</div>
+            </div>
+            <div class="qsign-meta">{{ $company->name }}</div>
+        </td>
     </tr>
 </table>
 
-{{-- ════════ Footnote ════════ --}}
-<div class="footnote">
-    <p style="margin:0 0 1.5mm 0;">
-        This quotation is not a contract or a bill. It is our best guess at the total price for the goods
-        and services described above. The customer will be billed after indicating acceptance of this quote.
-        @if ($quote->expires_at)
-            This offer is valid until <strong>{{ $quote->expires_at->format('j M Y') }}</strong>.
-        @endif
-        Payment will be due prior to the delivery of goods. Please return the signed quote to the address
-        listed above.
-    </p>
-</div>
-
-{{-- ════════ Customer acceptance ════════ --}}
-<div class="acceptance">
-    <div class="heading">Customer acceptance</div>
-    <table>
-        <tr>
-            <td style="width:50%;"><div class="sig-line"></div><div class="sig-cap">Signature</div></td>
-            <td style="width:30%;"><div class="sig-line"></div><div class="sig-cap">Printed name</div></td>
-            <td style="width:20%;"><div class="sig-line"></div><div class="sig-cap">Date</div></td>
-        </tr>
-    </table>
-</div>
-
-{{-- ════════ Bottom contact ════════ --}}
-<div class="bottom-contact">
-    If you have any questions, please contact
-    {{ $company->salesperson_name }}{{ $company->salesperson_phone ? ', ' . $company->salesperson_phone : '' }}{{ $company->salesperson_email ? ', ' . $company->salesperson_email : '' }}.
-</div>
-
-{{-- ════════ Footer ════════ --}}
-<div class="footer">
-    <strong>{{ $company->name }}</strong>
-    @if ($company->legal_form) · {{ $company->legal_form }} @endif
-    @if ($company->siren) · SIREN {{ $company->siren }} @endif
-    @if ($company->vat_number) · VAT {{ $company->vat_number }} @endif
-    · {{ str_replace("\n", ', ', $company->address ?? '') }}
+{{-- ════════════ FOOTER (every page) ════════════ --}}
+<div class="qfooter">
+    <div class="legal">
+        <strong>{{ $company->name }}</strong>
+        @if ($company->legal_form) · {{ $company->legal_form }} @endif
+        @if ($company->siren) · SIREN {{ $company->siren }} @endif
+        @if ($company->vat_number) · VAT {{ $company->vat_number }} @endif
+        <br>
+        @if ($company->address) {{ str_replace("\n", ' · ', $company->address) }} @endif
+    </div>
+    <div class="page">Page <span class="pagenum"></span></div>
 </div>
 
 </body>

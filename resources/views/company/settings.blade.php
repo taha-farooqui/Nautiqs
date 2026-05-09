@@ -4,12 +4,53 @@
         <div class="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-800 px-4 py-3 text-sm">{{ session('status') }}</div>
     @endif
 
-    <form action="{{ route('company.settings.update') }}" method="POST" class="max-w-4xl space-y-5">
+    @php
+        // Auto-jump to the tab that owns whichever field failed validation,
+        // otherwise default to Profile. Order of these checks matches the
+        // declared tabs below.
+        $errorMap = [
+            'profile'  => ['name','legal_form','siren','vat_number','address'],
+            'sales'    => ['salesperson_name','salesperson_phone','salesperson_email'],
+            'defaults' => ['default_vat_rate','default_margin_pct','default_display_mode','timezone'],
+            'margins'  => ['margin_presets.hull','margin_presets.engine','margin_presets.options','margin_presets.custom_items'],
+        ];
+        $startTab = 'profile';
+        foreach ($errorMap as $tab => $fields) {
+            if (collect($fields)->some(fn ($f) => $errors->has($f))) { $startTab = $tab; break; }
+        }
+    @endphp
+
+    <form action="{{ route('company.settings.update') }}" method="POST" class="max-w-4xl"
+          x-data="{ tab: @js($startTab) }">
         @csrf
         @method('PATCH')
 
-        {{-- §17.1 Company profile & legal details --}}
-        <div class="bg-white rounded-2xl border border-gray-200 p-6">
+        {{-- Tab strip --}}
+        <div class="mb-4 border-b border-gray-200 flex items-center gap-1 overflow-x-auto">
+            <button type="button" @click="tab = 'profile'"
+                :class="tab === 'profile' ? 'border-primary-800 text-primary-900' : 'border-transparent text-gray-500 hover:text-gray-900'"
+                class="px-4 py-2.5 text-sm font-semibold border-b-2 transition whitespace-nowrap">
+                <i class="ri-building-line"></i> Profile
+            </button>
+            <button type="button" @click="tab = 'sales'"
+                :class="tab === 'sales' ? 'border-primary-800 text-primary-900' : 'border-transparent text-gray-500 hover:text-gray-900'"
+                class="px-4 py-2.5 text-sm font-semibold border-b-2 transition whitespace-nowrap">
+                <i class="ri-user-star-line"></i> Salesperson
+            </button>
+            <button type="button" @click="tab = 'defaults'"
+                :class="tab === 'defaults' ? 'border-primary-800 text-primary-900' : 'border-transparent text-gray-500 hover:text-gray-900'"
+                class="px-4 py-2.5 text-sm font-semibold border-b-2 transition whitespace-nowrap">
+                <i class="ri-settings-3-line"></i> Defaults
+            </button>
+            <button type="button" @click="tab = 'margins'"
+                :class="tab === 'margins' ? 'border-primary-800 text-primary-900' : 'border-transparent text-gray-500 hover:text-gray-900'"
+                class="px-4 py-2.5 text-sm font-semibold border-b-2 transition whitespace-nowrap">
+                <i class="ri-percent-line"></i> Margin presets
+            </button>
+        </div>
+
+        {{-- ============================== PROFILE ============================== --}}
+        <section x-show="tab === 'profile'" class="bg-white rounded-2xl border border-gray-200 p-6">
             <h3 class="font-semibold text-gray-900 mb-1">Company profile</h3>
             <p class="text-xs text-gray-500 mb-4">Displayed in all PDFs and emails (§17.1).</p>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -41,10 +82,10 @@
                         class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800">{{ old('address', $company->address) }}</textarea>
                 </div>
             </div>
-        </div>
+        </section>
 
-        {{-- §17.2 Salesperson --}}
-        <div class="bg-white rounded-2xl border border-gray-200 p-6">
+        {{-- ============================== SALESPERSON ============================== --}}
+        <section x-show="tab === 'sales'" x-cloak class="bg-white rounded-2xl border border-gray-200 p-6">
             <h3 class="font-semibold text-gray-900 mb-1">Salesperson</h3>
             <p class="text-xs text-gray-500 mb-4">Appears in PDF header and signature block (§17.2).</p>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -64,10 +105,10 @@
                         class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />
                 </div>
             </div>
-        </div>
+        </section>
 
-        {{-- §17.3 Defaults --}}
-        <div class="bg-white rounded-2xl border border-gray-200 p-6">
+        {{-- ============================== DEFAULTS ============================== --}}
+        <section x-show="tab === 'defaults'" x-cloak class="bg-white rounded-2xl border border-gray-200 p-6">
             <h3 class="font-semibold text-gray-900 mb-1">Defaults</h3>
             <p class="text-xs text-gray-500 mb-4">Overridable per quote (§17.3).</p>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -91,12 +132,26 @@
                 </div>
             </div>
 
+            {{-- Language. Drives the same Google Translate widget as the
+                 header switcher, via window.setNautiqsLocale(). Stored in a
+                 cookie (not on the form) so it persists per browser. --}}
+            <div class="mt-4 notranslate" translate="no" x-data="{ current: window.__nautiqsLocale || 'fr' }">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Language</label>
+                <select onchange="window.setNautiqsLocale(this.value)"
+                    x-init="$el.value = current"
+                    class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800">
+                    <option value="fr">Français (default)</option>
+                    <option value="en">English</option>
+                </select>
+                <p class="text-xs text-gray-500 mt-1">
+                    Saved per browser. Reloads the page when changed.
+                </p>
+            </div>
+
             <div class="mt-4">
                 <label class="block text-sm font-medium text-gray-700 mb-1">Timezone</label>
                 @php
                     $currentTz = old('timezone', $company->timezone ?? config('app.timezone', 'UTC'));
-                    // Group IANA zones by their region prefix (Africa, America, Asia, …)
-                    // so the dropdown stays scannable.
                     $zones = collect(timezone_identifiers_list())
                         ->groupBy(fn ($z) => str_contains($z, '/') ? explode('/', $z)[0] : 'Other')
                         ->sortKeys();
@@ -116,10 +171,10 @@
                 </p>
                 <x-input-error :messages="$errors->get('timezone')" class="mt-1" />
             </div>
-        </div>
+        </section>
 
-        {{-- §17.4 Margin presets --}}
-        <div class="bg-white rounded-2xl border border-gray-200 p-6">
+        {{-- ============================== MARGIN PRESETS ============================== --}}
+        <section x-show="tab === 'margins'" x-cloak class="bg-white rounded-2xl border border-gray-200 p-6">
             <h3 class="font-semibold text-gray-900 mb-1">Margin presets</h3>
             <p class="text-xs text-gray-500 mb-4">Per-category fallback margin when no real cost is provided (§17.4).</p>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -132,9 +187,9 @@
                     </div>
                 @endforeach
             </div>
-        </div>
+        </section>
 
-        <div class="flex justify-end">
+        <div class="flex justify-end mt-4">
             <button type="submit"
                 class="inline-flex items-center gap-2 bg-primary-800 hover:bg-primary-900 text-white font-semibold px-5 py-2.5 rounded-lg transition">
                 <i class="ri-save-line"></i> Save changes

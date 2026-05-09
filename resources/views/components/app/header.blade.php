@@ -50,6 +50,35 @@
 
         {{-- Actions --}}
         <div class="ml-auto flex items-center gap-1.5">
+
+            {{-- Language switcher. Drives the hidden Google Translate widget
+                 via window.setNautiqsLocale() defined in <x-app.google-translate />.
+                 Adding `notranslate` keeps Google from translating our own labels. --}}
+            <div x-data="{ open: false, current: window.__nautiqsLocale || 'fr' }" class="relative notranslate" translate="no">
+                <button @click="open = !open"
+                    class="h-10 px-3 inline-flex items-center gap-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition text-sm font-medium"
+                    title="Language">
+                    <i class="ri-translate-2 text-lg"></i>
+                    <span x-text="current.toUpperCase()"></span>
+                    <i class="ri-arrow-down-s-line text-base"></i>
+                </button>
+                <div x-show="open" @click.outside="open = false" x-cloak x-transition
+                    class="absolute right-0 mt-2 w-44 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
+                    <button type="button" @click="window.setNautiqsLocale('fr')"
+                        class="w-full text-left px-4 py-2 text-sm flex items-center justify-between hover:bg-gray-50"
+                        :class="current === 'fr' ? 'text-primary-800 font-semibold bg-primary-50/50' : 'text-gray-700'">
+                        <span>Français</span>
+                        <i class="ri-check-line" x-show="current === 'fr'"></i>
+                    </button>
+                    <button type="button" @click="window.setNautiqsLocale('en')"
+                        class="w-full text-left px-4 py-2 text-sm flex items-center justify-between hover:bg-gray-50"
+                        :class="current === 'en' ? 'text-primary-800 font-semibold bg-primary-50/50' : 'text-gray-700'">
+                        <span>English</span>
+                        <i class="ri-check-line" x-show="current === 'en'"></i>
+                    </button>
+                </div>
+            </div>
+
             {{-- Notifications --}}
             <div x-data="{ open: false }" class="relative">
                 <button @click="open = !open"

@@ -7,6 +7,7 @@ use App\Models\CompanyBoatModel;
 use App\Models\CompanyBoatVariant;
 use App\Models\CompanyBrand;
 use App\Models\CompanyOption;
+use App\Models\Engine;
 use App\Models\Quote;
 use App\Models\QuoteCounter;
 use App\Services\QuoteCalculator;
@@ -29,6 +30,15 @@ class QuoteBuilder extends Component
     public string $client_mode = 'existing'; // 'existing' | 'guest'
     public ?string $client_id = null;
 
+    // Inline "quick add client" drawer — lets the dealer create a client
+    // mid-quote without losing in-progress builder state.
+    public bool   $quickClientOpen      = false;
+    public string $quickClientFirstName = '';
+    public string $quickClientLastName  = '';
+    public string $quickClientEmail     = '';
+    public string $quickClientPhone     = '';
+    public string $quickClientCompany   = '';
+
     // §8.1 Step 2 — Model
     public ?string $brand_id = null;
     public ?string $model_id = null;
@@ -39,6 +49,11 @@ class QuoteBuilder extends Component
     // §8.1 Step 4 — Options: selected[option_id] = qty
     public array $selectedOptions = [];
     public array $optionDiscounts = [];  // [option_id => pct]
+
+    // Global engines (§ matches old software's "Options Globales"). Engines
+    // live in their own per-company library and can be attached to any quote
+    // independent of the chosen boat. Map: [engine_id => qty].
+    public array $selectedEngines = [];
 
     // §8.1 Step 5 — Custom line items
     public array $custom_items = [];
@@ -98,8 +113,13 @@ class QuoteBuilder extends Component
 
         $this->selectedOptions = [];
         $this->optionDiscounts = [];
+        $this->selectedEngines = [];
         foreach (($quote->options ?? []) as $row) {
-            if (!empty($row['option_id'])) {
+            if (empty($row['option_id'])) continue;
+            // Distinguish engines from regular options when re-loading.
+            if (($row['source'] ?? null) === 'engine') {
+                $this->selectedEngines[$row['option_id']] = $row['quantity'] ?? 1;
+            } else {
                 $this->selectedOptions[$row['option_id']] = $row['quantity'] ?? 1;
                 $this->optionDiscounts[$row['option_id']] = $row['discount_pct'] ?? 0;
             }
@@ -177,12 +197,116 @@ class QuoteBuilder extends Component
     public function updatedBrandId()      { $this->model_id = null; $this->variant_id = null; $this->selectedOptions = []; }
     public function updatedModelId()      { $this->variant_id = null; $this->selectedOptions = []; }
 
+    /**
+     * Open the inline quick-add-client drawer with a clean form.
+     */
+    public function openQuickClient(): void
+    {
+        $this->quickClientFirstName = '';
+        $this->quickClientLastName  = '';
+        $this->quickClientEmail     = '';
+        $this->quickClientPhone     = '';
+        $this->quickClientCompany   = '';
+        $this->resetErrorBag(['quickClientFirstName', 'quickClientLastName', 'quickClientEmail', 'quickClientPhone', 'quickClientCompany']);
+        $this->quickClientOpen      = true;
+    }
+
+    public function closeQuickClient(): void
+    {
+        $this->quickClientOpen = false;
+    }
+
+    /**
+     * Persist a client from the inline drawer and select them as the
+     * quote's client. The clients computed property is invalidated so the
+     * select repopulates with the new entry.
+     */
+    public function saveQuickClient(): void
+    {
+        $data = $this->validate([
+            'quickClientFirstName' => 'required|string|max:100',
+            'quickClientLastName'  => 'required|string|max:100',
+            'quickClientEmail'     => 'nullable|email|max:200',
+            'quickClientPhone'     => 'nullable|string|max:50',
+            'quickClientCompany'   => 'nullable|string|max:200',
+        ], [], [
+            'quickClientFirstName' => 'first name',
+            'quickClientLastName'  => 'last name',
+            'quickClientEmail'     => 'email',
+        ]);
+
+        $client = Client::create([
+            'company_id'   => auth()->user()->company_id,
+            'first_name'   => $data['quickClientFirstName'],
+            'last_name'    => $data['quickClientLastName'],
+            'email'        => $data['quickClientEmail'] ?: null,
+            'phone'        => $data['quickClientPhone'] ?: null,
+            'company_name' => $data['quickClientCompany'] ?: null,
+        ]);
+
+        // Refresh the clients dropdown + select the freshly created one.
+        unset($this->clients);
+        $this->client_mode = 'existing';
+        $this->client_id   = (string) $client->_id;
+        $this->quickClientOpen = false;
+
+        $this->dispatch('toast', message: "Client «{$client->first_name} {$client->last_name}» added.");
+    }
+
     public function toggleOption(string $optionId): void
     {
         if (isset($this->selectedOptions[$optionId])) {
             unset($this->selectedOptions[$optionId], $this->optionDiscounts[$optionId]);
         } else {
             $this->selectedOptions[$optionId] = 1;
+        }
+    }
+
+    #[Computed]
+    public function engines()
+    {
+        // Merged engine list = platform-provided global library + this
+        // dealer's private engines. Each row gets a normalised shape so the
+        // view doesn't care about the source. The 'id' is namespaced
+        // ("global:..." vs "private:...") so toggleEngine() can look the
+        // right one back up at save time.
+        $global = \App\Models\GlobalEngine::where('is_active', true)
+            ->orderBy('brand')->orderBy('code')->get()
+            ->map(fn ($e) => (object) [
+                'id'         => 'global:' . (string) $e->_id,
+                'brand'      => $e->brand,
+                'code'       => $e->code,
+                'horsepower' => $e->horsepower,
+                'fuel'       => $e->fuel,
+                'price'      => (float) $e->price,
+                'cost'       => 0.0,
+                'currency'   => $e->currency ?? 'EUR',
+                'source'     => 'library',
+            ]);
+
+        $private = Engine::where('is_archived', false)
+            ->orderBy('brand')->orderBy('code')->get()
+            ->map(fn ($e) => (object) [
+                'id'         => 'private:' . (string) $e->_id,
+                'brand'      => $e->brand,
+                'code'       => $e->code,
+                'horsepower' => $e->horsepower,
+                'fuel'       => $e->fuel,
+                'price'      => (float) $e->price,
+                'cost'       => (float) ($e->cost ?? 0),
+                'currency'   => $e->currency ?? 'EUR',
+                'source'     => 'yours',
+            ]);
+
+        return $global->concat($private)->sortBy(fn ($e) => $e->brand . ' ' . $e->code)->values();
+    }
+
+    public function toggleEngine(string $engineId): void
+    {
+        if (isset($this->selectedEngines[$engineId])) {
+            unset($this->selectedEngines[$engineId]);
+        } else {
+            $this->selectedEngines[$engineId] = 1;
         }
     }
 
@@ -227,6 +351,38 @@ class QuoteBuilder extends Component
                 'currency'     => $opt->currency ?? 'EUR',
                 'quantity'     => (int) $qty,
                 'discount_pct' => (float) ($this->optionDiscounts[$optionId] ?? 0),
+            ];
+        }
+
+        // Engines — appended onto the options payload so the calculator,
+        // totals, and PDF treat them uniformly. Each id is namespaced
+        // ("global:xxx" or "private:xxx") so we know which table to look
+        // it up in. Resolved engines are tagged source=engine and
+        // category=Engine for PDF grouping.
+        $globalIds  = [];
+        $privateIds = [];
+        foreach (array_keys($this->selectedEngines) as $namespacedId) {
+            [$ns, $rawId] = array_pad(explode(':', $namespacedId, 2), 2, null);
+            if ($ns === 'global'  && $rawId) $globalIds[]  = $rawId;
+            if ($ns === 'private' && $rawId) $privateIds[] = $rawId;
+        }
+        $globalEngines  = \App\Models\GlobalEngine::whereIn('_id', $globalIds)->get()->keyBy(fn ($e) => 'global:' . (string) $e->_id);
+        $privateEngines = Engine::whereIn('_id', $privateIds)->get()->keyBy(fn ($e) => 'private:' . (string) $e->_id);
+        $allEngines     = $globalEngines->concat($privateEngines);
+
+        foreach ($this->selectedEngines as $engineId => $qty) {
+            $eng = $allEngines[$engineId] ?? null;
+            if (! $eng) continue;
+            $optionsPayload[] = [
+                'option_id'    => $engineId, // namespaced id preserved in the snapshot
+                'category'     => 'Engine',
+                'label'        => trim(($eng->brand ?? '') . ' ' . ($eng->code ?? '')),
+                'unit_price'   => (float) $eng->price,
+                'unit_cost'    => (float) ($eng->cost ?? 0),
+                'currency'     => $eng->currency ?? 'EUR',
+                'quantity'     => (int) $qty,
+                'discount_pct' => 0.0,
+                'source'       => 'engine',
             ];
         }
 
