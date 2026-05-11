@@ -1,11 +1,11 @@
-<x-app-layout :title="$engine ? 'Edit engine' : 'Add engine'" :header="$engine ? 'Edit engine' : 'Add engine'">
+<x-app-layout :title="$engine ? __('Edit engine') : __('Add engine')" :header="$engine ? __('Edit engine') : __('Add engine')">
     @if ($errors->any())
         <div class="mb-4 rounded-lg border border-red-200 bg-red-50 text-red-700 px-4 py-3 text-sm">{{ $errors->first() }}</div>
     @endif
 
     <div class="mb-4 flex items-center gap-2 text-sm text-gray-500">
         <a href="{{ route('engines.index') }}" class="hover:text-primary-800">
-            <i class="ri-arrow-left-line"></i> Back to engines
+            <i class="ri-arrow-left-line"></i> {{ __('Back to engines') }}
         </a>
     </div>
 
@@ -17,7 +17,7 @@
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Brand <span class="text-red-500">*</span></label>
+                <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Brand') }} <span class="text-red-500">*</span></label>
                 <input type="text" name="brand" required list="engine-brands"
                     value="{{ old('brand', $engine->brand ?? '') }}"
                     placeholder="Suzuki, Yamaha, Mercury, …"
@@ -33,7 +33,7 @@
                 <x-input-error :messages="$errors->get('brand')" class="mt-1" />
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Code / SKU <span class="text-red-500">*</span></label>
+                <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Code / SKU') }} <span class="text-red-500">*</span></label>
                 <input type="text" name="code" required
                     value="{{ old('code', $engine->code ?? '') }}"
                     placeholder="e.g. DF200A TL/TX"
@@ -44,23 +44,31 @@
 
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Horsepower</label>
+                <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Horsepower') }}</label>
                 <input type="number" step="1" min="0" name="horsepower"
                     value="{{ old('horsepower', $engine->horsepower ?? '') }}"
                     placeholder="200"
                     class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Fuel</label>
+                <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Fuel') }}</label>
                 <select name="fuel" class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800">
                     <option value="">—</option>
-                    @foreach (['petrol', 'diesel', 'electric', 'unknown'] as $f)
-                        <option value="{{ $f }}" @selected(old('fuel', $engine->fuel ?? '') === $f)>{{ ucfirst($f) }}</option>
+                    @php
+                        $fuelLabels = [
+                            'petrol'   => __('Petrol'),
+                            'diesel'   => __('Diesel'),
+                            'electric' => __('Electric'),
+                            'unknown'  => __('Unknown'),
+                        ];
+                    @endphp
+                    @foreach ($fuelLabels as $value => $label)
+                        <option value="{{ $value }}" @selected(old('fuel', $engine->fuel ?? '') === $value)>{{ $label }}</option>
                     @endforeach
                 </select>
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Currency</label>
+                <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Currency') }}</label>
                 <select name="currency" class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800">
                     <option value="EUR" @selected(old('currency', $engine->currency ?? 'EUR') === 'EUR')>EUR</option>
                     <option value="USD" @selected(old('currency', $engine->currency ?? '') === 'USD')>USD</option>
@@ -69,30 +77,30 @@
         </div>
 
         <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Description') }}</label>
             <input type="text" name="description"
                 value="{{ old('description', $engine->description ?? '') }}"
-                placeholder="Optional — extra notes shown next to the SKU"
+                placeholder="{{ __('Optional — extra notes shown next to the SKU') }}"
                 class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Cost (revendeur)</label>
+                <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Cost (dealer)') }}</label>
                 <input type="number" step="0.01" min="0" name="cost"
                     value="{{ old('cost', $engine->cost ?? '') }}"
                     class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />
-                <p class="text-xs text-gray-500 mt-1">Internal — never shown to clients.</p>
+                <p class="text-xs text-gray-500 mt-1">{{ __('Internal — never shown to clients.') }}</p>
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Public HT <span class="text-red-500">*</span></label>
+                <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Public HT') }} <span class="text-red-500">*</span></label>
                 <input type="number" step="0.01" min="0" name="price" required
                     value="{{ old('price', $engine->price ?? '') }}"
                     class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />
                 <x-input-error :messages="$errors->get('price')" class="mt-1" />
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">VAT rate (%)</label>
+                <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('VAT rate (%)') }}</label>
                 <input type="number" step="0.1" min="0" max="100" name="vat_rate"
                     value="{{ old('vat_rate', $engine->vat_rate ?? '20') }}"
                     class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />
@@ -100,9 +108,9 @@
         </div>
 
         <div class="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
-            <a href="{{ route('engines.index') }}" class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">Cancel</a>
+            <a href="{{ route('engines.index') }}" class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">{{ __('Cancel') }}</a>
             <button class="inline-flex items-center gap-1 px-4 py-2 text-sm font-semibold bg-primary-800 hover:bg-primary-900 text-white rounded-lg">
-                <i class="ri-save-line"></i> {{ $engine ? 'Save changes' : 'Add engine' }}
+                <i class="ri-save-line"></i> {{ $engine ? __('Save changes') : __('Add engine') }}
             </button>
         </div>
     </form>

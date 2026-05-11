@@ -54,12 +54,14 @@ class EmailTemplateService
     ];
 
     /**
-     * Factory defaults per type. Used on first read and on Reset.
+     * Factory defaults per type, keyed by locale. Used on first read and on
+     * Reset. defaultsFor() picks the right locale.
      */
     public const DEFAULTS = [
-        self::TYPE_QUOTE => [
-            'subject' => 'Your quotation {{quote_number}} from {{company_name}}',
-            'body'    => <<<'HTML'
+        'en' => [
+            self::TYPE_QUOTE => [
+                'subject' => 'Your quotation {{quote_number}} from {{company_name}}',
+                'body'    => <<<'HTML'
 <div>Hello {{client_first_name}},</div>
 <div><br></div>
 <div>Please find attached your quotation for the <strong>{{boat_model}}</strong>.</div>
@@ -70,10 +72,10 @@ class EmailTemplateService
 <div><br></div>
 <div>Best regards,<br>{{salesperson_name}}<br>{{company_name}}</div>
 HTML,
-        ],
-        self::TYPE_ORDER_CONFIRMATION => [
-            'subject' => 'Order confirmation {{order_number}} — {{boat_model}}',
-            'body'    => <<<'HTML'
+            ],
+            self::TYPE_ORDER_CONFIRMATION => [
+                'subject' => 'Order confirmation {{order_number}} — {{boat_model}}',
+                'body'    => <<<'HTML'
 <div>Hello {{client_first_name}},</div>
 <div><br></div>
 <div>Thank you for trusting us with your order. Please find attached the official order confirmation <strong>{{order_number}}</strong> for the <strong>{{boat_model}}</strong>.</div>
@@ -84,10 +86,10 @@ HTML,
 <div><br></div>
 <div>Best regards,<br>{{salesperson_name}}<br>{{company_name}}</div>
 HTML,
-        ],
-        self::TYPE_FOLLOW_UP => [
-            'subject' => 'Quick follow-up on quotation {{quote_number}}',
-            'body'    => <<<'HTML'
+            ],
+            self::TYPE_FOLLOW_UP => [
+                'subject' => 'Quick follow-up on quotation {{quote_number}}',
+                'body'    => <<<'HTML'
 <div>Hello {{client_first_name}},</div>
 <div><br></div>
 <div>I wanted to check in on quotation <strong>{{quote_number}}</strong> for the <strong>{{boat_model}}</strong> we sent you recently.</div>
@@ -98,8 +100,67 @@ HTML,
 <div><br></div>
 <div>Best regards,<br>{{salesperson_name}}<br>{{company_name}}</div>
 HTML,
+            ],
+        ],
+        'fr' => [
+            self::TYPE_QUOTE => [
+                'subject' => 'Votre devis {{quote_number}} de {{company_name}}',
+                'body'    => <<<'HTML'
+<div>Bonjour {{client_first_name}},</div>
+<div><br></div>
+<div>Veuillez trouver ci-joint votre devis pour le <strong>{{boat_model}}</strong>.</div>
+<div><br></div>
+<div>Le montant total est de <strong>{{total_ttc}}</strong> TTC.</div>
+<div><br></div>
+<div>N'hésitez pas à me contacter pour toute question ou pour discuter des détails.</div>
+<div><br></div>
+<div>Cordialement,<br>{{salesperson_name}}<br>{{company_name}}</div>
+HTML,
+            ],
+            self::TYPE_ORDER_CONFIRMATION => [
+                'subject' => 'Bon de commande {{order_number}} — {{boat_model}}',
+                'body'    => <<<'HTML'
+<div>Bonjour {{client_first_name}},</div>
+<div><br></div>
+<div>Merci de votre confiance pour cette commande. Veuillez trouver ci-joint le bon de commande officiel <strong>{{order_number}}</strong> pour le <strong>{{boat_model}}</strong>.</div>
+<div><br></div>
+<div>Le montant total confirmé est de <strong>{{total_ttc}}</strong> TTC.</div>
+<div><br></div>
+<div>Nous reviendrons vers vous très prochainement pour la suite. En attendant, n'hésitez pas à nous contacter pour toute question.</div>
+<div><br></div>
+<div>Cordialement,<br>{{salesperson_name}}<br>{{company_name}}</div>
+HTML,
+            ],
+            self::TYPE_FOLLOW_UP => [
+                'subject' => 'Petite relance concernant le devis {{quote_number}}',
+                'body'    => <<<'HTML'
+<div>Bonjour {{client_first_name}},</div>
+<div><br></div>
+<div>Je me permets de revenir vers vous concernant le devis <strong>{{quote_number}}</strong> pour le <strong>{{boat_model}}</strong> que nous vous avons adressé récemment.</div>
+<div><br></div>
+<div>Avez-vous des questions, ou souhaitez-vous que nous prenions le temps d'en discuter ensemble ?</div>
+<div><br></div>
+<div>Je reste disponible pour ajuster l'offre afin qu'elle corresponde au mieux à vos attentes.</div>
+<div><br></div>
+<div>Cordialement,<br>{{salesperson_name}}<br>{{company_name}}</div>
+HTML,
+            ],
         ],
     ];
+
+    /**
+     * Pick the defaults bundle for the current app locale, falling back to
+     * English when the locale isn't supported or when DEFAULTS doesn't have
+     * an entry for it.
+     */
+    private function defaultsFor(string $type): array
+    {
+        $locale = app()->getLocale();
+        if (! isset(self::DEFAULTS[$locale][$type])) {
+            $locale = 'en';
+        }
+        return self::DEFAULTS[$locale][$type];
+    }
 
     /**
      * Get one template by type, creating it from defaults if missing.
@@ -132,11 +193,12 @@ HTML,
             return $existing;
         }
 
+        $defaults = $this->defaultsFor($type);
         return EmailTemplate::create([
             'company_id' => (string) $company->_id,
             'type'       => $type,
-            'subject'    => self::DEFAULTS[$type]['subject'],
-            'body'       => self::DEFAULTS[$type]['body'],
+            'subject'    => $defaults['subject'],
+            'body'       => $defaults['body'],
         ]);
     }
 
@@ -159,13 +221,14 @@ HTML,
     public function reset(EmailTemplate $template): EmailTemplate
     {
         $type = $template->type;
-        if (! isset(self::DEFAULTS[$type])) {
+        if (! in_array($type, self::TYPES, true)) {
             // Treat unknown legacy rows as quote-type defaults.
             $type = self::TYPE_QUOTE;
         }
+        $defaults = $this->defaultsFor($type);
         $template->update([
-            'subject' => self::DEFAULTS[$type]['subject'],
-            'body'    => self::DEFAULTS[$type]['body'],
+            'subject' => $defaults['subject'],
+            'body'    => $defaults['body'],
         ]);
         return $template;
     }
@@ -199,9 +262,9 @@ HTML,
             'order_number'       => 'BC-' . date('Y') . '-001',
             'boat_model'         => 'Eagle 10 — 2× 200HP',
             'total_ttc'          => '€89 500,00',
-            'salesperson_name'   => $company->salesperson_name ?? 'Salesperson',
-            'company_name'       => $company->name ?? 'Company',
-            'date'               => now()->format('F j, Y'),
+            'salesperson_name'   => $company->salesperson_name ?? __('Salesperson'),
+            'company_name'       => $company->name ?? __('Company'),
+            'date'               => now()->translatedFormat('F j, Y'),
         ];
     }
 
@@ -215,15 +278,15 @@ HTML,
         $totalTtc = $quote ? ($quote->totals['total_ttc'] ?? 0) : 0;
 
         return array_merge([
-            'client_name'        => trim($first . ' ' . $last) ?: 'Client',
-            'client_first_name'  => $first ?: 'Client',
+            'client_name'        => trim($first . ' ' . $last) ?: __('Client'),
+            'client_first_name'  => $first ?: __('Client'),
             'quote_number'       => $quote->number ?? '',
             'order_number'       => $quote->order_confirmation_number ?? '',
             'boat_model'         => $quote->model_snapshot['name'] ?? '',
             'total_ttc'          => '€' . number_format($totalTtc, 2, ',', ' '),
             'salesperson_name'   => $company->salesperson_name ?? '',
             'company_name'       => $company->name ?? '',
-            'date'               => now()->format('F j, Y'),
+            'date'               => now()->translatedFormat('F j, Y'),
         ], $extra);
     }
 
@@ -249,6 +312,7 @@ HTML,
     public function wrapWithLogo(string $body, Company $company, ?string $logoSrc = null): string
     {
         $companyName = e($company->name ?? config('app.name', 'Nautiqs'));
+        $sentFrom    = e(__('Sent from'));
 
         return <<<HTML
 <div style="font-family: Inter, Arial, sans-serif; color: #1f2937; max-width: 600px; margin: 0 auto;">
@@ -259,7 +323,7 @@ HTML,
         {$body}
     </div>
     <div style="margin-top: 32px; padding-top: 16px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #6b7280;">
-        Sent from {$companyName}
+        {$sentFrom} {$companyName}
     </div>
 </div>
 HTML;
@@ -277,15 +341,15 @@ HTML;
     public static function availableVariables(): array
     {
         return [
-            'client_name'        => 'Client full name',
-            'client_first_name'  => 'Client first name',
-            'quote_number'       => 'Quote reference',
-            'order_number'       => 'Order confirmation reference',
-            'boat_model'         => 'Boat model + variant',
-            'total_ttc'          => 'Total incl. VAT',
-            'salesperson_name'   => 'Salesperson name',
-            'company_name'       => 'Your company name',
-            'date'               => "Today's date",
+            'client_name'        => __('Client full name'),
+            'client_first_name'  => __('Client first name'),
+            'quote_number'       => __('Quote reference'),
+            'order_number'       => __('Order confirmation reference'),
+            'boat_model'         => __('Boat model + variant'),
+            'total_ttc'          => __('Total incl. VAT'),
+            'salesperson_name'   => __('Salesperson name'),
+            'company_name'       => __('Your company name'),
+            'date'               => __("Today's date"),
         ];
     }
 }

@@ -4,22 +4,22 @@
     // controller from the email log + quote status.
     $sendUi = match ($sendType ?? 'quote') {
         'order_confirmation' => [
-            'button' => 'Send order confirmation',
+            'button' => __('Send order confirmation'),
             'icon'   => 'ri-file-paper-2-line',
-            'title'  => 'Send order confirmation',
-            'note'   => 'Order confirmation PDF is attached automatically.',
+            'title'  => __('Send order confirmation'),
+            'note'   => __('Order confirmation PDF is attached automatically.'),
         ],
         'follow_up' => [
-            'button' => 'Send follow-up',
+            'button' => __('Send follow-up'),
             'icon'   => 'ri-mail-send-line',
-            'title'  => 'Send follow-up',
-            'note'   => 'Original quote PDF is attached automatically.',
+            'title'  => __('Send follow-up'),
+            'note'   => __('Original quote PDF is attached automatically.'),
         ],
         default => [
-            'button' => 'Send by email',
+            'button' => __('Send by email'),
             'icon'   => 'ri-mail-send-line',
-            'title'  => "Send quote {$quote->number}",
-            'note'   => 'PDF is attached automatically.',
+            'title'  => __('Send quote') . ' ' . $quote->number,
+            'note'   => __('PDF is attached automatically.'),
         ],
     };
 @endphp
@@ -47,19 +47,19 @@
 
         $steps = [
             [
-                'label'  => 'Quote created',
+                'label'  => __('Quote created'),
                 'icon'   => 'ri-file-add-line',
                 'date'   => $quote->created_at,
                 'state'  => 'done',
             ],
             [
-                'label'  => 'Marked sent',
+                'label'  => __('Marked sent'),
                 'icon'   => 'ri-send-plane-line',
                 'date'   => $quote->sent_at,
                 'state'  => $isSent ? 'done' : 'pending',
             ],
             [
-                'label'  => 'Email sent',
+                'label'  => __('Email sent'),
                 'icon'   => 'ri-mail-send-line',
                 'date'   => $firstQuoteEmailAt,
                 'state'  => $hasEmail ? 'done' : 'pending',
@@ -67,17 +67,17 @@
         ];
 
         if ($isLost) {
-            $steps[] = ['label' => 'Lost',  'icon' => 'ri-close-circle-line', 'date' => $quote->lost_at, 'state' => 'lost'];
+            $steps[] = ['label' => __('Lost'),  'icon' => 'ri-close-circle-line', 'date' => $quote->lost_at, 'state' => 'lost'];
         } else {
             $steps[] = [
-                'label'  => 'Won',
+                'label'  => __('Won'),
                 'icon'   => 'ri-trophy-line',
                 'date'   => $quote->won_at,
                 'state'  => $isWon ? 'done' : 'pending',
             ];
             if ($isWon) {
                 $steps[] = [
-                    'label'  => 'Order confirmation sent',
+                    'label'  => __('Order confirmation sent'),
                     'icon'   => 'ri-file-paper-2-line',
                     'date'   => $firstOrderEmailAt,
                     'state'  => $firstOrderEmailAt ? 'done' : 'pending',
@@ -89,9 +89,9 @@
     <div class="mb-6 bg-white rounded-2xl border border-gray-200 p-5">
         <div class="flex items-center justify-between mb-4 gap-3">
             <div class="flex items-center gap-3">
-                <h3 class="font-semibold text-gray-900 text-sm">Lifecycle</h3>
+                <h3 class="font-semibold text-gray-900 text-sm">{{ __('Lifecycle') }}</h3>
                 @if ($quote->duplicated_from)
-                    <span class="text-xs text-gray-500">Duplicated from <span class="font-mono">{{ $quote->duplicated_from }}</span></span>
+                    <span class="text-xs text-gray-500">{{ __('Duplicated from') }} <span class="font-mono">{{ $quote->duplicated_from }}</span></span>
                 @endif
             </div>
         </div>
@@ -133,7 +133,7 @@
                     <div class="mt-2 min-w-0 max-w-full">
                         <p class="text-sm font-semibold {{ $title }} truncate">{{ $s['label'] }}</p>
                         <p class="text-xs text-gray-500 truncate">
-                            {{ $s['date'] ? \Illuminate\Support\Carbon::parse($s['date'])->format('d M Y, H:i') : '—' }}
+                            {{ $s['date'] ? \Illuminate\Support\Carbon::parse($s['date'])->translatedFormat('d M Y, H:i') : '—' }}
                         </p>
                     </div>
                 </li>
@@ -145,7 +145,7 @@
     <div class="mb-6 flex flex-wrap items-center justify-end gap-2">
         <button type="button" @click="previewOpen = true; previewLoading = true"
             class="inline-flex items-center gap-2 bg-primary-800 hover:bg-primary-900 text-white font-semibold px-4 py-2 rounded-lg text-sm transition">
-            <i class="ri-file-pdf-line"></i> Preview PDF
+            <i class="ri-file-pdf-line"></i> {{ __('Preview PDF') }}
         </button>
         <button type="button" @click="emailOpen = true"
             class="inline-flex items-center gap-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-800 font-medium px-4 py-2 rounded-lg text-sm transition">
@@ -155,7 +155,7 @@
         @if ($quote->isEditable())
             <a href="{{ route('quotes.edit', $quote->_id) }}"
                 class="inline-flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium px-4 py-2 rounded-lg text-sm transition">
-                <i class="ri-pencil-line"></i> Edit
+                <i class="ri-pencil-line"></i> {{ __('Edit') }}
             </a>
         @endif
 
@@ -166,7 +166,7 @@
             <form method="POST" action="{{ route('quotes.mark-sent', $quote->_id) }}">
                 @csrf
                 <button class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg text-sm transition">
-                    <i class="ri-send-plane-line"></i> Mark Sent
+                    <i class="ri-send-plane-line"></i> {{ __('Mark Sent') }}
                 </button>
             </form>
         @endif
@@ -175,7 +175,7 @@
             <div x-data="{ open: false }" class="relative">
                 <button type="button" @click="open = !open" @click.outside="open = false"
                     class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2 rounded-lg text-sm transition">
-                    <i class="ri-flag-2-line"></i> Mark as
+                    <i class="ri-flag-2-line"></i> {{ __('Mark as') }}
                     <i class="ri-arrow-down-s-line"></i>
                 </button>
                 <div x-show="open" x-cloak x-transition.opacity
@@ -183,13 +183,13 @@
                     <form method="POST" action="{{ route('quotes.mark-won', $quote->_id) }}">
                         @csrf
                         <button class="w-full text-left flex items-center gap-2 px-3 py-2 text-sm text-emerald-700 hover:bg-emerald-50">
-                            <i class="ri-trophy-line"></i> Won
+                            <i class="ri-trophy-line"></i> {{ __('Won') }}
                         </button>
                     </form>
                     <form method="POST" action="{{ route('quotes.mark-lost', $quote->_id) }}">
                         @csrf
                         <button class="w-full text-left flex items-center gap-2 px-3 py-2 text-sm text-red-700 hover:bg-red-50">
-                            <i class="ri-close-circle-line"></i> Lost
+                            <i class="ri-close-circle-line"></i> {{ __('Lost') }}
                         </button>
                     </form>
                 </div>
@@ -200,20 +200,20 @@
             <a href="{{ route('quotes.order-confirmation', $quote->_id) }}"
                 class="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white font-semibold px-4 py-2 rounded-lg text-sm transition">
                 <i class="ri-file-paper-2-line"></i>
-                {{ $quote->order_confirmation_number ? 'Re-download order (' . $quote->order_confirmation_number . ')' : 'Generate order confirmation' }}
+                {{ $quote->order_confirmation_number ? __('Re-download order') . ' (' . $quote->order_confirmation_number . ')' : __('Generate order confirmation') }}
             </a>
         @endif
 
         <form method="POST" action="{{ route('quotes.duplicate', $quote->_id) }}">
             @csrf
             <button class="inline-flex items-center gap-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-800 font-medium px-4 py-2 rounded-lg text-sm transition">
-                <i class="ri-file-copy-line"></i> Duplicate
+                <i class="ri-file-copy-line"></i> {{ __('Duplicate') }}
             </button>
         </form>
 
         @if ($quote->status === \App\Models\Quote::STATUS_DRAFT)
             <form method="POST" action="{{ route('quotes.destroy', $quote->_id) }}"
-                onsubmit="return confirm('Delete this draft? This cannot be undone.');">
+                onsubmit="return confirm('{{ __('Delete this draft? This cannot be undone.') }}');">
                 @csrf @method('DELETE')
                 <button class="inline-flex items-center justify-center w-9 h-9 text-red-600 hover:bg-red-50 rounded-lg">
                     <i class="ri-delete-bin-line"></i>
@@ -230,13 +230,13 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <h4 class="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2 flex items-center gap-2">
-                            Client
+                            {{ __('Client') }}
                             @if ($isGuest)
-                                <span class="px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[10px] font-bold">GUEST</span>
+                                <span class="px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[10px] font-bold">{{ __('GUEST') }}</span>
                             @endif
                         </h4>
                         @php $name = trim(($quote->client_snapshot['first_name'] ?? '') . ' ' . ($quote->client_snapshot['last_name'] ?? '')); @endphp
-                        <p class="font-semibold text-gray-900">{{ $name ?: 'Not yet specified' }}</p>
+                        <p class="font-semibold text-gray-900">{{ $name ?: __('Not yet specified') }}</p>
                         @if (! empty($quote->client_snapshot['company_name']))
                             <p class="text-sm text-gray-700">{{ $quote->client_snapshot['company_name'] }}</p>
                         @endif
@@ -250,7 +250,7 @@
                         </p>
                     </div>
                     <div>
-                        <h4 class="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">Boat</h4>
+                        <h4 class="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">{{ __('Boat') }}</h4>
                         <p class="font-semibold text-gray-900">{{ $quote->model_snapshot['name'] ?? '' }}</p>
                         <p class="text-sm text-gray-700">{{ $quote->variant_snapshot['name'] ?? '' }}</p>
                         <p class="text-sm text-gray-500">{{ $quote->model_snapshot['brand'] ?? '' }} · {{ $quote->model_snapshot['code'] ?? '' }}</p>
@@ -261,7 +261,7 @@
             {{-- Included equipment --}}
             @if (! empty($quote->included_equipment))
                 <div class="bg-white rounded-2xl border border-gray-200 p-6">
-                    <h4 class="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3">Included equipment</h4>
+                    <h4 class="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3">{{ __('Included equipment') }}</h4>
                     <ul class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-sm text-gray-700">
                         @foreach ($quote->included_equipment as $eq)
                             <li class="flex items-center gap-2">
@@ -275,14 +275,14 @@
             {{-- Options --}}
             @if (! empty($quote->options))
                 <div class="bg-white rounded-2xl border border-gray-200 p-6">
-                    <h4 class="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3">Selected options</h4>
+                    <h4 class="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3">{{ __('Selected options') }}</h4>
                     <table class="w-full text-sm">
                         <thead class="text-xs text-gray-500">
                             <tr>
-                                <th class="text-left py-2">Item</th>
-                                <th class="text-right py-2">Qty</th>
-                                <th class="text-right py-2">Unit</th>
-                                <th class="text-right py-2">Total HT</th>
+                                <th class="text-left py-2">{{ __('Item') }}</th>
+                                <th class="text-right py-2">{{ __('Qty') }}</th>
+                                <th class="text-right py-2">{{ __('Unit') }}</th>
+                                <th class="text-right py-2">{{ __('Total HT') }}</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
@@ -305,7 +305,7 @@
             {{-- Custom items --}}
             @if (! empty($quote->custom_items))
                 <div class="bg-white rounded-2xl border border-gray-200 p-6">
-                    <h4 class="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3">Custom items</h4>
+                    <h4 class="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3">{{ __('Custom items') }}</h4>
                     <table class="w-full text-sm">
                         <tbody class="divide-y divide-gray-100">
                             @foreach ($quote->custom_items as $ci)
@@ -323,8 +323,8 @@
             @if (! empty($quote->trade_in) && (($quote->trade_in['value'] ?? 0) > 0))
                 <div class="bg-white rounded-2xl border border-gray-200 p-6 flex items-center justify-between">
                     <div>
-                        <h4 class="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1">Trade-in</h4>
-                        <p class="text-sm text-gray-600">Deducted from the total payable.</p>
+                        <h4 class="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1">{{ __('Trade-in') }}</h4>
+                        <p class="text-sm text-gray-600">{{ __('Deducted from the total payable.') }}</p>
                     </div>
                     <div class="text-2xl font-bold text-amber-700">
                         −€{{ number_format($quote->trade_in['value'], 2, ',', ' ') }}
@@ -337,8 +337,8 @@
                 <div class="bg-amber-50 border border-amber-200 rounded-2xl p-6">
                     <div class="flex items-center gap-2 mb-2">
                         <i class="ri-lock-2-line text-amber-700"></i>
-                        <h4 class="font-semibold text-amber-900 text-sm">Internal notes</h4>
-                        <span class="ml-auto text-xs text-amber-700">Never in PDF</span>
+                        <h4 class="font-semibold text-amber-900 text-sm">{{ __('Internal notes') }}</h4>
+                        <span class="ml-auto text-xs text-amber-700">{{ __('Never in PDF') }}</span>
                     </div>
                     <p class="text-sm text-amber-900 whitespace-pre-line">{{ $quote->internal_notes }}</p>
                 </div>
@@ -350,37 +350,37 @@
             <div class="sticky top-20 bg-white rounded-2xl border border-gray-200 overflow-hidden">
                 <div class="px-5 py-4 bg-primary-900 text-white flex items-start justify-between gap-3">
                     <div>
-                        <h3 class="font-semibold">Totals</h3>
-                        <p class="text-xs text-white/70">Snapshot at creation</p>
+                        <h3 class="font-semibold">{{ __('Totals') }}</h3>
+                        <p class="text-xs text-white/70">{{ __('Snapshot at creation') }}</p>
                     </div>
                     <x-app.status-pill :status="$quote->status" />
                 </div>
                 @php $t = $quote->totals ?? []; @endphp
                 <dl class="p-5 space-y-2 text-sm">
-                    <div class="flex justify-between"><dt class="text-gray-600">Base (HT)</dt><dd class="font-medium">€{{ number_format($t['base_ht'] ?? 0, 2, ',', ' ') }}</dd></div>
-                    <div class="flex justify-between"><dt class="text-gray-600">Options (HT)</dt><dd class="font-medium">€{{ number_format($t['options_ht'] ?? 0, 2, ',', ' ') }}</dd></div>
-                    <div class="flex justify-between"><dt class="text-gray-600">Custom (HT)</dt><dd class="font-medium">€{{ number_format($t['custom_items_ht'] ?? 0, 2, ',', ' ') }}</dd></div>
+                    <div class="flex justify-between"><dt class="text-gray-600">{{ __('Base (HT)') }}</dt><dd class="font-medium">€{{ number_format($t['base_ht'] ?? 0, 2, ',', ' ') }}</dd></div>
+                    <div class="flex justify-between"><dt class="text-gray-600">{{ __('Options (HT)') }}</dt><dd class="font-medium">€{{ number_format($t['options_ht'] ?? 0, 2, ',', ' ') }}</dd></div>
+                    <div class="flex justify-between"><dt class="text-gray-600">{{ __('Custom (HT)') }}</dt><dd class="font-medium">€{{ number_format($t['custom_items_ht'] ?? 0, 2, ',', ' ') }}</dd></div>
                     @if (($t['global_discount_amount'] ?? 0) > 0)
-                        <div class="flex justify-between text-red-600"><dt>Global discount</dt><dd class="font-medium">−€{{ number_format($t['global_discount_amount'], 2, ',', ' ') }}</dd></div>
+                        <div class="flex justify-between text-red-600"><dt>{{ __('Global discount') }}</dt><dd class="font-medium">−€{{ number_format($t['global_discount_amount'], 2, ',', ' ') }}</dd></div>
                     @endif
-                    <div class="flex justify-between pt-2 border-t border-gray-100"><dt class="font-semibold">Total HT</dt><dd class="font-semibold">€{{ number_format($t['total_ht'] ?? 0, 2, ',', ' ') }}</dd></div>
-                    <div class="flex justify-between"><dt class="text-gray-600">VAT ({{ $t['vat_rate'] ?? 20 }}%)</dt><dd class="font-medium">€{{ number_format($t['vat_amount'] ?? 0, 2, ',', ' ') }}</dd></div>
-                    <div class="flex justify-between pt-2 border-t border-gray-100"><dt class="font-semibold">Total TTC</dt><dd class="font-semibold">€{{ number_format($t['total_ttc'] ?? 0, 2, ',', ' ') }}</dd></div>
+                    <div class="flex justify-between pt-2 border-t border-gray-100"><dt class="font-semibold">{{ __('Total HT') }}</dt><dd class="font-semibold">€{{ number_format($t['total_ht'] ?? 0, 2, ',', ' ') }}</dd></div>
+                    <div class="flex justify-between"><dt class="text-gray-600">{{ __('VAT') }} ({{ $t['vat_rate'] ?? 20 }}%)</dt><dd class="font-medium">€{{ number_format($t['vat_amount'] ?? 0, 2, ',', ' ') }}</dd></div>
+                    <div class="flex justify-between pt-2 border-t border-gray-100"><dt class="font-semibold">{{ __('Total TTC') }}</dt><dd class="font-semibold">€{{ number_format($t['total_ttc'] ?? 0, 2, ',', ' ') }}</dd></div>
                     @if (($t['trade_in_deduction'] ?? 0) > 0)
-                        <div class="flex justify-between text-gray-600"><dt>Trade-in</dt><dd>−€{{ number_format($t['trade_in_deduction'], 2, ',', ' ') }}</dd></div>
+                        <div class="flex justify-between text-gray-600"><dt>{{ __('Trade-in') }}</dt><dd>−€{{ number_format($t['trade_in_deduction'], 2, ',', ' ') }}</dd></div>
                     @endif
                     <div class="flex justify-between pt-3 border-t-2 border-gray-200">
-                        <dt class="font-bold text-lg">Net payable</dt>
+                        <dt class="font-bold text-lg">{{ __('Net payable') }}</dt>
                         <dd class="font-bold text-lg text-primary-900">€{{ number_format($t['net_payable'] ?? 0, 2, ',', ' ') }}</dd>
                     </div>
                 </dl>
                 <div class="px-5 py-3 bg-gray-50 border-t border-gray-100 text-xs">
                     <div class="flex items-center justify-between">
-                        <span class="text-gray-600">Margin
+                        <span class="text-gray-600">{{ __('Margin') }}
                             @if (($t['margin_type'] ?? '') === 'real')
-                                <span class="ml-1 px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 font-semibold">REAL</span>
+                                <span class="ml-1 px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 font-semibold">{{ __('REAL') }}</span>
                             @else
-                                <span class="ml-1 px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-semibold">ESTIMATED</span>
+                                <span class="ml-1 px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-semibold">{{ __('ESTIMATED') }}</span>
                             @endif
                         </span>
                         <span class="font-semibold text-gray-900">€{{ number_format($t['margin_amount'] ?? 0, 0, ',', ' ') }} ({{ $t['margin_pct'] ?? 0 }}%)</span>
@@ -403,12 +403,12 @@
                     <i class="ri-file-pdf-line text-xl"></i>
                 </div>
                 <div class="flex-1 min-w-0">
-                    <h3 class="font-semibold text-gray-900">Quote {{ $quote->number }}</h3>
+                    <h3 class="font-semibold text-gray-900">{{ __('Quote') }} {{ $quote->number }}</h3>
                     <p class="text-xs text-gray-500 truncate">{{ $quote->client_snapshot['first_name'] ?? '' }} {{ $quote->client_snapshot['last_name'] ?? '' }} · {{ $quote->model_snapshot['name'] ?? '' }}</p>
                 </div>
                 <a href="{{ route('quotes.pdf', $quote->_id) }}"
                     class="inline-flex items-center gap-2 bg-primary-800 hover:bg-primary-900 text-white font-semibold px-4 py-2 rounded-lg text-sm transition">
-                    <i class="ri-download-line"></i> Download
+                    <i class="ri-download-line"></i> {{ __('Download') }}
                 </a>
                 <button type="button" @click="previewOpen = false; emailOpen = true"
                     class="inline-flex items-center gap-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-800 font-medium px-4 py-2 rounded-lg text-sm transition">
@@ -432,13 +432,13 @@
                         <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-opacity="0.25"></circle>
                         <path d="M22 12a10 10 0 0 1-10 10" stroke="currentColor" stroke-width="3" stroke-linecap="round"></path>
                     </svg>
-                    <p class="text-sm font-medium">Generating PDF…</p>
+                    <p class="text-sm font-medium">{{ __('Generating PDF…') }}</p>
                 </div>
                 <iframe
                     x-bind:src="previewOpen ? '{{ route('quotes.pdf', $quote->_id) }}?inline=1' : ''"
                     @load="if (previewOpen) previewLoading = false"
                     class="absolute inset-0 w-full h-full"
-                    title="Quote {{ $quote->number }}"></iframe>
+                    title="{{ __('Quote') }} {{ $quote->number }}"></iframe>
             </div>
         </div>
     </div>
@@ -473,20 +473,20 @@
                     <div class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-800">
                         <p class="flex items-center gap-2 font-medium">
                             <i class="ri-information-line"></i>
-                            This is a guest quote — please enter the recipient's details.
+                            {{ __('This is a guest quote — please enter the recipient\'s details.') }}
                         </p>
                     </div>
 
                     <div class="grid grid-cols-2 gap-3">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">First name <span class="text-red-500">*</span></label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('First name') }} <span class="text-red-500">*</span></label>
                             <input type="text" name="first_name" required
                                 value="{{ old('first_name', $quote->client_snapshot['first_name'] ?? '') }}"
                                 class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />
                             <x-input-error :messages="$errors->get('first_name')" class="mt-1" />
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Last name <span class="text-red-500">*</span></label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Last name') }} <span class="text-red-500">*</span></label>
                             <input type="text" name="last_name" required
                                 value="{{ old('last_name', $quote->client_snapshot['last_name'] ?? '') }}"
                                 class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />
@@ -496,7 +496,7 @@
                 @endif
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">To <span class="text-red-500">*</span></label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('To') }} <span class="text-red-500">*</span></label>
                     <input type="email" name="email" required
                         value="{{ $quote->client_snapshot['email'] ?? '' }}"
                         class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800"
@@ -504,14 +504,14 @@
                     <x-input-error :messages="$errors->get('email')" class="mt-1" />
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Subject') }}</label>
                     <input type="text" name="subject"
                         value="{{ $emailSubject ?? '' }}"
                         class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />
                 </div>
                 <div>
                     <div class="flex items-center justify-between mb-1">
-                        <label class="block text-sm font-medium text-gray-700">Message</label>
+                        <label class="block text-sm font-medium text-gray-700">{{ __('Message') }}</label>
                         @php
                             $sendTemplateType = $quote->status === \App\Models\Quote::STATUS_WON
                                 ? \App\Services\EmailTemplateService::TYPE_ORDER_CONFIRMATION
@@ -520,7 +520,7 @@
                         <a href="{{ route('email-templates.edit', $sendTemplateType) }}"
                             target="_blank"
                             class="text-xs text-primary-800 hover:underline">
-                            <i class="ri-edit-line"></i> Edit template
+                            <i class="ri-edit-line"></i> {{ __('Edit template') }}
                         </a>
                     </div>
                     <div x-ref="messageEditor"
@@ -528,7 +528,7 @@
                         class="w-full max-h-72 overflow-y-auto rounded-lg border border-gray-300 focus:border-primary-800 focus:ring-primary-800 focus:outline-none px-3 py-2 text-sm bg-white prose prose-sm max-w-none">{!! $emailBodyHtml ?? '' !!}</div>
                     <input type="hidden" name="message" x-ref="messageInput" value="{{ $emailBodyHtml ?? '' }}" />
                     <p class="text-xs text-gray-500 mt-1">
-                        Edit visually — formatting and the logo are preserved. Variables already substituted from the saved template.
+                        {{ __('Edit visually — formatting and the logo are preserved. Variables already substituted from the saved template.') }}
                     </p>
                 </div>
             </div>
@@ -536,7 +536,7 @@
             <div class="px-5 py-4 border-t border-gray-100 bg-gray-50 flex items-center justify-end gap-2">
                 <button type="button" @click="emailOpen = false"
                     class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">
-                    Cancel
+                    {{ __('Cancel') }}
                 </button>
                 <button type="submit"
                     class="inline-flex items-center gap-2 bg-primary-800 hover:bg-primary-900 text-white font-semibold px-5 py-2 rounded-lg text-sm transition">

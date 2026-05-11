@@ -43,11 +43,11 @@
                 <div class="mt-5 flex gap-2">
                     <a href="{{ route('clients.edit', $client->_id) }}"
                         class="flex-1 inline-flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium px-4 py-2 rounded-lg text-sm transition">
-                        <i class="ri-pencil-line"></i> Edit
+                        <i class="ri-pencil-line"></i> {{ __('Edit') }}
                     </a>
                     <a href="{{ route('quotes.create', ['client_id' => $client->_id]) }}"
                         class="flex-1 inline-flex items-center justify-center gap-2 bg-primary-800 hover:bg-primary-900 text-white font-semibold px-4 py-2 rounded-lg text-sm transition">
-                        <i class="ri-add-line"></i> New quote
+                        <i class="ri-add-line"></i> {{ __('New quote') }}
                     </a>
                 </div>
             </div>
@@ -56,7 +56,7 @@
                 <div class="bg-amber-50 border border-amber-200 rounded-2xl p-5">
                     <div class="flex items-center gap-2 mb-2">
                         <i class="ri-lock-2-line text-amber-700"></i>
-                        <h4 class="font-semibold text-amber-900 text-sm">Internal notes</h4>
+                        <h4 class="font-semibold text-amber-900 text-sm">{{ __('Internal notes') }}</h4>
                     </div>
                     <p class="text-sm text-amber-900 whitespace-pre-line">{{ $client->internal_notes }}</p>
                 </div>
@@ -67,31 +67,31 @@
         <div class="xl:col-span-2 bg-white rounded-2xl border border-gray-200 overflow-hidden">
             <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
                 <div>
-                    <h3 class="font-semibold text-gray-900">Quotes</h3>
-                    <p class="text-sm text-gray-500">{{ $quotes->count() }} total</p>
+                    <h3 class="font-semibold text-gray-900">{{ __('Quotes') }}</h3>
+                    <p class="text-sm text-gray-500">{{ $quotes->count() }} {{ __('total') }}</p>
                 </div>
                 <a href="{{ route('quotes.create', ['client_id' => $client->_id]) }}"
                     class="text-sm font-medium text-primary-800 hover:text-primary-900">
-                    <i class="ri-add-line"></i> New quote
+                    <i class="ri-add-line"></i> {{ __('New quote') }}
                 </a>
             </div>
             @if ($quotes->isEmpty())
                 <x-app.empty-state
                     icon="ri-file-list-3-line"
-                    title="No quotes yet"
-                    message="Build the first quote for this client."
-                    ctaLabel="New quote"
+                    :title="__('No quotes yet')"
+                    :message="__('Build the first quote for this client.')"
+                    :ctaLabel="__('New quote')"
                     :ctaHref="route('quotes.create', ['client_id' => $client->_id])" />
             @else
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm">
                         <thead class="bg-gray-50 text-xs uppercase tracking-wider text-gray-500">
                             <tr>
-                                <th class="px-5 py-3 text-left font-semibold">Quote</th>
-                                <th class="px-5 py-3 text-left font-semibold">Model</th>
-                                <th class="px-5 py-3 text-right font-semibold">Amount</th>
-                                <th class="px-5 py-3 text-left font-semibold">Status</th>
-                                <th class="px-5 py-3 text-left font-semibold">Date</th>
+                                <th class="px-5 py-3 text-left font-semibold">{{ __('Quote') }}</th>
+                                <th class="px-5 py-3 text-left font-semibold">{{ __('Model') }}</th>
+                                <th class="px-5 py-3 text-right font-semibold">{{ __('Amount') }}</th>
+                                <th class="px-5 py-3 text-left font-semibold">{{ __('Status') }}</th>
+                                <th class="px-5 py-3 text-left font-semibold">{{ __('Date') }}</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
@@ -107,7 +107,7 @@
                                         €{{ number_format($q->totals['total_ttc'] ?? 0, 0, ',', ' ') }}
                                     </td>
                                     <td class="px-5 py-3"><x-app.status-pill :status="$q->status" /></td>
-                                    <td class="px-5 py-3 text-gray-600">{{ $q->created_at?->format('M j, Y') }}</td>
+                                    <td class="px-5 py-3 text-gray-600">{{ $q->created_at?->translatedFormat('M j, Y') }}</td>
                                 </tr>
                             @endforeach
                         </tbody>
