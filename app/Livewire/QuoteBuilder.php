@@ -65,7 +65,7 @@ class QuoteBuilder extends Component
     public float $global_discount_pct = 0;
 
     // Summary view mode (vendor sees margin, client doesn't)
-    public string $view_mode = 'vendor'; // 'vendor' | 'client'
+    public string $view_mode = 'client'; // 'client' | 'vendor'
 
     // §8.1 Step 7 — Trade-in (§10) — simplified: value only, deducted from total
     public bool $hasTradeIn = false;
@@ -298,7 +298,36 @@ class QuoteBuilder extends Component
                 'source'     => 'yours',
             ]);
 
-        return $global->concat($private)->sortBy(fn ($e) => $e->brand . ' ' . $e->code)->values();
+        $all = $global->concat($private)
+            ->sortBy(fn ($e) => $e->brand . ' ' . $e->code)
+            ->values();
+
+        // Filter to engines matching the variant's HP rating. Variants name
+        // their power in the title, e.g. "Cap Camarat 7.5 WA — 250HP" or
+        // "Cap Camarat 7.5 BR — 2× 150HP" — we extract every HP figure and
+        // keep engines whose horsepower matches any of them. If we can't
+        // parse a number from the name, fall back to the full list rather
+        // than hiding everything.
+        $hpTargets = $this->variantHpTargets();
+        if (! empty($hpTargets)) {
+            $matching = $all->filter(fn ($e) => $e->horsepower && in_array((int) $e->horsepower, $hpTargets, true))->values();
+            if ($matching->isNotEmpty()) return $matching;
+        }
+        return $all;
+    }
+
+    /**
+     * Parse the selected variant's name for HP figures. Returns an array
+     * of unique horsepower integers — e.g. "2× 150HP" → [150], "200/250HP"
+     * → [200, 250]. Empty array when no variant is selected or no HP token
+     * could be extracted.
+     */
+    private function variantHpTargets(): array
+    {
+        $variant = $this->variant;
+        if (! $variant || empty($variant->name)) return [];
+        if (! preg_match_all('/(\d{2,4})\s*HP/i', $variant->name, $m)) return [];
+        return array_values(array_unique(array_map('intval', $m[1])));
     }
 
     public function toggleEngine(string $engineId): void

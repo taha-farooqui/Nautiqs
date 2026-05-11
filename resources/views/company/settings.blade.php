@@ -132,19 +132,16 @@
                 </div>
             </div>
 
-            {{-- Language. Drives the same Google Translate widget as the
-                 header switcher, via window.setNautiqsLocale(). Stored in a
-                 cookie (not on the form) so it persists per browser. --}}
-            <div class="mt-4 notranslate" translate="no" x-data="{ current: window.__nautiqsLocale || 'fr' }">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Language</label>
-                <select onchange="window.setNautiqsLocale(this.value)"
-                    x-init="$el.value = current"
+            {{-- Language picker. Hits /locale/{lang}, drops a cookie, redirects back. --}}
+            <div class="mt-4">
+                <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Language') }}</label>
+                <select onchange="window.location = this.value"
                     class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800">
-                    <option value="fr">Français (default)</option>
-                    <option value="en">English</option>
+                    <option value="{{ route('locale.switch', 'fr') }}" @selected(app()->getLocale() === 'fr')>Français</option>
+                    <option value="{{ route('locale.switch', 'en') }}" @selected(app()->getLocale() === 'en')>English</option>
                 </select>
                 <p class="text-xs text-gray-500 mt-1">
-                    Saved per browser. Reloads the page when changed.
+                    {{ __('Saved per browser. Reloads the page when changed.') }}
                 </p>
             </div>
 

@@ -50,7 +50,7 @@ class ClientController extends Controller
 
         return redirect()
             ->route('clients.show', $client->_id)
-            ->with('status', 'Client created.');
+            ->with('status', __('Client created.'));
     }
 
     public function show(string $id)
@@ -81,7 +81,7 @@ class ClientController extends Controller
 
         return redirect()
             ->route('clients.show', $client->_id)
-            ->with('status', 'Client updated.');
+            ->with('status', __('Client updated.'));
     }
 
     public function destroy(string $id)
@@ -92,7 +92,7 @@ class ClientController extends Controller
         // references this client.
         if (Quote::where('client_id', $id)->exists()) {
             return back()->withErrors([
-                'delete' => 'Cannot delete a client who has quotes. Archive the quotes first.',
+                'delete' => __('Cannot delete a client who has quotes. Archive the quotes first.'),
             ]);
         }
 
@@ -100,6 +100,6 @@ class ClientController extends Controller
 
         return redirect()
             ->route('clients.index')
-            ->with('status', 'Client deleted.');
+            ->with('status', __('Client deleted.'));
     }
 }

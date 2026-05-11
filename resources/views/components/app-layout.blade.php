@@ -4,15 +4,13 @@
 ])
 
 <!DOCTYPE html>
-{{-- lang="en" tells Google Translate the source language. The displayed
-     language is driven by the googtrans cookie set in <x-app.google-translate />. --}}
-<html lang="en" data-theme="nautiqs">
+<html lang="{{ app()->getLocale() }}" data-theme="nautiqs">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        <title>{{ $title ?? 'Dashboard' }} · {{ config('app.name', 'Nautiqs') }}</title>
+        <title>{{ $title ?? __('Dashboard') }} · {{ config('app.name', 'Nautiqs') }}</title>
 
         <link rel="icon" type="image/png" href="{{ asset('nautiqs_logo.png') }}" />
         <link rel="apple-touch-icon" href="{{ asset('nautiqs_logo.png') }}" />
@@ -39,7 +37,7 @@
                 style="display: none;"></div>
 
             <div class="flex-1 flex flex-col min-w-0 lg:ml-72">
-                <x-app.header :title="$header ?? ($title ?? 'Dashboard')" />
+                <x-app.header :title="$header ?? ($title ?? __('Dashboard'))" />
 
                 <main class="flex-1 px-4 sm:px-6 lg:px-8 py-6">
                     {{ $slot }}
@@ -49,8 +47,6 @@
 
         {{-- Global ⌘K command palette --}}
         <x-app.search-palette />
-
-        <x-app.google-translate />
 
         @livewireScripts
         @stack('scripts')

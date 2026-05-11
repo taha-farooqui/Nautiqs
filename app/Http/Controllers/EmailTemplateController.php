@@ -64,7 +64,7 @@ class EmailTemplateController extends Controller
 
         return redirect()
             ->route('email-templates.edit', $type)
-            ->with('status', 'Template saved.');
+            ->with('status', __('Template saved.'));
     }
 
     public function reset(string $type)
@@ -79,6 +79,6 @@ class EmailTemplateController extends Controller
 
         return redirect()
             ->route('email-templates.edit', $type)
-            ->with('status', 'Template reset to default.');
+            ->with('status', __('Template reset to default.'));
     }
 }

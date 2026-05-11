@@ -1,0 +1,3 @@
+{
+    "_comment": "English fallback. Source strings in Blade files use English verbatim — this file is the source-of-truth list, kept in sync so missing FR translations fall back cleanly."
+}

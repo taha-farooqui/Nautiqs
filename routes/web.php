@@ -19,6 +19,17 @@ Route::get('/', function () {
         : redirect()->route('login');
 });
 
+// UI locale switcher — drops a 1-year `locale` cookie and bounces the user
+// back where they came from. Reachable while logged in or out so the login
+// screen language toggle works.
+Route::get('/locale/{lang}', function (string $lang) {
+    $supported = ['en', 'fr'];
+    if (! in_array($lang, $supported, true)) {
+        $lang = 'fr';
+    }
+    return back()->cookie(cookie('locale', $lang, 60 * 24 * 365));
+})->name('locale.switch');
+
 /*
  * One-shot mail diagnostic gated by DIAG_TOKEN env var. Designed for hosts
  * (Railway etc.) that don't expose an SSH/shell. Hit:
@@ -143,6 +154,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // Option CRUD on a model
         Route::post('/models/{modelId}/options',                 [CatalogueController::class, 'storeOption'])->name('options.store');
         Route::post('/models/{modelId}/options/import',          [CatalogueController::class, 'importGlobalOptions'])->name('options.import');
+        Route::post('/models/{modelId}/options/reorder',         [CatalogueController::class, 'reorderOptions'])->name('options.reorder');
         Route::patch('/options/{optionId}',                      [CatalogueController::class, 'updateOption'])->name('options.update');
         Route::delete('/options/{optionId}',                     [CatalogueController::class, 'destroyOption'])->name('options.destroy');
     });

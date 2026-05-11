@@ -46,6 +46,6 @@ class CompanySettingsController extends Controller
 
         $company->update($validated);
 
-        return redirect()->route('company.settings')->with('status', 'Company settings saved.');
+        return redirect()->route('company.settings')->with('status', __('Company settings saved.'));
     }
 }

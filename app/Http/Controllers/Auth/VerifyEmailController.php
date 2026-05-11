@@ -47,6 +47,6 @@ class VerifyEmailController extends Controller
             Auth::login($user);
         }
 
-        return redirect()->route('dashboard')->with('status', 'Email verified — welcome aboard!');
+        return redirect()->route('dashboard')->with('status', __('Email verified — welcome aboard!'));
     }
 }

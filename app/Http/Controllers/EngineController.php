@@ -41,7 +41,7 @@ class EngineController extends Controller
             'company_id'  => auth()->user()->company_id,
             'is_archived' => false,
         ]));
-        return redirect()->route('engines.index')->with('status', 'Engine added.');
+        return redirect()->route('engines.index')->with('status', __('Engine added.'));
     }
 
     public function edit(string $id)
@@ -54,14 +54,14 @@ class EngineController extends Controller
     {
         $engine = Engine::findOrFail($id);
         $engine->update($this->validated($request));
-        return redirect()->route('engines.index')->with('status', 'Engine updated.');
+        return redirect()->route('engines.index')->with('status', __('Engine updated.'));
     }
 
     public function destroy(string $id)
     {
         $engine = Engine::findOrFail($id);
         $engine->delete();
-        return back()->with('status', 'Engine removed.');
+        return back()->with('status', __('Engine removed.'));
     }
 
     private function validated(Request $request): array

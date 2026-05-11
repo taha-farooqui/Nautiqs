@@ -1,4 +1,4 @@
-<x-app-layout title="Clients" header="Clients">
+<x-app-layout :title="__('Clients')" :header="__('Clients')">
 
     @if (session('status'))
         <div class="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-800 px-4 py-3 text-sm">
@@ -12,13 +12,13 @@
                 <div class="relative">
                     <i class="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
                     <input type="search" name="q" value="{{ $q }}"
-                        placeholder="Search name, email, phone, city..."
+                        placeholder="{{ __('Search name, email, phone, city…') }}"
                         class="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:border-primary-800 focus:ring-primary-800 focus:bg-white" />
                 </div>
             </form>
             <a href="{{ route('clients.create') }}"
                 class="inline-flex items-center gap-2 bg-primary-800 hover:bg-primary-900 text-white font-semibold px-4 py-2 rounded-lg text-sm transition sm:ml-auto">
-                <i class="ri-add-line"></i> New client
+                <i class="ri-add-line"></i> {{ __('New client') }}
             </a>
         </div>
 
@@ -26,14 +26,14 @@
             @if ($q)
                 <x-app.empty-state
                     icon="ri-search-line"
-                    title="No matches"
-                    :message="'No clients matched \"' . $q . '\". Try a different search term.'" />
+                    :title="__('No matches')"
+                    :message="__('No clients matched') . ' «' . $q . '».'" />
             @else
                 <x-app.empty-state
                     icon="ri-user-smile-line"
-                    title="No clients yet"
-                    message="Add your first client to start building quotes for them."
-                    ctaLabel="Add your first client"
+                    :title="__('No clients yet')"
+                    :message="__('Add your first client to start building quotes for them.')"
+                    :ctaLabel="__('Add your first client')"
                     ctaHref="{{ route('clients.create') }}"
                     size="lg" />
             @endif
@@ -42,11 +42,11 @@
                 <table class="w-full text-sm">
                     <thead class="bg-gray-50 text-xs uppercase tracking-wider text-gray-500">
                         <tr>
-                            <th class="px-5 py-3 text-left font-semibold">Name</th>
-                            <th class="px-5 py-3 text-left font-semibold">Email</th>
-                            <th class="px-5 py-3 text-left font-semibold">Phone</th>
-                            <th class="px-5 py-3 text-left font-semibold">City</th>
-                            <th class="px-5 py-3 text-right font-semibold">Actions</th>
+                            <th class="px-5 py-3 text-left font-semibold">{{ __('Name') }}</th>
+                            <th class="px-5 py-3 text-left font-semibold">{{ __('Email') }}</th>
+                            <th class="px-5 py-3 text-left font-semibold">{{ __('Phone') }}</th>
+                            <th class="px-5 py-3 text-left font-semibold">{{ __('City') }}</th>
+                            <th class="px-5 py-3 text-right font-semibold">{{ __('Actions') }}</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
@@ -65,11 +65,11 @@
                                 <td class="px-5 py-3 text-gray-700">{{ $c->city ?: '—' }}</td>
                                 <td class="px-5 py-3 text-right">
                                     <div class="inline-flex items-center gap-1">
-                                        <a href="{{ route('clients.show', $c->_id) }}" title="View"
+                                        <a href="{{ route('clients.show', $c->_id) }}" title="{{ __('View') }}"
                                             class="w-8 h-8 inline-flex items-center justify-center text-gray-500 hover:text-primary-800 hover:bg-gray-100 rounded-lg">
                                             <i class="ri-eye-line"></i>
                                         </a>
-                                        <a href="{{ route('clients.edit', $c->_id) }}" title="Edit"
+                                        <a href="{{ route('clients.edit', $c->_id) }}" title="{{ __('Edit') }}"
                                             class="w-8 h-8 inline-flex items-center justify-center text-gray-500 hover:text-primary-800 hover:bg-gray-100 rounded-lg">
                                             <i class="ri-pencil-line"></i>
                                         </a>

@@ -93,7 +93,7 @@
         <div class="leading-tight">
             <div class="font-bold text-lg">Nautiqs</div>
             <div class="text-[11px] text-white/60 uppercase tracking-wider">
-                {{ $isSuperadmin ? 'Superadmin' : 'Dealership' }}
+                {{ $isSuperadmin ? __('Superadmin') : __('Dealership') }}
             </div>
         </div>
         <button @click="sidebarOpen = false" class="ml-auto lg:hidden text-white/70 hover:text-white">
@@ -106,7 +106,7 @@
         @foreach ($nav as $group)
             <div>
                 <div class="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-white/40">
-                    {{ $group['section'] }}
+                    {{ __($group['section']) }}
                 </div>
                 <ul class="space-y-0.5">
                     @foreach ($group['items'] as $item)
@@ -120,7 +120,7 @@
                                     class="group w-full flex items-center gap-3 px-3 py-2 rounded-lg text-base font-medium transition
                                         {{ $groupActive ? 'bg-white/10 text-white' : 'text-white/75 hover:bg-white/10 hover:text-white' }}">
                                     <i class="{{ $item['icon'] }} text-xl"></i>
-                                    <span class="flex-1 text-left">{{ $item['label'] }}</span>
+                                    <span class="flex-1 text-left">{{ __($item['label']) }}</span>
                                     <i class="ri-arrow-down-s-line text-base transition-transform"
                                         :class="open ? 'rotate-180' : ''"></i>
                                 </button>
@@ -137,7 +137,7 @@
                                                         ? 'bg-white/15 text-white'
                                                         : 'text-white/65 hover:bg-white/10 hover:text-white' }}">
                                                 <i class="{{ $child['icon'] }} text-lg"></i>
-                                                <span>{{ $child['label'] }}</span>
+                                                <span>{{ __($child['label']) }}</span>
                                             </a>
                                         </li>
                                     @endforeach
@@ -155,14 +155,14 @@
                                             ? 'bg-white/15 text-white'
                                             : 'text-white/75 hover:bg-white/10 hover:text-white' }}">
                                     <i class="{{ $item['icon'] }} text-xl"></i>
-                                    <span class="flex-1">{{ $item['label'] }}</span>
+                                    <span class="flex-1">{{ __($item['label']) }}</span>
                                     @if (!empty($item['badge']))
                                         <span class="ml-auto min-w-[1.25rem] h-5 px-1.5 rounded-full bg-red-500 text-white text-[11px] font-bold flex items-center justify-center">
                                             {{ $item['badge'] }}
                                         </span>
                                     @endif
                                     @if (empty($item['route']))
-                                        <i class="ri-lock-line text-xs text-white/30" title="Coming soon"></i>
+                                        <i class="ri-lock-line text-xs text-white/30" title="{{ __('Coming soon') }}"></i>
                                     @endif
                                 </a>
                             </li>
@@ -186,11 +186,11 @@
                 <div class="py-1">
                     <a href="{{ route('profile.edit') }}"
                         class="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                        <i class="ri-user-settings-line"></i> Profile
+                        <i class="ri-user-settings-line"></i> {{ __('Profile') }}
                     </a>
                     <a href="{{ route('company.settings') }}"
                         class="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                        <i class="ri-settings-3-line"></i> Settings
+                        <i class="ri-settings-3-line"></i> {{ __('Settings') }}
                     </a>
                 </div>
                 <div class="py-1 border-t border-gray-100">
@@ -198,7 +198,7 @@
                         @csrf
                         <button type="submit"
                             class="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 text-left">
-                            <i class="ri-logout-box-r-line"></i> Log out
+                            <i class="ri-logout-box-r-line"></i> {{ __('Log out') }}
                         </button>
                     </form>
                 </div>

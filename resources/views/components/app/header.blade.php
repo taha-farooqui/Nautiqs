@@ -12,6 +12,7 @@
     // View::composer in AppServiceProvider.
     $notifications = $notifications ?? collect();
     $unreadCount = $unreadNotificationsCount ?? 0;
+    $currentLocale = app()->getLocale();
 
     $colorMap = [
         'primary' => 'bg-primary-50 text-primary-800',
@@ -42,7 +43,7 @@
                 class="group relative w-full text-left">
                 <i class="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
                 <div class="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-500 hover:bg-white hover:border-primary-800 transition">
-                    Search quotes, clients, models...
+                    {{ __('Search quotes, clients, models…') }}
                 </div>
                 <kbd class="hidden lg:inline-flex absolute right-2 top-1/2 -translate-y-1/2 px-1.5 py-0.5 text-[10px] font-semibold text-gray-500 bg-white border border-gray-200 rounded">⌘K</kbd>
             </button>
@@ -51,31 +52,28 @@
         {{-- Actions --}}
         <div class="ml-auto flex items-center gap-1.5">
 
-            {{-- Language switcher. Drives the hidden Google Translate widget
-                 via window.setNautiqsLocale() defined in <x-app.google-translate />.
-                 Adding `notranslate` keeps Google from translating our own labels. --}}
-            <div x-data="{ open: false, current: window.__nautiqsLocale || 'fr' }" class="relative notranslate" translate="no">
+            {{-- Native locale switcher — hits /locale/{lang}, sets a cookie,
+                 bounces back. No third-party widget, no flashes, no mistranslations. --}}
+            <div x-data="{ open: false }" class="relative">
                 <button @click="open = !open"
                     class="h-10 px-3 inline-flex items-center gap-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition text-sm font-medium"
-                    title="Language">
+                    :title="'{{ __('Language') }}'">
                     <i class="ri-translate-2 text-lg"></i>
-                    <span x-text="current.toUpperCase()"></span>
+                    <span>{{ strtoupper($currentLocale) }}</span>
                     <i class="ri-arrow-down-s-line text-base"></i>
                 </button>
                 <div x-show="open" @click.outside="open = false" x-cloak x-transition
                     class="absolute right-0 mt-2 w-44 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
-                    <button type="button" @click="window.setNautiqsLocale('fr')"
-                        class="w-full text-left px-4 py-2 text-sm flex items-center justify-between hover:bg-gray-50"
-                        :class="current === 'fr' ? 'text-primary-800 font-semibold bg-primary-50/50' : 'text-gray-700'">
+                    <a href="{{ route('locale.switch', 'fr') }}"
+                        class="w-full text-left px-4 py-2 text-sm flex items-center justify-between hover:bg-gray-50 {{ $currentLocale === 'fr' ? 'text-primary-800 font-semibold bg-primary-50/50' : 'text-gray-700' }}">
                         <span>Français</span>
-                        <i class="ri-check-line" x-show="current === 'fr'"></i>
-                    </button>
-                    <button type="button" @click="window.setNautiqsLocale('en')"
-                        class="w-full text-left px-4 py-2 text-sm flex items-center justify-between hover:bg-gray-50"
-                        :class="current === 'en' ? 'text-primary-800 font-semibold bg-primary-50/50' : 'text-gray-700'">
+                        @if ($currentLocale === 'fr') <i class="ri-check-line"></i> @endif
+                    </a>
+                    <a href="{{ route('locale.switch', 'en') }}"
+                        class="w-full text-left px-4 py-2 text-sm flex items-center justify-between hover:bg-gray-50 {{ $currentLocale === 'en' ? 'text-primary-800 font-semibold bg-primary-50/50' : 'text-gray-700' }}">
                         <span>English</span>
-                        <i class="ri-check-line" x-show="current === 'en'"></i>
-                    </button>
+                        @if ($currentLocale === 'en') <i class="ri-check-line"></i> @endif
+                    </a>
                 </div>
             </div>
 
@@ -83,7 +81,7 @@
             <div x-data="{ open: false }" class="relative">
                 <button @click="open = !open"
                     class="w-10 h-10 inline-flex items-center justify-center text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition relative"
-                    title="Notifications">
+                    :title="'{{ __('Notifications') }}'">
                     <i class="ri-notification-3-line text-xl"></i>
                     @if ($unreadCount > 0)
                         <span class="absolute top-1.5 right-1.5 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
@@ -96,15 +94,15 @@
                     style="display: none;">
                     <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
                         <div>
-                            <p class="font-semibold text-sm">Notifications</p>
+                            <p class="font-semibold text-sm">{{ __('Notifications') }}</p>
                             @if ($unreadCount > 0)
-                                <p class="text-xs text-gray-500">{{ $unreadCount }} unread</p>
+                                <p class="text-xs text-gray-500">{{ $unreadCount }} {{ __('unread') }}</p>
                             @endif
                         </div>
                         @if ($unreadCount > 0)
                             <form method="POST" action="{{ route('notifications.read-all') }}">
                                 @csrf
-                                <button class="text-xs font-medium text-primary-800 hover:underline">Mark all read</button>
+                                <button class="text-xs font-medium text-primary-800 hover:underline">{{ __('Mark all read') }}</button>
                             </form>
                         @endif
                     </div>
@@ -120,7 +118,7 @@
                                     </span>
                                     <div class="flex-1 min-w-0">
                                         <div class="flex items-center justify-between gap-2">
-                                            <p class="text-sm font-medium text-gray-900 truncate">{{ $n->title }}</p>
+                                            <p class="text-sm font-medium text-gray-900 truncate">{{ $n->displayTitle() }}</p>
                                             @if (! $n->read_at)
                                                 <span class="w-2 h-2 rounded-full bg-primary-800 shrink-0"></span>
                                             @endif
@@ -133,8 +131,8 @@
                         @empty
                             <div class="px-4 py-8 text-center">
                                 <i class="ri-notification-off-line text-3xl text-gray-300"></i>
-                                <p class="text-sm text-gray-600 mt-2">No notifications yet</p>
-                                <p class="text-xs text-gray-400 mt-0.5">You're all caught up.</p>
+                                <p class="text-sm text-gray-600 mt-2">{{ __('No notifications') }}</p>
+                                <p class="text-xs text-gray-400 mt-0.5">{{ __("You're all caught up.") }}</p>
                             </div>
                         @endforelse
                     </div>
@@ -152,10 +150,10 @@
                         <div class="text-sm font-semibold text-gray-900 leading-tight">{{ $user?->name }}</div>
                         <div class="text-xs text-gray-500 leading-tight">
                             {{ match ($user?->role) {
-                                \App\Models\User::ROLE_SUPERADMIN   => 'Superadmin',
-                                \App\Models\User::ROLE_TENANT_ADMIN => 'Dealer',
-                                \App\Models\User::ROLE_TENANT_USER  => 'Salesperson',
-                                default                             => 'User',
+                                \App\Models\User::ROLE_SUPERADMIN   => __('Superadmin'),
+                                \App\Models\User::ROLE_TENANT_ADMIN => __('Dealer'),
+                                \App\Models\User::ROLE_TENANT_USER  => __('Salesperson'),
+                                default                             => __('User'),
                             } }}
                         </div>
                     </div>
@@ -171,11 +169,11 @@
                     <div class="py-1">
                         <a href="{{ route('profile.edit') }}"
                             class="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                            <i class="ri-user-settings-line"></i> Profile
+                            <i class="ri-user-settings-line"></i> {{ __('Profile') }}
                         </a>
                         <a href="{{ route('company.settings') }}"
                             class="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                            <i class="ri-settings-3-line"></i> Settings
+                            <i class="ri-settings-3-line"></i> {{ __('Settings') }}
                         </a>
                     </div>
                     <div class="py-1 border-t border-gray-100">
@@ -183,7 +181,7 @@
                             @csrf
                             <button type="submit"
                                 class="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 text-left">
-                                <i class="ri-logout-box-r-line"></i> Log out
+                                <i class="ri-logout-box-r-line"></i> {{ __('Log out') }}
                             </button>
                         </form>
                     </div>

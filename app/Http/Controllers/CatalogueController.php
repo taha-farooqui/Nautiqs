@@ -60,21 +60,21 @@ class CatalogueController extends Controller
     {
         $brand = GlobalBrand::findOrFail($globalBrandId);
         $this->catalogue->activateGlobalBrand(auth()->user()->company_id, $brand);
-        return back()->with('status', "Brand «{$brand->name}» activated — all models copied to your workspace.");
+        return back()->with('status', __('Brand «:name» activated — all models copied to your workspace.', ['name' => $brand->name]));
     }
 
     public function deactivateBrand(string $companyBrandId)
     {
         $companyBrand = CompanyBrand::findOrFail($companyBrandId);
         $this->catalogue->deactivateGlobalBrand(auth()->user()->company_id, $companyBrand);
-        return back()->with('status', "Brand «{$companyBrand->name}» deactivated. Your customisations are kept.");
+        return back()->with('status', __('Brand «:name» deactivated. Your customisations are kept.', ['name' => $companyBrand->name]));
     }
 
     public function reactivateBrand(string $companyBrandId)
     {
         $companyBrand = CompanyBrand::findOrFail($companyBrandId);
         $companyBrand->update(['is_active' => true]);
-        return back()->with('status', "Brand «{$companyBrand->name}» re-activated.");
+        return back()->with('status', __('Brand «:name» re-activated.', ['name' => $companyBrand->name]));
     }
 
     public function storePrivateBrand(Request $request)
@@ -85,7 +85,7 @@ class CatalogueController extends Controller
         ]);
         $brand = $this->catalogue->createPrivateBrand(auth()->user()->company_id, $data);
         return redirect()->route('catalogue.brands')
-            ->with('status', "Private brand «{$brand->name}» created. Add your first model →");
+            ->with('status', __('Private brand «:name» created. Add your first model →', ['name' => $brand->name]));
     }
 
     /**
@@ -126,7 +126,7 @@ class CatalogueController extends Controller
     {
         $brand = CompanyBrand::findOrFail($companyBrandId);
         if ($brand->source !== CompanyBrand::SOURCE_PRIVATE) {
-            return back()->withErrors(['brand' => 'Only private brands can be deleted. Deactivate global brands instead.']);
+            return back()->withErrors(['brand' => __('Only private brands can be deleted. Deactivate global brands instead.')]);
         }
         // Delete cascade — models, variants, options.
         // NB: Laravel-Mongodb's query-builder ->pluck('_id') returns NULLs;
@@ -137,7 +137,7 @@ class CatalogueController extends Controller
         CompanyBoatVariant::whereIn('company_model_id', $modelIds)->delete();
         CompanyBoatModel::whereIn('_id', $modelIds)->delete();
         $brand->delete();
-        return redirect()->route('catalogue.brands')->with('status', 'Private brand removed.');
+        return redirect()->route('catalogue.brands')->with('status', __('Private brand removed.'));
     }
 
     /* -------------------------------------------------- MODELS / VARIANTS */
@@ -341,7 +341,7 @@ class CatalogueController extends Controller
             return back()->withErrors(['variants' => $error]);
         }
 
-        return back()->with('status', "Added «{$globalVariant->name}» to your workspace.");
+        return back()->with('status', __('Added «:name» to your workspace.', ['name' => $globalVariant->name]));
     }
 
     /**
@@ -353,7 +353,7 @@ class CatalogueController extends Controller
     {
         $ids = $request->input('variant_ids', []);
         if (empty($ids) || ! is_array($ids)) {
-            return back()->withErrors(['variants' => 'Pick at least one variant first.']);
+            return back()->withErrors(['variants' => __('Pick at least one variant first.')]);
         }
 
         $added   = 0;
@@ -376,7 +376,7 @@ class CatalogueController extends Controller
         }
 
         if ($added > 0 && empty($skipped)) {
-            return back()->with('status', "{$added} variant(s) added to your workspace.");
+            return back()->with('status', __(':count variant(s) added to your workspace.', ['count' => $added]));
         }
 
         if ($added === 0 && ! empty($skipped)) {
@@ -385,7 +385,7 @@ class CatalogueController extends Controller
 
         // Mixed result — partial success.
         return back()
-            ->with('status', "{$added} variant(s) added.")
+            ->with('status', __(':count variant(s) added.', ['count' => $added]))
             ->withErrors(['variants' => $this->formatSkippedMessage($skipped)]);
     }
 
@@ -600,7 +600,7 @@ class CatalogueController extends Controller
         }
 
         return redirect()->route('catalogue.models.edit', $model->_id)
-            ->with('status', "Boat «{$model->name}» created.");
+            ->with('status', __('Boat «:name» created.', ['name' => $model->name]));
     }
 
     public function editModel(string $modelId)
@@ -666,7 +666,7 @@ class CatalogueController extends Controller
         }
 
         $model->update($data);
-        return back()->with('status', 'Boat saved.');
+        return back()->with('status', __('Boat saved.'));
     }
 
     public function destroyModel(string $modelId)
@@ -678,7 +678,7 @@ class CatalogueController extends Controller
         CompanyOption::where('company_model_id', $modelId)->delete();
         CompanyBoatVariant::where('company_model_id', $modelId)->delete();
         $model->delete();
-        return redirect()->route('catalogue.models')->with('status', 'Model deleted.');
+        return redirect()->route('catalogue.models')->with('status', __('Model deleted.'));
     }
 
     /* ---------------------------------------------- VARIANT EDITS */
@@ -748,7 +748,7 @@ class CatalogueController extends Controller
         ]);
 
         return redirect()->route('catalogue.models', ['tab' => 'workspace'])
-            ->with('status', "Variant «{$variant->name}» added to your workspace.");
+            ->with('status', __('Variant «:name» added to your workspace.', ['name' => $variant->name]));
     }
 
     public function storeVariant(string $modelId, Request $request)
@@ -773,7 +773,7 @@ class CatalogueController extends Controller
             'is_active'          => true,
             'is_archived'        => false,
         ]);
-        return back()->with('status', 'Variant added.');
+        return back()->with('status', __('Variant added.'));
     }
 
     public function updateVariant(string $variantId, Request $request)
@@ -791,7 +791,7 @@ class CatalogueController extends Controller
             'cost'       => (float) ($data['cost'] ?? $variant->cost),
             'currency'   => $data['currency'] ?? $variant->currency,
         ]);
-        return back()->with('status', "Variant «{$variant->name}» updated.");
+        return back()->with('status', __('Variant «:name» updated.', ['name' => $variant->name]));
     }
 
     public function destroyVariant(string $variantId)
@@ -805,7 +805,7 @@ class CatalogueController extends Controller
         } else {
             $variant->delete();
         }
-        return back()->with('status', 'Variant removed.');
+        return back()->with('status', __('Variant removed.'));
     }
 
     /* ---------------------------------------------- OPTION EDITS */
@@ -851,7 +851,7 @@ class CatalogueController extends Controller
             $count++;
         }
 
-        return back()->with('status', "{$count} option(s) added from the library.");
+        return back()->with('status', __(':count option(s) added from the library.', ['count' => $count]));
     }
 
     public function storeOption(string $modelId, Request $request)
@@ -878,7 +878,7 @@ class CatalogueController extends Controller
             'position'          => (int) ($data['position'] ?? 0),
             'is_archived'       => false,
         ]);
-        return back()->with('status', 'Option added.');
+        return back()->with('status', __('Option added.'));
     }
 
     public function updateOption(string $optionId, Request $request)
@@ -900,7 +900,7 @@ class CatalogueController extends Controller
             'currency' => $data['currency'] ?? $option->currency,
             'position' => (int) ($data['position'] ?? $option->position),
         ]);
-        return back()->with('status', 'Option updated.');
+        return back()->with('status', __('Option updated.'));
     }
 
     public function destroyOption(string $optionId)
@@ -911,7 +911,22 @@ class CatalogueController extends Controller
         } else {
             $option->delete();
         }
-        return back()->with('status', 'Option removed.');
+        return back()->with('status', __('Option removed.'));
+    }
+
+    public function reorderOptions(string $modelId, Request $request)
+    {
+        CompanyBoatModel::findOrFail($modelId);
+        $data = $request->validate([
+            'ids'   => 'required|array',
+            'ids.*' => 'string',
+        ]);
+        foreach ($data['ids'] as $i => $id) {
+            CompanyOption::where('_id', $id)
+                ->where('company_model_id', $modelId)
+                ->update(['position' => $i]);
+        }
+        return response()->json(['ok' => true]);
     }
 
     /* ---------------------------------------------- UPDATES TAB */

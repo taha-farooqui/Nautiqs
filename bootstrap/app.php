@@ -17,7 +17,10 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Apply the dealership's configured timezone (§17.3) to every web
         // request so dates render in the dealer's local TZ.
+        // SetLocale reads the `locale` cookie so __() resolves to FR or EN
+        // on every request.
         $middleware->web(append: [
+            \App\Http\Middleware\SetLocale::class,
             \App\Http\Middleware\SetCompanyTimezone::class,
         ]);
 

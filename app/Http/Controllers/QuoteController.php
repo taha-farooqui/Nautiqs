@@ -190,10 +190,10 @@ class QuoteController extends Controller
     {
         $quote = Quote::findOrFail($id);
         if ($quote->status !== Quote::STATUS_DRAFT) {
-            return back()->withErrors(['delete' => 'Only draft quotes can be deleted.']);
+            return back()->withErrors(['delete' => __('Only draft quotes can be deleted.')]);
         }
         $quote->delete();
-        return redirect()->route('quotes.index')->with('status', 'Draft deleted.');
+        return redirect()->route('quotes.index')->with('status', __('Draft deleted.'));
     }
 
     // §11.2 status transitions
@@ -204,7 +204,7 @@ class QuoteController extends Controller
             'status'  => Quote::STATUS_SENT,
             'sent_at' => now(),
         ]);
-        return back()->with('status', 'Quote marked as sent.');
+        return back()->with('status', __('Quote marked as sent.'));
     }
 
     public function markWon(string $id)
@@ -214,7 +214,7 @@ class QuoteController extends Controller
             'status' => Quote::STATUS_WON,
             'won_at' => now(),
         ]);
-        return back()->with('status', 'Quote marked as won — you can now generate the order confirmation.');
+        return back()->with('status', __('Quote marked as won — you can now generate the order confirmation.'));
     }
 
     public function markLost(string $id)
@@ -224,7 +224,7 @@ class QuoteController extends Controller
             'status'  => Quote::STATUS_LOST,
             'lost_at' => now(),
         ]);
-        return back()->with('status', 'Quote marked as lost.');
+        return back()->with('status', __('Quote marked as lost.'));
     }
 
     // §11.3 Duplicate
@@ -245,7 +245,7 @@ class QuoteController extends Controller
         $copy->save();
 
         return redirect()->route('quotes.edit', $copy->_id)
-            ->with('status', 'Quote duplicated — now a draft.');
+            ->with('status', __('Quote duplicated — now a draft.'));
     }
 
     // §12 Quote PDF
@@ -377,7 +377,7 @@ class QuoteController extends Controller
         ]);
 
         if ($sendError) {
-            return back()->withErrors(['email' => "Sending failed: {$sendError}"]);
+            return back()->withErrors(['email' => __('Sending failed') . ": {$sendError}"]);
         }
 
         // First successful send moves a draft into Sent state.
@@ -389,11 +389,11 @@ class QuoteController extends Controller
         }
 
         $verb = match ($type) {
-            EmailLog::TYPE_ORDER_CONFIRMATION => 'Order confirmation',
-            EmailLog::TYPE_FOLLOW_UP          => 'Follow-up',
-            default                           => 'Quote',
+            EmailLog::TYPE_ORDER_CONFIRMATION => __('Order confirmation'),
+            EmailLog::TYPE_FOLLOW_UP          => __('Follow-up'),
+            default                           => __('Quote'),
         };
-        return back()->with('status', "{$verb} sent to {$to}.");
+        return back()->with('status', __(':verb sent to :to.', ['verb' => $verb, 'to' => $to]));
     }
 
     // §13 Order confirmation PDF (bon de commande)

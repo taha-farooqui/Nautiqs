@@ -1,7 +1,5 @@
 <!DOCTYPE html>
-{{-- lang="en" tells Google Translate the source language. The displayed
-     language is driven by the googtrans cookie set in <x-app.google-translate />. --}}
-<html lang="en" data-theme="nautiqs">
+<html lang="{{ app()->getLocale() }}" data-theme="nautiqs">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -35,10 +33,18 @@
             </div>
         </div>
 
-        <p class="text-center text-xs text-gray-500 mt-6 pb-6">
-            © {{ date('Y') }} {{ config('app.name', 'Nautiqs') }}. All rights reserved.
-        </p>
+        {{-- Guest locale switcher — tiny pill bottom-right so the login
+             screen can be French or English without a separate widget. --}}
+        @php $currentLocale = app()->getLocale(); @endphp
+        <div class="fixed bottom-4 right-4 flex items-center gap-1 bg-white rounded-full border border-gray-200 shadow-sm text-xs">
+            <a href="{{ route('locale.switch', 'fr') }}"
+               class="px-3 py-1.5 rounded-full {{ $currentLocale === 'fr' ? 'bg-primary-800 text-white font-semibold' : 'text-gray-600 hover:text-gray-900' }}">FR</a>
+            <a href="{{ route('locale.switch', 'en') }}"
+               class="px-3 py-1.5 rounded-full {{ $currentLocale === 'en' ? 'bg-primary-800 text-white font-semibold' : 'text-gray-600 hover:text-gray-900' }}">EN</a>
+        </div>
 
-        <x-app.google-translate />
+        <p class="text-center text-xs text-gray-500 mt-6 pb-6">
+            © {{ date('Y') }} {{ config('app.name', 'Nautiqs') }}. {{ __('All rights reserved.') }}
+        </p>
     </body>
 </html>

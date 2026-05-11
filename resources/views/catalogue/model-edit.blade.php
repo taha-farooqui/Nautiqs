@@ -393,95 +393,60 @@
 
         {{-- Options tab --}}
         <section x-show="tab === 'options'" x-cloak class="space-y-4">
-            {{-- Library picker --}}
-            <div x-data="{ open: false, picked: [] }" class="bg-white rounded-2xl border border-gray-200 p-5">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h3 class="text-sm font-semibold text-gray-900">Pick from library</h3>
-                        <p class="text-xs text-gray-500">Add ready-made options to this boat. Adjust each price after.</p>
-                    </div>
-                    <button type="button" @click="open = !open"
-                        class="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg">
-                        <i class="ri-archive-stack-line"></i> Browse library
-                    </button>
-                </div>
-
-                <form x-show="open" x-cloak x-transition.opacity method="POST"
-                      action="{{ route('catalogue.options.import', $model->_id) }}" class="mt-4">
-                    @csrf
-                    <div class="max-h-72 overflow-y-auto border border-gray-200 rounded-lg divide-y divide-gray-100 mb-3">
-                        @foreach ($libraryOptions->groupBy('category') as $category => $items)
-                            <div>
-                                <div class="px-3 py-2 bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-600">{{ $category }}</div>
-                                @foreach ($items as $opt)
-                                    <label class="flex items-center justify-between gap-3 px-3 py-2 hover:bg-gray-50 cursor-pointer">
-                                        <div class="flex items-center gap-2 min-w-0">
-                                            <input type="checkbox" name="option_ids[]" value="{{ $opt->_id }}" x-model="picked"
-                                                class="rounded border-gray-300 text-primary-800 focus:ring-primary-800" />
-                                            <span class="text-sm text-gray-900 truncate">{{ $opt->label }}</span>
-                                        </div>
-                                        <span class="text-sm text-gray-700 font-semibold whitespace-nowrap">€{{ number_format($opt->price, 0, ',', ' ') }}</span>
-                                    </label>
-                                @endforeach
-                            </div>
-                        @endforeach
-                    </div>
-                    <div class="flex justify-end">
-                        <button type="submit" :disabled="picked.length === 0"
-                            class="inline-flex items-center gap-1 px-3 py-2 text-sm font-semibold bg-primary-800 hover:bg-primary-900 text-white rounded-lg disabled:opacity-50">
-                            <i class="ri-add-line"></i> Add <span x-text="picked.length"></span> selected
-                        </button>
-                    </div>
-                </form>
-            </div>
-
             {{-- Per-boat options list --}}
             <div class="bg-white rounded-2xl border border-gray-200 p-6">
                 <h2 class="text-base font-semibold text-gray-900 mb-4">Options on this boat</h2>
                 @if ($options->isEmpty())
                     <p class="text-sm text-gray-500 italic mb-4">No options yet — pick from the library above or add a custom one below.</p>
                 @else
-                    <div class="space-y-2 mb-6">
+                    <p class="text-xs text-gray-500 mb-3"><i class="ri-drag-move-2-line"></i> Drag the handle on the left to reorder. Order is saved automatically.</p>
+                    <div
+                        x-data="optionsSortable('{{ route('catalogue.options.reorder', $model->_id) }}')"
+                        x-init="init($el)"
+                        class="space-y-2 mb-6"
+                        data-options-sortable>
                         @foreach ($options as $o)
-                            <form method="POST" action="{{ route('catalogue.options.update', $o->_id) }}"
-                                class="border border-gray-200 rounded-lg p-3 grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
-                                @csrf @method('PATCH')
-                                <div class="md:col-span-3">
-                                    <label class="block text-xs font-medium text-gray-700 mb-1">Category</label>
-                                    <input type="text" name="category" value="{{ $o->category }}" required
-                                        class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
-                                </div>
-                                <div class="md:col-span-4">
-                                    <label class="block text-xs font-medium text-gray-700 mb-1">Label</label>
-                                    <input type="text" name="label" value="{{ $o->label }}" required
-                                        class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
-                                </div>
-                                <div class="md:col-span-2">
-                                    <label class="block text-xs font-medium text-gray-700 mb-1">Public HT</label>
-                                    <input type="number" step="0.01" min="0" name="price" value="{{ $o->price }}" required
-                                        class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
-                                </div>
-                                <div class="md:col-span-1">
-                                    <label class="block text-xs font-medium text-gray-700 mb-1">Cost</label>
-                                    <input type="number" step="0.01" min="0" name="cost" value="{{ $o->cost }}"
-                                        class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
-                                </div>
-                                <div class="md:col-span-1">
-                                    <label class="block text-xs font-medium text-gray-700 mb-1">Pos.</label>
-                                    <input type="number" name="position" value="{{ $o->position }}"
-                                        class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
-                                </div>
-                                <div class="md:col-span-1">
-                                    <button class="w-full inline-flex items-center justify-center gap-1 px-3 py-2 text-xs font-medium bg-primary-800 hover:bg-primary-900 text-white rounded-lg">
-                                        <i class="ri-save-line"></i>
-                                    </button>
-                                </div>
-                            </form>
-                            <form method="POST" action="{{ route('catalogue.options.destroy', $o->_id) }}"
-                                onsubmit="return confirm('Remove «{{ $o->label }}»?');" class="-mt-1 text-right">
-                                @csrf @method('DELETE')
-                                <button class="text-xs text-red-600 hover:underline"><i class="ri-delete-bin-line"></i> Remove</button>
-                            </form>
+                            <div class="opt-row" data-id="{{ $o->_id }}">
+                                <form method="POST" action="{{ route('catalogue.options.update', $o->_id) }}"
+                                    class="border border-gray-200 rounded-lg p-3 grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+                                    @csrf @method('PATCH')
+                                    <div class="md:col-span-1 flex md:items-end md:justify-center">
+                                        <span class="opt-handle cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-700 py-2 px-1" title="Drag to reorder">
+                                            <i class="ri-draggable text-xl"></i>
+                                        </span>
+                                    </div>
+                                    <div class="md:col-span-3">
+                                        <label class="block text-xs font-medium text-gray-700 mb-1">Category</label>
+                                        <input type="text" name="category" value="{{ $o->category }}" required
+                                            class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
+                                    </div>
+                                    <div class="md:col-span-4">
+                                        <label class="block text-xs font-medium text-gray-700 mb-1">Label</label>
+                                        <input type="text" name="label" value="{{ $o->label }}" required
+                                            class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
+                                    </div>
+                                    <div class="md:col-span-2">
+                                        <label class="block text-xs font-medium text-gray-700 mb-1">Public HT</label>
+                                        <input type="number" step="0.01" min="0" name="price" value="{{ $o->price }}" required
+                                            class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
+                                    </div>
+                                    <div class="md:col-span-1">
+                                        <label class="block text-xs font-medium text-gray-700 mb-1">Cost</label>
+                                        <input type="number" step="0.01" min="0" name="cost" value="{{ $o->cost }}"
+                                            class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
+                                    </div>
+                                    <div class="md:col-span-1">
+                                        <button class="w-full inline-flex items-center justify-center gap-1 px-3 py-2 text-xs font-medium bg-primary-800 hover:bg-primary-900 text-white rounded-lg">
+                                            <i class="ri-save-line"></i>
+                                        </button>
+                                    </div>
+                                </form>
+                                <form method="POST" action="{{ route('catalogue.options.destroy', $o->_id) }}"
+                                    onsubmit="return confirm('Remove «{{ $o->label }}»?');" class="-mt-1 text-right">
+                                    @csrf @method('DELETE')
+                                    <button class="text-xs text-red-600 hover:underline"><i class="ri-delete-bin-line"></i> Remove</button>
+                                </form>
+                            </div>
                         @endforeach
                     </div>
                 @endif
@@ -508,14 +473,9 @@
                             <input type="number" step="0.01" min="0" name="price" required
                                 class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
                         </div>
-                        <div class="md:col-span-1">
+                        <div class="md:col-span-2">
                             <label class="block text-xs font-medium text-gray-700 mb-1">Cost</label>
                             <input type="number" step="0.01" min="0" name="cost"
-                                class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
-                        </div>
-                        <div class="md:col-span-1">
-                            <label class="block text-xs font-medium text-gray-700 mb-1">Pos.</label>
-                            <input type="number" name="position" value="0"
                                 class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
                         </div>
                         <div class="md:col-span-1">
@@ -598,6 +558,56 @@
                 },
                 addOption() {
                     this.newOptions.push({ category: '', label: '', price: '', cost: '' });
+                },
+            };
+        }
+
+        // Drag-and-drop reorder for the per-boat options list. Uses SortableJS
+        // loaded on demand from CDN — keeps page weight off the global bundle.
+        function optionsSortable(reorderUrl) {
+            return {
+                reorderUrl,
+                sortable: null,
+                csrf: document.querySelector('meta[name="csrf-token"]')?.content,
+
+                async init(root) {
+                    await this.ensureSortable();
+                    this.sortable = window.Sortable.create(root, {
+                        handle: '.opt-handle',
+                        draggable: '.opt-row',
+                        animation: 150,
+                        ghostClass: 'opacity-50',
+                        onEnd: () => this.persist(root),
+                    });
+                },
+
+                ensureSortable() {
+                    if (window.Sortable) return Promise.resolve();
+                    return new Promise((resolve, reject) => {
+                        const s = document.createElement('script');
+                        s.src = 'https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js';
+                        s.onload = resolve;
+                        s.onerror = reject;
+                        document.head.appendChild(s);
+                    });
+                },
+
+                async persist(root) {
+                    const ids = Array.from(root.querySelectorAll('.opt-row')).map(el => el.dataset.id);
+                    try {
+                        await fetch(this.reorderUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': this.csrf,
+                            },
+                            body: JSON.stringify({ ids }),
+                        });
+                    } catch (e) {
+                        // Silent — the next page load will fall back to the
+                        // server-stored positions. Don't block the UI.
+                    }
                 },
             };
         }

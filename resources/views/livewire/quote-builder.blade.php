@@ -292,41 +292,84 @@
 
             @if ($this->engines->isEmpty())
                 <p class="text-sm text-gray-500 italic">
-                    No engines in your library yet.
-                    <a href="{{ route('engines.create') }}" class="text-primary-800 hover:underline">Add your first engine</a>
-                    so you can attach it to quotes.
+                    No engines match this variant's HP. Adjust the variant or
+                    <a href="{{ route('engines.create') }}" class="text-primary-800 hover:underline">add an engine</a>.
                 </p>
             @else
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    @foreach ($this->engines as $engine)
-                        @php $eid = $engine->id; $checked = isset($selectedEngines[$eid]); @endphp
-                        <label class="flex items-center gap-3 p-2.5 rounded-lg border {{ $checked ? 'border-primary-200 bg-primary-50/40' : 'border-gray-200 hover:bg-gray-50' }} cursor-pointer transition">
-                            <input type="checkbox" wire:click="toggleEngine('{{ $eid }}')" @checked($checked)
-                                class="rounded border-gray-300 text-primary-800 focus:ring-primary-800" />
-                            <div class="flex-1 min-w-0">
-                                <p class="text-sm font-medium text-gray-900 truncate flex items-center gap-2">
-                                    {{ $engine->brand }} <span class="text-gray-500 font-mono text-xs">{{ $engine->code }}</span>
-                                    @if ($engine->source === 'library')
-                                        <span class="px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 text-[10px] font-semibold uppercase tracking-wide">Library</span>
-                                    @else
-                                        <span class="px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 text-[10px] font-semibold uppercase tracking-wide">Yours</span>
-                                    @endif
-                                </p>
-                                <p class="text-xs text-gray-500">
-                                    {{ $engine->horsepower ? number_format($engine->horsepower, 0) . ' HP' : '' }}
-                                    @if ($engine->fuel) · {{ ucfirst($engine->fuel) }} @endif
-                                </p>
+                @php
+                    // Pre-shape the engines into a plain JSON-ready array so
+                    // the Alpine search filter can run client-side without
+                    // hitting Livewire on every keystroke.
+                    $engineList = $this->engines->map(fn ($e) => [
+                        'id'    => $e->id,
+                        'brand' => $e->brand,
+                        'code'  => $e->code,
+                        'hp'    => $e->horsepower,
+                        'fuel'  => $e->fuel,
+                        'price' => (float) $e->price,
+                        'label' => trim($e->brand . ' ' . $e->code . ($e->horsepower ? ' · ' . (int) $e->horsepower . ' HP' : '')),
+                    ])->values()->all();
+                    $selectedOne = ! empty($selectedEngines) ? array_key_first($selectedEngines) : null;
+                    $selectedEngineLabel = null;
+                    if ($selectedOne) {
+                        foreach ($engineList as $row) {
+                            if ($row['id'] === $selectedOne) { $selectedEngineLabel = $row['label']; break; }
+                        }
+                    }
+                @endphp
+
+                <div x-data="engineDropdown(@js($engineList), @js($selectedOne), @js($selectedEngineLabel))" class="relative">
+                    <button type="button" @click="open = !open"
+                        class="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg border border-gray-200 bg-white hover:border-gray-300 text-left">
+                        <span class="flex items-center gap-2 min-w-0">
+                            <i class="ri-settings-3-line text-gray-400"></i>
+                            <span class="text-sm truncate" x-text="selectedLabel || 'Select an engine…'"
+                                :class="selectedLabel ? 'text-gray-900' : 'text-gray-500'"></span>
+                        </span>
+                        <i class="ri-arrow-down-s-line text-gray-400" :class="open ? 'rotate-180' : ''"></i>
+                    </button>
+
+                    <div x-show="open" x-cloak @click.outside="open = false"
+                        class="absolute z-30 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
+                        <div class="p-2 border-b border-gray-100">
+                            <input type="search" x-model="query" x-ref="qbox" placeholder="Search by brand or code…"
+                                @keydown.escape="open = false"
+                                class="w-full px-3 py-1.5 text-sm rounded-md border-gray-200 focus:border-primary-800 focus:ring-primary-800" />
+                        </div>
+                        <ul class="max-h-72 overflow-y-auto py-1">
+                            <template x-for="row in filtered" :key="row.id">
+                                <li>
+                                    <button type="button" @click="pick(row)"
+                                        :class="row.id === selectedId ? 'bg-primary-50/40' : 'hover:bg-gray-50'"
+                                        class="w-full text-left px-3 py-2 flex items-center justify-between gap-3">
+                                        <div class="min-w-0">
+                                            <p class="text-sm font-medium text-gray-900 truncate">
+                                                <span x-text="row.brand"></span>
+                                                <span class="text-gray-500 font-mono text-xs" x-text="row.code"></span>
+                                            </p>
+                                            <p class="text-xs text-gray-500">
+                                                <span x-text="row.hp ? Math.round(row.hp) + ' HP' : ''"></span>
+                                                <template x-if="row.fuel"><span> · <span x-text="row.fuel.charAt(0).toUpperCase() + row.fuel.slice(1)"></span></span></template>
+                                            </p>
+                                        </div>
+                                        <span class="text-sm font-semibold text-gray-900 shrink-0"
+                                            x-text="'€' + row.price.toLocaleString('fr-FR')"></span>
+                                    </button>
+                                </li>
+                            </template>
+                            <template x-if="filtered.length === 0">
+                                <li class="px-3 py-4 text-center text-sm text-gray-500 italic">No engines match.</li>
+                            </template>
+                        </ul>
+                        <template x-if="selectedId">
+                            <div class="p-2 border-t border-gray-100">
+                                <button type="button" @click="clear()"
+                                    class="w-full text-xs text-red-600 hover:underline py-1">
+                                    <i class="ri-close-circle-line"></i> Clear selection
+                                </button>
                             </div>
-                            @if ($checked)
-                                <input type="number" min="1" value="{{ $selectedEngines[$eid] ?? 1 }}"
-                                    wire:model.live.debounce.300ms="selectedEngines.{{ $eid }}"
-                                    class="w-14 rounded border-gray-300 text-xs text-center focus:border-primary-800 focus:ring-primary-800" />
-                            @endif
-                            <div class="text-right shrink-0 text-sm font-semibold text-gray-900">
-                                €{{ number_format($engine->price, 0, ',', ' ') }}
-                            </div>
-                        </label>
-                    @endforeach
+                        </template>
+                    </div>
                 </div>
             @endif
         </div>
@@ -584,3 +627,57 @@
     </div>
 
 </div>
+
+@once
+@push('scripts')
+<script>
+    /**
+     * Searchable single-select engine picker. Client-side filter so typing
+     * doesn't hit Livewire on every keystroke; picking an item flips the
+     * Livewire `selectedEngines` map via toggleEngine() actions (clearing
+     * any previous pick first so the dropdown stays single-select).
+     */
+    function engineDropdown(rows, initialId, initialLabel) {
+        return {
+            rows: rows || [],
+            open: false,
+            query: '',
+            selectedId: initialId || null,
+            selectedLabel: initialLabel || '',
+
+            get filtered() {
+                const q = this.query.trim().toLowerCase();
+                if (! q) return this.rows;
+                return this.rows.filter(r =>
+                    (r.brand || '').toLowerCase().includes(q) ||
+                    (r.code || '').toLowerCase().includes(q) ||
+                    (r.label || '').toLowerCase().includes(q)
+                );
+            },
+
+            pick(row) {
+                // Clear any previous pick first, then toggle the new one on.
+                // Single-select semantics for boats with one engine slot.
+                if (this.selectedId && this.selectedId !== row.id) {
+                    this.$wire.toggleEngine(this.selectedId);
+                }
+                this.$wire.toggleEngine(row.id);
+                this.selectedId = row.id;
+                this.selectedLabel = row.label;
+                this.open = false;
+                this.query = '';
+            },
+
+            clear() {
+                if (this.selectedId) {
+                    this.$wire.toggleEngine(this.selectedId);
+                }
+                this.selectedId = null;
+                this.selectedLabel = '';
+                this.open = false;
+            },
+        };
+    }
+</script>
+@endpush
+@endonce

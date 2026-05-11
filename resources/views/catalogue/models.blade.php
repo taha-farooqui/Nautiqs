@@ -1,4 +1,4 @@
-<x-app-layout title="Catalogue" header="Catalogue">
+<x-app-layout :title="__('Catalogue')" :header="__('Catalogue')">
 
     {{-- Toast stack --}}
     @if (session('status') || $errors->any())
@@ -34,12 +34,12 @@
             <div class="relative">
                 <i class="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
                 <input type="text" name="q" value="{{ request('q', '') }}"
-                    placeholder="Search by brand, model, or variant…"
+                    placeholder="{{ __('Search by brand, model, or variant…') }}"
                     class="pl-9 pr-3 py-2 rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800 min-w-[280px]" />
             </div>
             <select name="brand" onchange="this.form.submit()"
                 class="rounded-lg border-gray-200 text-sm focus:border-primary-800 focus:ring-primary-800">
-                <option value="">All brands</option>
+                <option value="">{{ __('All brands') }}</option>
                 @foreach ($brands as $b)
                     <option value="{{ $b->_id }}" @selected($brandFilter === (string) $b->_id)>{{ $b->name }}</option>
                 @endforeach
@@ -48,16 +48,16 @@
 
         <a href="{{ route('catalogue.models.create') }}"
             class="inline-flex items-center gap-1 px-3 py-2 text-sm font-semibold bg-primary-800 hover:bg-primary-900 text-white rounded-lg">
-            <i class="ri-add-line"></i> Add boat
+            <i class="ri-add-line"></i> {{ __('Add boat') }}
         </a>
     </div>
 
     @if ($rows->isEmpty())
         <x-app.empty-state
             icon="ri-sailboat-line"
-            title="Your catalogue is empty"
-            message="Add your first boat — pick the brand, model, then add versions and options."
-            ctaLabel="Add a boat"
+            :title="__('Your catalogue is empty')"
+            :message="__('Add your first boat — pick the brand, model, then add versions and options.')"
+            :ctaLabel="__('Add a boat')"
             ctaHref="{{ route('catalogue.models.create') }}"
             size="lg" />
     @else
@@ -65,13 +65,10 @@
             <table class="w-full text-sm">
                 <thead class="bg-gray-50 text-left text-xs uppercase text-gray-500 tracking-wide">
                     <tr>
-                        <th class="px-5 py-3 font-semibold">Supplier</th>
-                        <th class="px-5 py-3 font-semibold">Brand</th>
-                        <th class="px-5 py-3 font-semibold">Model</th>
-                        <th class="px-5 py-3 font-semibold">Type</th>
-                        <th class="px-5 py-3 font-semibold">Propulsion</th>
-                        <th class="px-5 py-3 font-semibold text-right">From TTC</th>
-                        <th class="px-5 py-3 font-semibold">Updated</th>
+                        <th class="px-5 py-3 font-semibold">{{ __('Brand') }}</th>
+                        <th class="px-5 py-3 font-semibold">{{ __('Model') }}</th>
+                        <th class="px-5 py-3 font-semibold text-right">{{ __('From TTC') }}</th>
+                        <th class="px-5 py-3 font-semibold">{{ __('Updated') }}</th>
                         <th class="px-5 py-3"></th>
                     </tr>
                 </thead>
@@ -84,19 +81,16 @@
                         <tr class="hover:bg-gray-50 cursor-pointer"
                             data-href="{{ route('catalogue.models.edit', $m?->_id) }}"
                             onclick="if (!event.target.closest('a, button, form, input')) window.location = this.dataset.href">
-                            <td class="px-5 py-3 text-gray-700">{{ $m?->supplier ?? '—' }}</td>
                             <td class="px-5 py-3 font-medium text-gray-900">{{ $b?->name ?? '—' }}</td>
                             <td class="px-5 py-3">
                                 <p class="font-medium text-gray-900">{{ $m?->name ?? '—' }}{{ $m?->complement ? ' ' . $m->complement : '' }}</p>
                                 <p class="text-xs text-gray-500">{{ $v->name }}</p>
                             </td>
-                            <td class="px-5 py-3 text-gray-700 capitalize">{{ $m?->type ?? '—' }}</td>
-                            <td class="px-5 py-3 text-gray-700 capitalize">{{ $m?->propulsion ?? '—' }}</td>
                             <td class="px-5 py-3 text-right font-semibold text-gray-900">€{{ number_format($ttc, 0, ',', ' ') }}</td>
                             <td class="px-5 py-3 text-xs text-gray-500">{{ $m?->updated_at?->diffForHumans() ?? '—' }}</td>
                             <td class="px-5 py-3 text-right">
                                 <a href="{{ route('catalogue.models.edit', $m?->_id) }}"
-                                    class="inline-flex items-center justify-center w-8 h-8 text-gray-500 hover:text-primary-800 hover:bg-gray-100 rounded-lg" title="Edit">
+                                    class="inline-flex items-center justify-center w-8 h-8 text-gray-500 hover:text-primary-800 hover:bg-gray-100 rounded-lg" title="{{ __('Edit') }}">
                                     <i class="ri-pencil-line"></i>
                                 </a>
                             </td>

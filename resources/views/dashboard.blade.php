@@ -8,7 +8,7 @@
     }
 @endphp
 
-<x-app-layout title="Dashboard" :header="'Dashboard — ' . now()->format('l, F j Y')">
+<x-app-layout :title="__('Dashboard')" :header="__('Dashboard') . ' — ' . now()->translatedFormat('l, F j Y')">
 
     {{-- Catalogue update banner (only when there are pending updates) --}}
     @if ($pendingUpdatesCount > 0)
@@ -18,17 +18,17 @@
                     <i class="ri-anchor-line text-xl"></i>
                 </div>
                 <div class="flex-1">
-                    <p class="font-semibold">Catalogue update available{{ $pendingUpdatesBrand ? ' — ' . $pendingUpdatesBrand : '' }}</p>
+                    <p class="font-semibold">{{ __('Catalogue update available') }}{{ $pendingUpdatesBrand ? ' — ' . $pendingUpdatesBrand : '' }}</p>
                     <p class="text-sm text-white/80">
-                        {{ $pendingUpdatesCount }} {{ $pendingUpdatesCount === 1 ? 'change' : 'changes' }} from the platform — review before applying.
+                        {{ $pendingUpdatesCount }} {{ $pendingUpdatesCount === 1 ? __('change') : __('changes') }} {{ __('from the platform — review before applying') }}.
                     </p>
                 </div>
                 <div class="flex flex-wrap gap-2">
                     <button class="px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white font-medium text-sm hover:bg-white/20 transition">
-                        Dismiss
+                        {{ __('Dismiss') }}
                     </button>
                     <button class="px-4 py-2 rounded-lg bg-white text-primary-900 font-semibold text-sm hover:bg-white/90 transition">
-                        Review &amp; apply
+                        {{ __('Review & apply') }}
                     </button>
                 </div>
             </div>
@@ -41,16 +41,16 @@
         <div class="bg-white rounded-2xl border border-gray-200 p-5">
             <div class="flex items-center gap-2 mb-3">
                 <span class="w-2 h-2 rounded-full bg-blue-500"></span>
-                <span class="text-sm text-gray-600">Quotes this month</span>
+                <span class="text-sm text-gray-600">{{ __('Quotes this month') }}</span>
             </div>
             <p class="text-3xl font-bold text-gray-900">{{ number_format($quotesThisMonth) }}</p>
             <p class="text-xs mt-2 {{ $quotesDelta > 0 ? 'text-emerald-600' : ($quotesDelta < 0 ? 'text-red-600' : 'text-gray-500') }}">
                 @if ($quotesDelta > 0)
-                    <i class="ri-arrow-up-line"></i> +{{ $quotesDelta }} vs last month
+                    <i class="ri-arrow-up-line"></i> +{{ $quotesDelta }} {{ __('vs last month') }}
                 @elseif ($quotesDelta < 0)
-                    <i class="ri-arrow-down-line"></i> {{ $quotesDelta }} vs last month
+                    <i class="ri-arrow-down-line"></i> {{ $quotesDelta }} {{ __('vs last month') }}
                 @else
-                    <i class="ri-subtract-line"></i> Same as last month
+                    <i class="ri-subtract-line"></i> {{ __('Same as last month') }}
                 @endif
             </p>
         </div>
@@ -59,18 +59,18 @@
         <div class="bg-white rounded-2xl border border-gray-200 p-5">
             <div class="flex items-center gap-2 mb-3">
                 <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                <span class="text-sm text-gray-600">Total quoted (excl. VAT)</span>
+                <span class="text-sm text-gray-600">{{ __('Total quoted (excl. VAT)') }}</span>
             </div>
             <p class="text-3xl font-bold text-gray-900">€{{ nautiqs_format_short($totalQuotedThisMonth) }}</p>
             <p class="text-xs mt-2 {{ ($totalQuotedDeltaPct ?? 0) > 0 ? 'text-emerald-600' : (($totalQuotedDeltaPct ?? 0) < 0 ? 'text-red-600' : 'text-gray-500') }}">
                 @if ($totalQuotedDeltaPct === null)
-                    <i class="ri-subtract-line"></i> No data last month
+                    <i class="ri-subtract-line"></i> {{ __('No data last month') }}
                 @elseif ($totalQuotedDeltaPct > 0)
-                    <i class="ri-arrow-up-line"></i> +{{ $totalQuotedDeltaPct }}% vs last month
+                    <i class="ri-arrow-up-line"></i> +{{ $totalQuotedDeltaPct }}% {{ __('vs last month') }}
                 @elseif ($totalQuotedDeltaPct < 0)
-                    <i class="ri-arrow-down-line"></i> {{ $totalQuotedDeltaPct }}% vs last month
+                    <i class="ri-arrow-down-line"></i> {{ $totalQuotedDeltaPct }}% {{ __('vs last month') }}
                 @else
-                    <i class="ri-subtract-line"></i> Same as last month
+                    <i class="ri-subtract-line"></i> {{ __('Same as last month') }}
                 @endif
             </p>
         </div>
@@ -79,18 +79,18 @@
         <div class="bg-white rounded-2xl border border-gray-200 p-5">
             <div class="flex items-center gap-2 mb-3">
                 <span class="w-2 h-2 rounded-full bg-amber-500"></span>
-                <span class="text-sm text-gray-600">Revenue won this month</span>
+                <span class="text-sm text-gray-600">{{ __('Revenue won this month') }}</span>
             </div>
             <p class="text-3xl font-bold text-gray-900">€{{ nautiqs_format_short($revenueWonThisMonth) }}</p>
             <p class="text-xs mt-2 {{ ($revenueWonDeltaPct ?? 0) > 0 ? 'text-emerald-600' : (($revenueWonDeltaPct ?? 0) < 0 ? 'text-red-600' : 'text-gray-500') }}">
                 @if ($revenueWonDeltaPct === null)
-                    <i class="ri-subtract-line"></i> No data last month
+                    <i class="ri-subtract-line"></i> {{ __('No data last month') }}
                 @elseif ($revenueWonDeltaPct > 0)
-                    <i class="ri-arrow-up-line"></i> +{{ $revenueWonDeltaPct }}% vs last month
+                    <i class="ri-arrow-up-line"></i> +{{ $revenueWonDeltaPct }}% {{ __('vs last month') }}
                 @elseif ($revenueWonDeltaPct < 0)
-                    <i class="ri-arrow-down-line"></i> {{ $revenueWonDeltaPct }}% vs last month
+                    <i class="ri-arrow-down-line"></i> {{ $revenueWonDeltaPct }}% {{ __('vs last month') }}
                 @else
-                    <i class="ri-subtract-line"></i> Same as last month
+                    <i class="ri-subtract-line"></i> {{ __('Same as last month') }}
                 @endif
             </p>
         </div>
@@ -99,14 +99,14 @@
         <div class="bg-white rounded-2xl border border-gray-200 p-5">
             <div class="flex items-center gap-2 mb-3">
                 <span class="w-2 h-2 rounded-full bg-red-500"></span>
-                <span class="text-sm text-gray-600">Awaiting response</span>
+                <span class="text-sm text-gray-600">{{ __('Awaiting response') }}</span>
             </div>
             <p class="text-3xl font-bold text-gray-900">{{ number_format($awaitingResponse) }}</p>
             <p class="text-xs mt-2 {{ $expiredThisWeek > 0 ? 'text-red-600' : 'text-gray-500' }}">
                 @if ($expiredThisWeek > 0)
-                    <i class="ri-arrow-down-line"></i> {{ $expiredThisWeek }} expired this week
+                    <i class="ri-arrow-down-line"></i> {{ $expiredThisWeek }} {{ __('expired this week') }}
                 @else
-                    <i class="ri-subtract-line"></i> None expired this week
+                    <i class="ri-subtract-line"></i> {{ __('None expired this week') }}
                 @endif
             </p>
         </div>
@@ -116,13 +116,13 @@
     <section class="bg-white rounded-2xl border border-gray-200 p-5 mb-4">
         <div class="flex items-start justify-between mb-4">
             <div>
-                <h3 class="font-semibold text-gray-900">Pipeline trend</h3>
-                <p class="text-sm text-gray-500">Last 6 months · sent vs won vs lost</p>
+                <h3 class="font-semibold text-gray-900">{{ __('Pipeline trend') }}</h3>
+                <p class="text-sm text-gray-500">{{ __('Last 6 months · sent vs won vs lost') }}</p>
             </div>
             <div class="flex items-center gap-3 text-xs">
-                <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span> Sent</span>
-                <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Won</span>
-                <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-red-500"></span> Lost</span>
+                <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span> {{ __('Sent') }}</span>
+                <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> {{ __('Won') }}</span>
+                <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-red-500"></span> {{ __('Lost') }}</span>
             </div>
         </div>
         <div class="h-64">
@@ -133,6 +133,14 @@
     @push('scripts')
         <script>
             const trend = @json($trend);
+            @php
+                $trendLabels = [
+                    'sent' => __('Sent'),
+                    'won'  => __('Won'),
+                    'lost' => __('Lost'),
+                ];
+            @endphp
+            const trendLabels = @json($trendLabels);
 
             document.addEventListener('DOMContentLoaded', () => {
                 const ctx = document.getElementById('pipelineTrendChart');
@@ -154,7 +162,7 @@
                         labels: trend.map(d => d.label),
                         datasets: [
                             {
-                                label: 'Sent',
+                                label: trendLabels.sent,
                                 data: trend.map(d => d.sent),
                                 borderColor: '#3b82f6',
                                 backgroundColor: grad('#3b82f6'),
@@ -162,7 +170,7 @@
                                 pointBackgroundColor: '#3b82f6', pointBorderColor: '#fff', pointBorderWidth: 2, pointRadius: 0, pointHoverRadius: 5,
                             },
                             {
-                                label: 'Won',
+                                label: trendLabels.won,
                                 data: trend.map(d => d.won),
                                 borderColor: '#10b981',
                                 backgroundColor: grad('#10b981'),
@@ -170,7 +178,7 @@
                                 pointBackgroundColor: '#10b981', pointBorderColor: '#fff', pointBorderWidth: 2, pointRadius: 0, pointHoverRadius: 5,
                             },
                             {
-                                label: 'Lost',
+                                label: trendLabels.lost,
                                 data: trend.map(d => d.lost),
                                 borderColor: '#ef4444',
                                 backgroundColor: grad('#ef4444'),
@@ -202,28 +210,28 @@
         {{-- Recent quotes (left, 2 cols) --}}
         <div class="xl:col-span-2 bg-white rounded-2xl border border-gray-200 overflow-hidden">
             <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-                <h3 class="font-semibold text-gray-900">Recent quotes</h3>
+                <h3 class="font-semibold text-gray-900">{{ __('Recent quotes') }}</h3>
                 <a href="{{ route('quotes.index') }}" class="text-sm font-medium text-primary-800 hover:text-primary-900">
-                    View all <i class="ri-arrow-right-line"></i>
+                    {{ __('View all') }} <i class="ri-arrow-right-line"></i>
                 </a>
             </div>
             @if ($recent->isEmpty())
                 <x-app.empty-state
                     icon="ri-file-list-3-line"
-                    title="No quotes yet"
-                    message="Start by creating a quote — it takes under 2 minutes."
-                    ctaLabel="New quote"
+                    :title="__('No quotes yet')"
+                    :message="__('Start by creating a quote — it takes under 2 minutes.')"
+                    :ctaLabel="__('New quote')"
                     ctaHref="{{ route('quotes.create') }}" />
             @else
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm">
                         <thead class="bg-gray-50 text-xs uppercase tracking-wider text-gray-500">
                             <tr>
-                                <th class="px-5 py-3 text-left font-semibold">Client</th>
-                                <th class="px-5 py-3 text-left font-semibold">Ref.</th>
-                                <th class="px-5 py-3 text-left font-semibold">Boat</th>
-                                <th class="px-5 py-3 text-right font-semibold">Amount excl. VAT</th>
-                                <th class="px-5 py-3 text-left font-semibold">Status</th>
+                                <th class="px-5 py-3 text-left font-semibold">{{ __('Client') }}</th>
+                                <th class="px-5 py-3 text-left font-semibold">{{ __('Ref.') }}</th>
+                                <th class="px-5 py-3 text-left font-semibold">{{ __('Boat') }}</th>
+                                <th class="px-5 py-3 text-right font-semibold">{{ __('Amount excl. VAT') }}</th>
+                                <th class="px-5 py-3 text-left font-semibold">{{ __('Status') }}</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
@@ -231,7 +239,7 @@
                                 @php
                                     $first = $q->client_snapshot['first_name'] ?? '';
                                     $last  = $q->client_snapshot['last_name']  ?? '';
-                                    $clientName = trim($first . ' ' . $last) ?: 'Guest';
+                                    $clientName = trim($first . ' ' . $last) ?: __('Guest');
                                     $initials = strtoupper(mb_substr($first, 0, 1) . mb_substr($last, 0, 1)) ?: 'G';
                                 @endphp
                                 <tr class="hover:bg-gray-50 cursor-pointer"
@@ -263,7 +271,7 @@
                                             €{{ number_format($q->totals['total_ht'] ?? 0, 0, ',', ' ') }}
                                         </div>
                                         <div class="text-xs text-gray-500">
-                                            incl. VAT €{{ number_format($q->totals['total_ttc'] ?? 0, 0, ',', ' ') }}
+                                            {{ __('VAT incl.') }} €{{ number_format($q->totals['total_ttc'] ?? 0, 0, ',', ' ') }}
                                         </div>
                                     </td>
                                     <td class="px-5 py-3"><x-app.status-pill :status="$q->status" /></td>
@@ -279,23 +287,23 @@
         <div class="space-y-4">
             {{-- Quick actions --}}
             <div class="bg-white rounded-2xl border border-gray-200 p-5">
-                <h3 class="font-semibold text-gray-900 mb-4">Quick actions</h3>
+                <h3 class="font-semibold text-gray-900 mb-4">{{ __('Quick actions') }}</h3>
                 <div class="grid grid-cols-2 gap-3">
                     <a href="{{ route('quotes.create') }}" class="flex flex-col items-center gap-2 p-4 rounded-xl border border-gray-200 hover:bg-primary-50 hover:border-primary-200 transition">
                         <i class="ri-file-add-line text-2xl text-primary-800"></i>
-                        <span class="text-xs font-medium text-gray-900 text-center">New quote</span>
+                        <span class="text-xs font-medium text-gray-900 text-center">{{ __('New quote') }}</span>
                     </a>
                     <a href="{{ route('clients.create') }}" class="flex flex-col items-center gap-2 p-4 rounded-xl border border-gray-200 hover:bg-primary-50 hover:border-primary-200 transition">
                         <i class="ri-user-add-line text-2xl text-primary-800"></i>
-                        <span class="text-xs font-medium text-gray-900 text-center">Add client</span>
+                        <span class="text-xs font-medium text-gray-900 text-center">{{ __('Add client') }}</span>
                     </a>
                     <a href="#" class="flex flex-col items-center gap-2 p-4 rounded-xl border border-gray-200 hover:bg-primary-50 hover:border-primary-200 transition">
                         <i class="ri-upload-cloud-2-line text-2xl text-primary-800"></i>
-                        <span class="text-xs font-medium text-gray-900 text-center">Import catalogue</span>
+                        <span class="text-xs font-medium text-gray-900 text-center">{{ __('Import catalogue') }}</span>
                     </a>
                     <a href="{{ route('quotes.index') }}" class="flex flex-col items-center gap-2 p-4 rounded-xl border border-gray-200 hover:bg-primary-50 hover:border-primary-200 transition">
                         <i class="ri-file-list-3-line text-2xl text-primary-800"></i>
-                        <span class="text-xs font-medium text-gray-900 text-center">All quotes</span>
+                        <span class="text-xs font-medium text-gray-900 text-center">{{ __('All quotes') }}</span>
                     </a>
                 </div>
             </div>
@@ -303,14 +311,14 @@
             {{-- Top quoted models --}}
             <div class="bg-white rounded-2xl border border-gray-200 p-5">
                 <div class="flex items-center justify-between mb-4">
-                    <h3 class="font-semibold text-gray-900">Top quoted models</h3>
-                    <span class="text-xs text-gray-500">This month</span>
+                    <h3 class="font-semibold text-gray-900">{{ __('Top quoted models') }}</h3>
+                    <span class="text-xs text-gray-500">{{ __('This month') }}</span>
                 </div>
                 @if ($topModels->isEmpty())
                     <x-app.empty-state
                         icon="ri-trophy-line"
-                        title="No quotes this month"
-                        message="Top models will appear here once you have quotes."
+                        :title="__('No quotes this month')"
+                        :message="__('Top models will appear here as you build quotes.')"
                         size="sm" />
                 @else
                     <ul class="space-y-3">

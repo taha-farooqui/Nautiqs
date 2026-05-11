@@ -16,8 +16,8 @@
     <span class="text-xs text-gray-500">Visible in the quote builder when checked.</span>
 </div>
 
-{{-- Brand typeahead + supplier --}}
-<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+{{-- Brand typeahead --}}
+<div>
     <div x-data="brandTypeahead({{ Js::from((string) ($model->company_brand_id ?? '')) }}, {{ Js::from($model->brand?->name ?? '') }})"
          x-init="init()" class="relative">
         <label class="block text-sm font-medium text-gray-700 mb-1">Brand <span class="text-red-500">*</span></label>
@@ -28,7 +28,7 @@
                 @keydown.escape="open = false"
                 @keydown.arrow-down.prevent="cursor = Math.min(cursor + 1, results.length - 1)"
                 @keydown.arrow-up.prevent="cursor = Math.max(cursor - 1, -1)"
-                @keydown.enter.prevent="cursor >= 0 ? select(results[cursor]) : confirmFreeText()"
+                @keydown.enter.prevent="if (cursor >= 0) select(results[cursor])"
                 placeholder="Type to search brands…"
                 class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800 pr-9" />
             <i class="ri-search-line absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
@@ -46,11 +46,7 @@
             </template>
             <template x-if="results.length === 0 && query.length > 0">
                 <div class="px-3 py-3 text-sm">
-                    <p class="text-gray-500 mb-2">No brand matches «<span class="font-semibold" x-text="query"></span>».</p>
-                    <button type="button" @click="quickAdd()" :disabled="adding"
-                        class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold bg-primary-800 hover:bg-primary-900 text-white rounded-lg disabled:opacity-50">
-                        <i class="ri-add-line"></i> <span x-text="adding ? 'Adding…' : 'Add «' + query + '» as a new brand'"></span>
-                    </button>
+                    <p class="text-gray-500">No brand matches «<span class="font-semibold" x-text="query"></span>».</p>
                 </div>
             </template>
         </div>
@@ -58,25 +54,13 @@
         <p class="text-xs mt-1" x-show="selectedId" x-cloak><span class="text-emerald-700">✓ Brand selected.</span></p>
         <x-input-error :messages="$errors->get('company_brand_id')" class="mt-1" />
     </div>
-    <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Supplier (importer)</label>
-        <input type="text" name="supplier" value="{{ old('supplier', $model->supplier ?? '') }}"
-            placeholder="Optional"
-            class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />
-    </div>
 </div>
 
-<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
     <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Model name <span class="text-red-500">*</span></label>
         <input type="text" name="name" required value="{{ old('name', $model->name ?? '') }}"
             placeholder="e.g. 60 OPEN LINE"
-            class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />
-    </div>
-    <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Complement</label>
-        <input type="text" name="complement" value="{{ old('complement', $model->complement ?? '') }}"
-            placeholder="Sub-name"
             class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />
     </div>
     <div>
@@ -89,7 +73,7 @@
 
 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
     <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Manufacturer code <span class="text-red-500">*</span></label>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Boat code <span class="text-red-500">*</span></label>
         <input type="text" name="code" required value="{{ old('code', $model->code ?? '') }}"
             class="w-full rounded-lg border-gray-300 font-mono text-sm focus:border-primary-800 focus:ring-primary-800" />
     </div>
@@ -107,6 +91,13 @@
     </div>
 </div>
 
+{{--
+    Hull type / Propulsion / Dimensions / Capacity / Notes — hidden for
+    now. Wrapped in `@if (false)` so the HTML stays in source for easy
+    revival without rendering. The underlying DB columns are still on
+    CompanyBoatModel; just no UI exposes them today.
+--}}
+@if (false)
 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
     <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Hull type</label>
@@ -197,3 +188,4 @@
     <textarea name="notes" rows="3"
         class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800">{{ old('notes', $model->notes ?? '') }}</textarea>
 </div>
+@endif

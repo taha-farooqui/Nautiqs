@@ -56,10 +56,10 @@
                                 </span>
                                 <div class="flex-1 min-w-0">
                                     <div class="flex items-center justify-between gap-2">
-                                        <p class="font-semibold text-gray-900 truncate">{{ $n->title }}</p>
+                                        <p class="font-semibold text-gray-900 truncate">{{ $n->displayTitle() }}</p>
                                         @if (! $n->read_at)
                                             <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary-50 text-primary-800 text-[10px] font-bold uppercase tracking-wide shrink-0">
-                                                <span class="w-1.5 h-1.5 rounded-full bg-primary-800"></span>New
+                                                <span class="w-1.5 h-1.5 rounded-full bg-primary-800"></span>{{ __('New') }}
                                             </span>
                                         @endif
                                     </div>

@@ -1,6 +1,6 @@
 @props([
     'icon'     => 'ri-inbox-line',
-    'title'    => 'Nothing here yet',
+    'title'    => null,
     'message'  => null,
     'ctaLabel' => null,
     'ctaHref'  => null,
@@ -21,7 +21,7 @@
     <div class="{{ $s['iw'] }} rounded-full bg-primary-50 text-primary-800 flex items-center justify-center mb-4">
         <i class="{{ $icon }} {{ $s['is'] }}"></i>
     </div>
-    <h4 class="{{ $s['tt'] }} font-semibold text-gray-900">{{ $title }}</h4>
+    <h4 class="{{ $s['tt'] }} font-semibold text-gray-900">{{ $title ?? __('Nothing here yet') }}</h4>
     @if ($message)
         <p class="mt-1 {{ $s['mt'] }} text-gray-500 max-w-sm">{{ $message }}</p>
     @endif
