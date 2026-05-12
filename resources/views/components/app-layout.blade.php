@@ -15,8 +15,9 @@
         <link rel="icon" type="image/png" href="{{ asset('nautiqs_logo.png') }}" />
         <link rel="apple-touch-icon" href="{{ asset('nautiqs_logo.png') }}" />
 
-        <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet" />
 
         {{-- Remixicon --}}
         <link href="https://cdn.jsdelivr.net/npm/remixicon@4.6.0/fonts/remixicon.css" rel="stylesheet" />

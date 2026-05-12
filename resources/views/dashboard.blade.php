@@ -146,7 +146,7 @@
                 const ctx = document.getElementById('pipelineTrendChart');
                 if (!ctx || !window.Chart) return;
 
-                Chart.defaults.font.family = "'Inter', sans-serif";
+                Chart.defaults.font.family = "'Geist', sans-serif";
                 Chart.defaults.color = '#64748b';
 
                 const grad = (color) => {

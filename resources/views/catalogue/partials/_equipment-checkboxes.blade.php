@@ -44,9 +44,7 @@
             <div class="flex-1 min-w-0">
                 <p class="text-sm font-semibold text-gray-900">{{ __('Paste a list of equipment') }}</p>
                 <p class="text-xs text-gray-600 mb-2">
-                    {{ __('One item per line. They\'ll be added to the') }}
-                    <span class="font-semibold" x-text="categoryName(activeCat)"></span>
-                    {{ __('category as ticked checkboxes.') }}
+                    {{ __('One item per line. Each line becomes a ticked checkbox below.') }}
                 </p>
                 <textarea x-model="pasteBuffer" rows="3"
                     @keydown.enter="$event.shiftKey ? null : ($event.preventDefault(), commitPaste())"
@@ -56,7 +54,7 @@
                     <button type="button" @click="commitPaste()"
                         :disabled="pasteBuffer.trim().length === 0"
                         class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold bg-primary-800 hover:bg-primary-900 text-white rounded-lg disabled:opacity-50">
-                        <i class="ri-add-line"></i> {{ __('Add to') }} <span x-text="categoryName(activeCat)"></span>
+                        <i class="ri-add-line"></i> {{ __('Add to list') }}
                     </button>
                     <span class="text-xs text-gray-500">{{ __('Press Enter to add · Shift+Enter for a new line') }}</span>
                 </div>
@@ -64,74 +62,34 @@
         </div>
     </div>
 
-    {{-- ─── Category tabs (hidden once dealer pastes anything) ──── --}}
-    <div x-show="!hasPasted" class="flex items-center gap-1 border-b border-gray-200 mb-3 overflow-x-auto">
-        @foreach (\App\Models\GlobalEquipment::CATEGORIES as $key => $label)
-            <button type="button" @click="activeCat = '{{ $key }}'"
-                :class="activeCat === '{{ $key }}' ? 'border-primary-800 text-primary-900' : 'border-transparent text-gray-500 hover:text-gray-900'"
-                class="px-3 py-2 text-xs font-semibold uppercase tracking-wide border-b-2 transition whitespace-nowrap">
-                {{ $label }}
-            </button>
-        @endforeach
-    </div>
-
-    {{-- ─── Per-category library grids (hidden once pasted) ─────── --}}
-    <div x-show="!hasPasted">
-        @foreach (\App\Models\GlobalEquipment::CATEGORIES as $key => $label)
-            @php $items = $libraryEquipment->get($key, collect()); @endphp
-            <div x-show="activeCat === '{{ $key }}'" x-cloak>
-                @if ($items->isEmpty())
-                    <p class="text-sm text-gray-500 italic">Nothing in this category yet — paste your own above.</p>
-                @else
-                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                        @foreach ($items as $item)
-                            @php $ref = 'global:' . (string) $item->_id; @endphp
-                            <label class="flex items-center gap-2 px-3 py-2 rounded-lg border {{ isset($checked[$ref]) ? 'border-primary-200 bg-primary-50/40' : 'border-gray-200 hover:bg-gray-50' }} cursor-pointer transition">
-                                <input type="checkbox" name="included_equipment_refs[]" value="{{ $ref }}"
-                                    @checked(isset($checked[$ref]))
-                                    class="rounded border-gray-300 text-primary-800 focus:ring-primary-800" />
-                                <span class="text-sm text-gray-800">{{ $item->label }}</span>
-                            </label>
-                        @endforeach
-                    </div>
-                @endif
-            </div>
-        @endforeach
-    </div>
-
-    {{-- ─── Pasted-items view (shown once any category has custom items) ─── --}}
-    <div x-show="hasPasted" x-cloak class="space-y-4">
+    {{-- ─── Pasted-items list ─────────────────────────────────────── --}}
+    <div x-show="hasPasted" x-cloak class="space-y-3">
         <div class="flex items-center justify-between">
             <p class="text-sm font-semibold text-gray-900">
-                <span x-text="totalCustom"></span> pasted item<span x-text="totalCustom === 1 ? '' : 's'"></span>
+                <span x-text="totalCustom"></span> <span x-text="totalCustom === 1 ? '{{ __('pasted item') }}' : '{{ __('pasted items') }}'"></span>
             </p>
             <button type="button" @click="clearAll()"
                 class="text-xs font-medium text-red-600 hover:underline">
-                <i class="ri-delete-bin-line"></i> Clear all
+                <i class="ri-delete-bin-line"></i> {{ __('Clear all') }}
             </button>
         </div>
 
-        @foreach (\App\Models\GlobalEquipment::CATEGORIES as $key => $label)
-            <div x-show="(customByCat['{{ $key }}'] ?? []).length > 0" x-cloak>
-                <div class="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">{{ $label }}</div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                    <template x-for="(label, i) in (customByCat['{{ $key }}'] ?? [])" :key="'{{ $key }}-' + i + '-' + label">
-                        <label class="flex items-center gap-2 px-3 py-2 rounded-lg border border-primary-200 bg-primary-50/40 cursor-pointer transition group">
-                            <input type="checkbox" name="included_equipment_refs[]"
-                                :value="'custom:{{ $key }}:' + label"
-                                checked
-                                class="rounded border-gray-300 text-primary-800 focus:ring-primary-800" />
-                            <span class="text-sm text-gray-800 flex-1" x-text="label"></span>
-                            <button type="button" @click.prevent="removeCustom('{{ $key }}', i)"
-                                class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-600 transition"
-                                title="Remove">
-                                <i class="ri-close-line text-sm"></i>
-                            </button>
-                        </label>
-                    </template>
-                </div>
-            </div>
-        @endforeach
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+            <template x-for="(label, i) in items" :key="i + '-' + label">
+                <label class="flex items-center gap-2 px-3 py-2 rounded-lg border border-primary-200 bg-primary-50/40 cursor-pointer transition group">
+                    <input type="checkbox" name="included_equipment_refs[]"
+                        :value="'custom:other:' + label"
+                        checked
+                        class="rounded border-gray-300 text-primary-800 focus:ring-primary-800" />
+                    <span class="text-sm text-gray-800 flex-1" x-text="label"></span>
+                    <button type="button" @click.prevent="removeItem(i)"
+                        class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-600 transition"
+                        title="{{ __('Remove') }}">
+                        <i class="ri-close-line text-sm"></i>
+                    </button>
+                </label>
+            </template>
+        </div>
     </div>
 </div>
 
@@ -139,34 +97,27 @@
 @push('scripts')
 <script>
     function equipmentBoard(initialCustom) {
-        const CAT_LABELS = @json(\App\Models\GlobalEquipment::CATEGORIES);
-
-        // Pre-seed every category key with an empty array so Alpine tracks
-        // them reactively from the start (adding a fresh key on a plain
-        // object after init won't trigger x-show recomputes in Alpine v3).
-        const seeded = {};
-        for (const key of Object.keys(CAT_LABELS)) {
-            seeded[key] = Array.isArray(initialCustom?.[key]) ? [...initialCustom[key]] : [];
-        }
+        // Flatten any previously-saved per-category data into a single list.
+        // Old refs persisted as `custom:<cat>:<label>` — we preserve the
+        // labels but no longer surface the category in the UI.
+        const flatten = (src) => {
+            if (! src) return [];
+            if (Array.isArray(src)) return [...src];
+            const out = [];
+            for (const key of Object.keys(src)) {
+                if (Array.isArray(src[key])) out.push(...src[key]);
+            }
+            return out;
+        };
 
         return {
-            activeCat: 'exterior',
-            customByCat: seeded,
+            items: flatten(initialCustom),
             pasteBuffer: '',
 
-            get hasPasted() {
-                return Object.values(this.customByCat).some(arr => arr && arr.length > 0);
-            },
-            get totalCustom() {
-                return Object.values(this.customByCat).reduce((sum, arr) => sum + (arr?.length ?? 0), 0);
-            },
-            clearAll() {
-                for (const key of Object.keys(this.customByCat)) {
-                    this.customByCat[key] = [];
-                }
-            },
+            get hasPasted() { return this.items.length > 0; },
+            get totalCustom() { return this.items.length; },
 
-            categoryName(key) { return CAT_LABELS[key] ?? key; },
+            clearAll() { this.items = []; },
 
             commitPaste() {
                 const lines = this.pasteBuffer
@@ -175,25 +126,21 @@
                     .filter(s => s.length > 0);
                 if (lines.length === 0) return;
 
-                const current = this.customByCat[this.activeCat] ?? [];
-                const existing = new Set(current.map(s => s.toLowerCase()));
-                const next = [...current];
+                const existing = new Set(this.items.map(s => s.toLowerCase()));
+                const next = [...this.items];
                 for (const line of lines) {
                     if (existing.has(line.toLowerCase())) continue;
                     next.push(line);
                     existing.add(line.toLowerCase());
                 }
-                // Reassign the array reference so Alpine reactivity fires
-                // even if the key was previously empty.
-                this.customByCat[this.activeCat] = next;
+                this.items = next;
                 this.pasteBuffer = '';
             },
 
-            removeCustom(cat, index) {
-                if (! this.customByCat[cat]) return;
-                const next = [...this.customByCat[cat]];
+            removeItem(index) {
+                const next = [...this.items];
                 next.splice(index, 1);
-                this.customByCat[cat] = next;
+                this.items = next;
             },
         };
     }

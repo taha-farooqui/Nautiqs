@@ -34,7 +34,6 @@
                         <th class="px-5 py-3 font-semibold">{{ __('Brand') }}</th>
                         <th class="px-5 py-3 font-semibold">{{ __('Code') }}</th>
                         <th class="px-5 py-3 font-semibold">{{ __('HP') }}</th>
-                        <th class="px-5 py-3 font-semibold">{{ __('Fuel') }}</th>
                         <th class="px-5 py-3 font-semibold text-right">{{ __('Public HT') }}</th>
                         <th class="px-5 py-3 font-semibold text-right">{{ __('VAT') }}</th>
                         <th class="px-5 py-3 font-semibold text-right">{{ __('TTC') }}</th>
@@ -47,7 +46,6 @@
                             <td class="px-5 py-3 font-medium text-gray-900">{{ $engine->brand }}</td>
                             <td class="px-5 py-3 font-mono text-xs text-gray-700">{{ $engine->code }}</td>
                             <td class="px-5 py-3 text-gray-700">{{ $engine->horsepower ? number_format($engine->horsepower, 0) . ' ' . __('HP') : '—' }}</td>
-                            <td class="px-5 py-3 text-gray-700 capitalize">{{ $engine->fuel ?? '—' }}</td>
                             <td class="px-5 py-3 text-right font-semibold text-gray-900">€{{ number_format($engine->price ?? 0, 2, ',', ' ') }}</td>
                             <td class="px-5 py-3 text-right text-gray-700">{{ number_format($engine->vat_rate ?? 0, 2) }}%</td>
                             <td class="px-5 py-3 text-right font-semibold text-gray-900">€{{ number_format($engine->priceTtc(), 2, ',', ' ') }}</td>

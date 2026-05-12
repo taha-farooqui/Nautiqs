@@ -524,11 +524,13 @@ class CatalogueController extends Controller
 
             // Nested arrays — when the dealer fills versions / options /
             // equipment on the same Add-boat page they all post together.
-            'versions'                => 'nullable|array',
-            'versions.*.name'         => 'required_with:versions|string|max:200',
-            'versions.*.base_price'   => 'required_with:versions|numeric|min:0',
-            'versions.*.cost'         => 'nullable|numeric|min:0',
-            'versions.*.currency'     => 'nullable|in:EUR,USD',
+            'versions'                  => 'nullable|array',
+            'versions.*.name'           => 'required_with:versions|string|max:200',
+            'versions.*.base_price'     => 'required_with:versions|numeric|min:0',
+            'versions.*.cost'           => 'nullable|numeric|min:0',
+            'versions.*.currency'       => 'nullable|in:EUR,USD',
+            'versions.*.equipment'      => 'nullable|array',
+            'versions.*.equipment.*'    => 'string|max:200',
 
             'new_options'                  => 'nullable|array',
             'new_options.*.category'       => 'required_with:new_options|string|max:100',
@@ -570,7 +572,7 @@ class CatalogueController extends Controller
                 'base_price'         => (float) $v['base_price'],
                 'cost'               => (float) ($v['cost'] ?? 0),
                 'currency'           => $v['currency'] ?? 'EUR',
-                'included_equipment' => [],
+                'included_equipment' => $this->normaliseEquipmentList($v['equipment'] ?? []),
                 'is_active'          => true,
                 'is_archived'        => false,
             ]);
@@ -755,10 +757,12 @@ class CatalogueController extends Controller
     {
         $model = CompanyBoatModel::findOrFail($modelId);
         $data = $request->validate([
-            'name'        => 'required|string|max:200',
-            'base_price'  => 'required|numeric|min:0',
-            'cost'        => 'nullable|numeric|min:0',
-            'currency'    => 'nullable|in:EUR,USD',
+            'name'         => 'required|string|max:200',
+            'base_price'   => 'required|numeric|min:0',
+            'cost'         => 'nullable|numeric|min:0',
+            'currency'     => 'nullable|in:EUR,USD',
+            'equipment'    => 'nullable|array',
+            'equipment.*'  => 'string|max:200',
         ]);
         CompanyBoatVariant::create([
             'company_id'         => auth()->user()->company_id,
@@ -769,7 +773,7 @@ class CatalogueController extends Controller
             'base_price'         => (float) $data['base_price'],
             'cost'               => (float) ($data['cost'] ?? 0),
             'currency'           => $data['currency'] ?? 'EUR',
-            'included_equipment' => [],
+            'included_equipment' => $this->normaliseEquipmentList($data['equipment'] ?? []),
             'is_active'          => true,
             'is_archived'        => false,
         ]);
@@ -780,18 +784,37 @@ class CatalogueController extends Controller
     {
         $variant = CompanyBoatVariant::findOrFail($variantId);
         $data = $request->validate([
-            'name'        => 'required|string|max:200',
-            'base_price'  => 'required|numeric|min:0',
-            'cost'        => 'nullable|numeric|min:0',
-            'currency'    => 'nullable|in:EUR,USD',
+            'name'         => 'required|string|max:200',
+            'base_price'   => 'required|numeric|min:0',
+            'cost'         => 'nullable|numeric|min:0',
+            'currency'     => 'nullable|in:EUR,USD',
+            'equipment'    => 'nullable|array',
+            'equipment.*'  => 'string|max:200',
         ]);
         $variant->update([
-            'name'       => $data['name'],
-            'base_price' => (float) $data['base_price'],
-            'cost'       => (float) ($data['cost'] ?? $variant->cost),
-            'currency'   => $data['currency'] ?? $variant->currency,
+            'name'               => $data['name'],
+            'base_price'         => (float) $data['base_price'],
+            'cost'               => (float) ($data['cost'] ?? $variant->cost),
+            'currency'           => $data['currency'] ?? $variant->currency,
+            'included_equipment' => $this->normaliseEquipmentList($data['equipment'] ?? []),
         ]);
         return back()->with('status', __('Variant «:name» updated.', ['name' => $variant->name]));
+    }
+
+    /**
+     * Accept either a flat list of labels (["Bimini", "Hot water"]) — the
+     * new paste-modal shape — and turn it into the [{label, type}] array
+     * we persist on the variant. Blanks are stripped, duplicates kept (the
+     * UI dedupes client-side already).
+     */
+    private function normaliseEquipmentList(array $list): array
+    {
+        return collect($list)
+            ->map(fn ($l) => trim((string) $l))
+            ->filter(fn ($l) => $l !== '')
+            ->map(fn ($l) => ['label' => $l, 'type' => 'standard'])
+            ->values()
+            ->all();
     }
 
     public function destroyVariant(string $variantId)

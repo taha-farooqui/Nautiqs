@@ -68,11 +68,6 @@
                     <i class="ri-list-check-2"></i> Versions
                     <span class="text-xs text-gray-400">(<span x-text="versions.length"></span>)</span>
                 </button>
-                <button type="button" @click="tab = 'equipment'"
-                    :class="tab === 'equipment' ? 'border-primary-800 text-primary-900' : 'border-transparent text-gray-500 hover:text-gray-900'"
-                    class="px-4 py-2.5 text-sm font-semibold border-b-2 transition whitespace-nowrap">
-                    <i class="ri-tools-line"></i> Equipment
-                </button>
                 <button type="button" @click="tab = 'options'"
                     :class="tab === 'options' ? 'border-primary-800 text-primary-900' : 'border-transparent text-gray-500 hover:text-gray-900'"
                     class="px-4 py-2.5 text-sm font-semibold border-b-2 transition whitespace-nowrap">
@@ -91,51 +86,134 @@
                 <p class="text-xs text-gray-500 mb-4">A version is a specific configuration (e.g. "2× 200HP"). Add at least one so you can sell this boat.</p>
 
                 <template x-for="(v, i) in versions" :key="i">
-                    <div class="border border-gray-200 rounded-lg p-3 mb-2 grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
-                        <div class="md:col-span-5">
-                            <label class="block text-xs font-medium text-gray-700 mb-1">Version name *</label>
-                            <input type="text" :name="`versions[${i}][name]`" x-model="v.name"
-                                placeholder="e.g. 2x 200HP" required
-                                class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
+                    <div class="border border-gray-200 rounded-lg p-3 mb-3">
+                        <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+                            <div class="md:col-span-5">
+                                <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Version name') }} *</label>
+                                <input type="text" :name="`versions[${i}][name]`" x-model="v.name"
+                                    placeholder="e.g. 2x 200HP" required
+                                    class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Public HT') }} *</label>
+                                <input type="number" step="0.01" min="0" :name="`versions[${i}][base_price]`" x-model="v.base_price" required
+                                    class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Cost') }}</label>
+                                <input type="number" step="0.01" min="0" :name="`versions[${i}][cost]`" x-model="v.cost"
+                                    class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Currency') }}</label>
+                                <select :name="`versions[${i}][currency]`" x-model="v.currency"
+                                    class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800">
+                                    <option value="EUR">EUR</option>
+                                    <option value="USD">USD</option>
+                                </select>
+                            </div>
+                            <div class="md:col-span-1">
+                                <button type="button" @click="versions.splice(i, 1)"
+                                    class="w-full inline-flex items-center justify-center px-3 py-2 text-xs font-medium bg-red-50 hover:bg-red-100 text-red-700 rounded-lg">
+                                    <i class="ri-delete-bin-line"></i>
+                                </button>
+                            </div>
                         </div>
-                        <div class="md:col-span-2">
-                            <label class="block text-xs font-medium text-gray-700 mb-1">Public HT *</label>
-                            <input type="number" step="0.01" min="0" :name="`versions[${i}][base_price]`" x-model="v.base_price" required
-                                class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
-                        </div>
-                        <div class="md:col-span-2">
-                            <label class="block text-xs font-medium text-gray-700 mb-1">Cost</label>
-                            <input type="number" step="0.01" min="0" :name="`versions[${i}][cost]`" x-model="v.cost"
-                                class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
-                        </div>
-                        <div class="md:col-span-2">
-                            <label class="block text-xs font-medium text-gray-700 mb-1">Currency</label>
-                            <select :name="`versions[${i}][currency]`" x-model="v.currency"
-                                class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800">
-                                <option value="EUR">EUR</option>
-                                <option value="USD">USD</option>
-                            </select>
-                        </div>
-                        <div class="md:col-span-1">
-                            <button type="button" @click="versions.splice(i, 1)"
-                                class="w-full inline-flex items-center justify-center px-3 py-2 text-xs font-medium bg-red-50 hover:bg-red-100 text-red-700 rounded-lg">
-                                <i class="ri-delete-bin-line"></i>
-                            </button>
+
+                        {{-- Equipment chips + add button --}}
+                        <div class="mt-3 pt-3 border-t border-gray-100">
+                            <div class="flex items-center justify-between mb-2">
+                                <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                    {{ __('Included equipment') }}
+                                    <span class="text-gray-400 normal-case font-normal">(<span x-text="v.equipment.length"></span>)</span>
+                                </p>
+                                <button type="button" @click="openEquipmentModal(i)"
+                                    class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium bg-primary-50 hover:bg-primary-100 text-primary-800 rounded-lg">
+                                    <i class="ri-add-line"></i> {{ __('Add equipment') }}
+                                </button>
+                            </div>
+                            <div class="flex flex-wrap gap-1.5">
+                                <template x-for="(eq, ei) in v.equipment" :key="ei + '-' + eq">
+                                    <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs border border-emerald-200 group">
+                                        <i class="ri-check-line text-emerald-600"></i>
+                                        <span x-text="eq"></span>
+                                        <input type="hidden" :name="`versions[${i}][equipment][]`" :value="eq" />
+                                        <button type="button" @click="v.equipment.splice(ei, 1)"
+                                            class="opacity-50 hover:opacity-100 text-emerald-700 hover:text-red-600 ml-1">
+                                            <i class="ri-close-line"></i>
+                                        </button>
+                                    </span>
+                                </template>
+                                <template x-if="v.equipment.length === 0">
+                                    <span class="text-xs text-gray-400 italic">{{ __('No equipment yet.') }}</span>
+                                </template>
+                            </div>
                         </div>
                     </div>
                 </template>
 
                 <button type="button" @click="addVersion()"
                     class="text-sm font-medium text-primary-800 hover:underline mt-2">
-                    <i class="ri-add-line"></i> Add version
+                    <i class="ri-add-line"></i> {{ __('Add version') }}
                 </button>
-            </section>
 
-            {{-- Equipment tab --}}
-            <section x-show="tab === 'equipment'" x-cloak class="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
-                <h2 class="text-base font-semibold text-gray-900">Included equipment</h2>
-                <p class="text-xs text-gray-500 -mt-2">Tick what comes standard. From the platform library.</p>
-                @include('catalogue.partials._equipment-checkboxes', ['model' => $model, 'libraryEquipment' => $libraryEquipment])
+                {{-- Paste-equipment modal — single instance, targets versions[modalIndex] --}}
+                <div x-show="equipmentModalOpen" x-cloak x-transition.opacity
+                    @keydown.escape.window="closeEquipmentModal()"
+                    class="fixed inset-0 z-50 bg-gray-900/70 flex items-center justify-center p-4">
+                    <div @click.outside="closeEquipmentModal()"
+                        class="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
+                        <div class="px-5 py-4 border-b border-gray-100 flex items-center gap-3">
+                            <span class="w-9 h-9 rounded-lg bg-primary-50 text-primary-800 flex items-center justify-center shrink-0">
+                                <i class="ri-clipboard-line"></i>
+                            </span>
+                            <div class="flex-1 min-w-0">
+                                <h3 class="font-semibold text-gray-900">{{ __('Paste a list of equipment') }}</h3>
+                                <p class="text-xs text-gray-500">{{ __('One item per line. Each line becomes a ticked checkbox below.') }}</p>
+                            </div>
+                            <button type="button" @click="closeEquipmentModal()"
+                                class="w-8 h-8 inline-flex items-center justify-center text-gray-500 hover:bg-gray-100 rounded-lg">
+                                <i class="ri-close-line text-xl"></i>
+                            </button>
+                        </div>
+                        <div class="p-5 space-y-3">
+                            <textarea x-model="equipmentPasteBuffer" rows="6"
+                                placeholder="Bathing platform&#10;Bimini top&#10;Bow rail"
+                                class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800 font-mono"></textarea>
+
+                            <template x-if="equipmentPreview.length > 0">
+                                <div class="rounded-lg border border-gray-200 p-3 bg-gray-50">
+                                    <p class="text-xs font-semibold text-gray-600 mb-2">
+                                        {{ __('Preview') }} <span class="text-gray-400 font-normal">(<span x-text="equipmentPreview.length"></span>)</span>
+                                    </p>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-60 overflow-y-auto">
+                                        <template x-for="(label, pi) in equipmentPreview" :key="pi">
+                                            <label class="flex items-center gap-2 px-2 py-1.5 rounded bg-white border border-gray-200 text-xs">
+                                                <input type="checkbox" checked disabled
+                                                    class="rounded border-gray-300 text-primary-800" />
+                                                <span class="text-gray-800 truncate" x-text="label"></span>
+                                            </label>
+                                        </template>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                        <div class="px-5 py-4 border-t border-gray-100 bg-gray-50 flex items-center justify-between gap-2">
+                            <span class="text-xs text-gray-500">{{ __('One item per line. Click OK when done.') }}</span>
+                            <div class="flex items-center gap-2">
+                                <button type="button" @click="closeEquipmentModal()"
+                                    class="px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">
+                                    {{ __('Cancel') }}
+                                </button>
+                                <button type="button" @click="confirmEquipmentPaste()"
+                                    :disabled="equipmentPreview.length === 0 && equipmentPasteBuffer.trim().length === 0"
+                                    class="inline-flex items-center gap-1 px-4 py-1.5 text-sm font-semibold bg-primary-800 hover:bg-primary-900 text-white rounded-lg disabled:opacity-50">
+                                    <i class="ri-check-line"></i> {{ __('OK') }}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </section>
 
             {{-- Options tab --}}
@@ -236,11 +314,6 @@
                 class="px-4 py-2.5 text-sm font-semibold border-b-2 transition whitespace-nowrap">
                 <i class="ri-list-check-2"></i> Versions <span class="text-xs text-gray-400">({{ $variants->count() }})</span>
             </button>
-            <button type="button" @click="tab = 'equipment'"
-                :class="tab === 'equipment' ? 'border-primary-800 text-primary-900' : 'border-transparent text-gray-500 hover:text-gray-900'"
-                class="px-4 py-2.5 text-sm font-semibold border-b-2 transition whitespace-nowrap">
-                <i class="ri-tools-line"></i> Equipment
-            </button>
             <button type="button" @click="tab = 'options'"
                 :class="tab === 'options' ? 'border-primary-800 text-primary-900' : 'border-transparent text-gray-500 hover:text-gray-900'"
                 class="px-4 py-2.5 text-sm font-semibold border-b-2 transition whitespace-nowrap">
@@ -278,117 +351,227 @@
         </section>
 
         {{-- Versions tab --}}
-        <section x-show="tab === 'versions'" x-cloak class="space-y-4">
+        <section x-show="tab === 'versions'" x-cloak class="space-y-4"
+            x-data="variantsEditor()">
             <div class="bg-white rounded-2xl border border-gray-200 p-6">
-                <h2 class="text-base font-semibold text-gray-900 mb-4">Versions</h2>
+                <h2 class="text-base font-semibold text-gray-900 mb-4">{{ __('Versions') }}</h2>
                 @if ($variants->isEmpty())
-                    <p class="text-sm text-gray-500 italic mb-4">No versions yet — add the first one below.</p>
+                    <p class="text-sm text-gray-500 italic mb-4">{{ __('No versions yet — add the first one below.') }}</p>
                 @else
-                    <div class="space-y-3 mb-6">
+                    <div class="space-y-4 mb-6">
                         @foreach ($variants as $v)
-                            <form method="POST" action="{{ route('catalogue.variants.update', $v->_id) }}"
-                                class="border border-gray-200 rounded-lg p-3 grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
-                                @csrf @method('PATCH')
-                                <div class="md:col-span-5">
-                                    <label class="block text-xs font-medium text-gray-700 mb-1">Version name</label>
-                                    <input type="text" name="name" value="{{ $v->name }}" required
-                                        class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
+                            @php
+                                $initialEquipment = collect($v->included_equipment ?? [])
+                                    ->map(fn ($e) => is_array($e) ? ($e['label'] ?? '') : (string) $e)
+                                    ->filter()
+                                    ->values()
+                                    ->all();
+                            @endphp
+                            <div class="border border-gray-200 rounded-lg p-3"
+                                x-data="{ equipment: @js($initialEquipment) }"
+                                x-init="register($el, equipment)">
+                                <form method="POST" action="{{ route('catalogue.variants.update', $v->_id) }}"
+                                    class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+                                    @csrf @method('PATCH')
+                                    <div class="md:col-span-5">
+                                        <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Version name') }}</label>
+                                        <input type="text" name="name" value="{{ $v->name }}" required
+                                            class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
+                                    </div>
+                                    <div class="md:col-span-2">
+                                        <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Public HT') }}</label>
+                                        <input type="number" step="0.01" min="0" name="base_price" value="{{ $v->base_price }}" required
+                                            class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
+                                    </div>
+                                    <div class="md:col-span-2">
+                                        <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Cost') }}</label>
+                                        <input type="number" step="0.01" min="0" name="cost" value="{{ $v->cost }}"
+                                            class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
+                                    </div>
+                                    <div class="md:col-span-2">
+                                        <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Currency') }}</label>
+                                        <select name="currency" class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800">
+                                            <option value="EUR" @selected($v->currency === 'EUR')>EUR</option>
+                                            <option value="USD" @selected($v->currency === 'USD')>USD</option>
+                                        </select>
+                                    </div>
+                                    <div class="md:col-span-1 flex items-center gap-2 justify-end">
+                                        <button type="submit" class="inline-flex items-center gap-1 px-3 py-2 text-xs font-medium bg-primary-800 hover:bg-primary-900 text-white rounded-lg">
+                                            <i class="ri-save-line"></i>
+                                        </button>
+                                    </div>
+
+                                    {{-- Equipment hidden inputs are inside the form so they post on Save --}}
+                                    <template x-for="(eq, ei) in equipment" :key="ei + '-' + eq">
+                                        <input type="hidden" name="equipment[]" :value="eq" />
+                                    </template>
+                                </form>
+
+                                {{-- Equipment chips + add button — outside the form so the buttons don't submit it --}}
+                                <div class="mt-3 pt-3 border-t border-gray-100">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                            {{ __('Included equipment') }}
+                                            <span class="text-gray-400 normal-case font-normal">(<span x-text="equipment.length"></span>)</span>
+                                        </p>
+                                        <button type="button" @click="openModalFor($data)"
+                                            class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium bg-primary-50 hover:bg-primary-100 text-primary-800 rounded-lg">
+                                            <i class="ri-add-line"></i> {{ __('Add equipment') }}
+                                        </button>
+                                    </div>
+                                    <div class="flex flex-wrap gap-1.5">
+                                        <template x-for="(eq, ei) in equipment" :key="ei + '-' + eq">
+                                            <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs border border-emerald-200">
+                                                <i class="ri-check-line text-emerald-600"></i>
+                                                <span x-text="eq"></span>
+                                                <button type="button" @click="equipment.splice(ei, 1)"
+                                                    class="opacity-50 hover:opacity-100 text-emerald-700 hover:text-red-600 ml-1">
+                                                    <i class="ri-close-line"></i>
+                                                </button>
+                                            </span>
+                                        </template>
+                                        <template x-if="equipment.length === 0">
+                                            <span class="text-xs text-gray-400 italic">{{ __('No equipment yet.') }}</span>
+                                        </template>
+                                    </div>
                                 </div>
-                                <div class="md:col-span-2">
-                                    <label class="block text-xs font-medium text-gray-700 mb-1">Public HT</label>
-                                    <input type="number" step="0.01" min="0" name="base_price" value="{{ $v->base_price }}" required
-                                        class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
-                                </div>
-                                <div class="md:col-span-2">
-                                    <label class="block text-xs font-medium text-gray-700 mb-1">Cost</label>
-                                    <input type="number" step="0.01" min="0" name="cost" value="{{ $v->cost }}"
-                                        class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
-                                </div>
-                                <div class="md:col-span-2">
-                                    <label class="block text-xs font-medium text-gray-700 mb-1">Currency</label>
-                                    <select name="currency" class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800">
-                                        <option value="EUR" @selected($v->currency === 'EUR')>EUR</option>
-                                        <option value="USD" @selected($v->currency === 'USD')>USD</option>
-                                    </select>
-                                </div>
-                                <div class="md:col-span-1 flex items-center gap-2 justify-end">
-                                    <button type="submit" class="inline-flex items-center gap-1 px-3 py-2 text-xs font-medium bg-primary-800 hover:bg-primary-900 text-white rounded-lg">
-                                        <i class="ri-save-line"></i>
-                                    </button>
-                                </div>
-                            </form>
+                            </div>
                             <form method="POST" action="{{ route('catalogue.variants.destroy', $v->_id) }}"
-                                onsubmit="return confirm('Remove «{{ $v->name }}»?');" class="-mt-2 text-right">
+                                onsubmit="return confirm('{{ __('Remove') }} «{{ $v->name }}»?');" class="-mt-3 text-right">
                                 @csrf @method('DELETE')
-                                <button class="text-xs text-red-600 hover:underline"><i class="ri-delete-bin-line"></i> Remove</button>
+                                <button class="text-xs text-red-600 hover:underline"><i class="ri-delete-bin-line"></i> {{ __('Remove') }}</button>
                             </form>
                         @endforeach
                     </div>
                 @endif
 
-                <div x-data="{ open: false }" class="border-t border-gray-100 pt-4">
+                <div x-data="{ open: false, newEquipment: [] }" class="border-t border-gray-100 pt-4">
                     <button type="button" @click="open = !open" class="text-sm font-medium text-primary-800 hover:underline">
-                        <i class="ri-add-line"></i> Add version
+                        <i class="ri-add-line"></i> {{ __('Add version') }}
                     </button>
                     <form x-show="open" x-cloak method="POST" action="{{ route('catalogue.variants.store', $model->_id) }}"
-                        class="mt-3 grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+                        class="mt-3 space-y-3">
                         @csrf
-                        <div class="md:col-span-5">
-                            <label class="block text-xs font-medium text-gray-700 mb-1">Name *</label>
-                            <input type="text" name="name" required placeholder="e.g. IDEA60 — 2x 200HP"
-                                class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
+                        <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+                            <div class="md:col-span-5">
+                                <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Name') }} *</label>
+                                <input type="text" name="name" required placeholder="e.g. IDEA60 — 2x 200HP"
+                                    class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Public HT') }} *</label>
+                                <input type="number" step="0.01" min="0" name="base_price" required
+                                    class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Cost') }}</label>
+                                <input type="number" step="0.01" min="0" name="cost"
+                                    class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Currency') }}</label>
+                                <select name="currency" class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800">
+                                    <option value="EUR">EUR</option>
+                                    <option value="USD">USD</option>
+                                </select>
+                            </div>
+                            <div class="md:col-span-1">
+                                <button class="w-full inline-flex items-center justify-center gap-1 px-3 py-2 text-xs font-medium bg-primary-800 hover:bg-primary-900 text-white rounded-lg">
+                                    <i class="ri-add-line"></i>
+                                </button>
+                            </div>
                         </div>
-                        <div class="md:col-span-2">
-                            <label class="block text-xs font-medium text-gray-700 mb-1">Public HT *</label>
-                            <input type="number" step="0.01" min="0" name="base_price" required
-                                class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
-                        </div>
-                        <div class="md:col-span-2">
-                            <label class="block text-xs font-medium text-gray-700 mb-1">Cost</label>
-                            <input type="number" step="0.01" min="0" name="cost"
-                                class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
-                        </div>
-                        <div class="md:col-span-2">
-                            <label class="block text-xs font-medium text-gray-700 mb-1">Currency</label>
-                            <select name="currency" class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800">
-                                <option value="EUR">EUR</option>
-                                <option value="USD">USD</option>
-                            </select>
-                        </div>
-                        <div class="md:col-span-1">
-                            <button class="w-full inline-flex items-center justify-center gap-1 px-3 py-2 text-xs font-medium bg-primary-800 hover:bg-primary-900 text-white rounded-lg">
-                                <i class="ri-add-line"></i>
-                            </button>
+
+                        <template x-for="(eq, ei) in newEquipment" :key="ei + '-' + eq">
+                            <input type="hidden" name="equipment[]" :value="eq" />
+                        </template>
+
+                        <div class="pt-2 border-t border-gray-100">
+                            <div class="flex items-center justify-between mb-2">
+                                <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                    {{ __('Included equipment') }}
+                                    <span class="text-gray-400 normal-case font-normal">(<span x-text="newEquipment.length"></span>)</span>
+                                </p>
+                                <button type="button" @click="openModalFor({ equipment: newEquipment })"
+                                    class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium bg-primary-50 hover:bg-primary-100 text-primary-800 rounded-lg">
+                                    <i class="ri-add-line"></i> {{ __('Add equipment') }}
+                                </button>
+                            </div>
+                            <div class="flex flex-wrap gap-1.5">
+                                <template x-for="(eq, ei) in newEquipment" :key="ei + '-' + eq">
+                                    <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs border border-emerald-200">
+                                        <i class="ri-check-line text-emerald-600"></i>
+                                        <span x-text="eq"></span>
+                                        <button type="button" @click="newEquipment.splice(ei, 1)"
+                                            class="opacity-50 hover:opacity-100 text-emerald-700 hover:text-red-600 ml-1">
+                                            <i class="ri-close-line"></i>
+                                        </button>
+                                    </span>
+                                </template>
+                            </div>
                         </div>
                     </form>
                 </div>
             </div>
-        </section>
 
-        {{-- Equipment tab --}}
-        <section x-show="tab === 'equipment'" x-cloak class="space-y-4">
-            <form method="POST" action="{{ route('catalogue.models.update', $model->_id) }}"
-                class="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
-                @csrf @method('PATCH')
-
-                {{-- Carry critical fields so the PATCH validator passes. --}}
-                <input type="hidden" name="code" value="{{ $model->code }}" />
-                <input type="hidden" name="name" value="{{ $model->name }}" />
-                <input type="hidden" name="company_brand_id" value="{{ $model->company_brand_id }}" />
-                <input type="hidden" name="is_active" value="{{ $model->is_active ? '1' : '0' }}" />
-
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h2 class="text-base font-semibold text-gray-900">Included equipment</h2>
-                        <p class="text-xs text-gray-500">Tick what comes standard with this boat. From the platform library.</p>
+            {{-- Shared paste modal — single instance for this section, targets
+                 whichever variant row called openModalFor(). --}}
+            <div x-show="modalOpen" x-cloak x-transition.opacity
+                @keydown.escape.window="closeModal()"
+                class="fixed inset-0 z-50 bg-gray-900/70 flex items-center justify-center p-4">
+                <div @click.outside="closeModal()"
+                    class="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
+                    <div class="px-5 py-4 border-b border-gray-100 flex items-center gap-3">
+                        <span class="w-9 h-9 rounded-lg bg-primary-50 text-primary-800 flex items-center justify-center shrink-0">
+                            <i class="ri-clipboard-line"></i>
+                        </span>
+                        <div class="flex-1 min-w-0">
+                            <h3 class="font-semibold text-gray-900">{{ __('Paste a list of equipment') }}</h3>
+                            <p class="text-xs text-gray-500">{{ __('One item per line. Each line becomes a ticked checkbox below.') }}</p>
+                        </div>
+                        <button type="button" @click="closeModal()"
+                            class="w-8 h-8 inline-flex items-center justify-center text-gray-500 hover:bg-gray-100 rounded-lg">
+                            <i class="ri-close-line text-xl"></i>
+                        </button>
                     </div>
-                    <button class="inline-flex items-center gap-1 px-3 py-2 text-sm font-semibold bg-primary-800 hover:bg-primary-900 text-white rounded-lg">
-                        <i class="ri-save-line"></i> Save selection
-                    </button>
-                </div>
+                    <div class="p-5 space-y-3">
+                        <textarea x-model="pasteBuffer" rows="6"
+                            placeholder="Bathing platform&#10;Bimini top&#10;Bow rail"
+                            class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800 font-mono"></textarea>
 
-                @include('catalogue.partials._equipment-checkboxes', ['model' => $model, 'libraryEquipment' => $libraryEquipment])
-            </form>
+                        <template x-if="preview.length > 0">
+                            <div class="rounded-lg border border-gray-200 p-3 bg-gray-50">
+                                <p class="text-xs font-semibold text-gray-600 mb-2">
+                                    {{ __('Preview') }} <span class="text-gray-400 font-normal">(<span x-text="preview.length"></span>)</span>
+                                </p>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-60 overflow-y-auto">
+                                    <template x-for="(label, pi) in preview" :key="pi">
+                                        <label class="flex items-center gap-2 px-2 py-1.5 rounded bg-white border border-gray-200 text-xs">
+                                            <input type="checkbox" checked disabled
+                                                class="rounded border-gray-300 text-primary-800" />
+                                            <span class="text-gray-800 truncate" x-text="label"></span>
+                                        </label>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                    <div class="px-5 py-4 border-t border-gray-100 bg-gray-50 flex items-center justify-between gap-2">
+                        <span class="text-xs text-gray-500">{{ __('One item per line. Click OK when done.') }}</span>
+                        <div class="flex items-center gap-2">
+                            <button type="button" @click="closeModal()"
+                                class="px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">
+                                {{ __('Cancel') }}
+                            </button>
+                            <button type="button" @click="commit()"
+                                :disabled="preview.length === 0"
+                                class="inline-flex items-center gap-1 px-4 py-1.5 text-sm font-semibold bg-primary-800 hover:bg-primary-900 text-white rounded-lg disabled:opacity-50">
+                                <i class="ri-check-line"></i> {{ __('OK') }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </section>
 
         {{-- Options tab --}}
@@ -549,15 +732,116 @@
         }
 
         // Repeater state for the create-mode page (versions + custom options).
+        // Each version owns its own `equipment` array — populated via the
+        // paste-modal targeting `modalIndex`.
         function boatCreator() {
             return {
-                versions: [{ name: '', base_price: '', cost: '', currency: 'EUR' }],
+                versions: [{ name: '', base_price: '', cost: '', currency: 'EUR', equipment: [] }],
                 newOptions: [],
+
+                // Equipment paste modal state — single modal instance shared
+                // across all version rows; `modalIndex` says which version
+                // we're editing.
+                equipmentModalOpen: false,
+                modalIndex: null,
+                equipmentPasteBuffer: '',
+
                 addVersion() {
-                    this.versions.push({ name: '', base_price: '', cost: '', currency: 'EUR' });
+                    this.versions.push({ name: '', base_price: '', cost: '', currency: 'EUR', equipment: [] });
                 },
                 addOption() {
                     this.newOptions.push({ category: '', label: '', price: '', cost: '' });
+                },
+
+                openEquipmentModal(i) {
+                    this.modalIndex = i;
+                    this.equipmentPasteBuffer = '';
+                    this.equipmentModalOpen = true;
+                },
+                closeEquipmentModal() {
+                    this.equipmentModalOpen = false;
+                    this.modalIndex = null;
+                    this.equipmentPasteBuffer = '';
+                },
+                get equipmentPreview() {
+                    if (! this.equipmentPasteBuffer.trim()) return [];
+                    return this.equipmentPasteBuffer
+                        .split(/\r?\n/)
+                        .map(s => s.trim())
+                        .filter(s => s.length > 0);
+                },
+                parseEquipmentPaste() {
+                    // No-op — the preview is reactive on equipmentPasteBuffer.
+                    // Bound to Enter so Enter doesn't submit the outer form.
+                },
+                confirmEquipmentPaste() {
+                    if (this.modalIndex === null) return;
+                    const lines = this.equipmentPreview;
+                    if (lines.length === 0) {
+                        this.closeEquipmentModal();
+                        return;
+                    }
+                    const existing = new Set(
+                        (this.versions[this.modalIndex].equipment || []).map(s => s.toLowerCase())
+                    );
+                    const next = [...(this.versions[this.modalIndex].equipment || [])];
+                    for (const line of lines) {
+                        if (existing.has(line.toLowerCase())) continue;
+                        next.push(line);
+                        existing.add(line.toLowerCase());
+                    }
+                    this.versions[this.modalIndex].equipment = next;
+                    this.closeEquipmentModal();
+                },
+            };
+        }
+
+        // Edit-mode variants editor — owns the shared paste modal for all
+        // variant rows. Each row registers its `equipment` array reference
+        // here so the modal can mutate the right variant's list on commit.
+        function variantsEditor() {
+            return {
+                modalOpen: false,
+                target: null,        // ref to { equipment: [...] }
+                pasteBuffer: '',
+
+                register(el, equipment) {
+                    // No-op placeholder; the row's reactive data is exposed
+                    // to openModalFor() via $data so we don't need to track
+                    // it here.
+                },
+
+                openModalFor(rowData) {
+                    this.target = rowData;
+                    this.pasteBuffer = '';
+                    this.modalOpen = true;
+                },
+                closeModal() {
+                    this.modalOpen = false;
+                    this.target = null;
+                    this.pasteBuffer = '';
+                },
+                get preview() {
+                    if (! this.pasteBuffer.trim()) return [];
+                    return this.pasteBuffer
+                        .split(/\r?\n/)
+                        .map(s => s.trim())
+                        .filter(s => s.length > 0);
+                },
+                commit() {
+                    if (! this.target) { this.closeModal(); return; }
+                    const lines = this.preview;
+                    if (lines.length === 0) { this.closeModal(); return; }
+                    const existing = new Set((this.target.equipment || []).map(s => s.toLowerCase()));
+                    const next = [...(this.target.equipment || [])];
+                    for (const line of lines) {
+                        if (existing.has(line.toLowerCase())) continue;
+                        next.push(line);
+                        existing.add(line.toLowerCase());
+                    }
+                    // Mutate in place so all references stay reactive.
+                    this.target.equipment.splice(0, this.target.equipment.length, ...next);
+                    this.closeModal();
                 },
             };
         }
