@@ -100,7 +100,7 @@
         </a>
         <div class="flex items-center gap-2">
             @if ($isEdit)
-                <button type="button" onclick="if(confirm('{{ __('Delete this client? This cannot be undone.') }}')) document.getElementById('delete-client-form').submit();"
+                <button type="submit" form="delete-client-form"
                     class="px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg">
                     {{ __('Delete client') }}
                 </button>
@@ -115,7 +115,10 @@
 </form>
 
 @if ($isEdit)
-    <form id="delete-client-form" action="{{ route('clients.destroy', $client->_id) }}" method="POST" class="hidden">
+    <form id="delete-client-form" action="{{ route('clients.destroy', $client->_id) }}" method="POST" class="hidden"
+        data-confirm="{{ __('Delete this client?') }}"
+        data-confirm-text="{{ __('This cannot be undone.') }}"
+        data-confirm-danger="1">
         @csrf
         @method('DELETE')
     </form>

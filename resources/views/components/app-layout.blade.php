@@ -49,6 +49,66 @@
         {{-- Global ⌘K command palette --}}
         <x-app.search-palette />
 
+        {{-- SweetAlert2 — used for every destructive confirmation across
+             the app instead of the browser's native confirm(). Forms opt
+             in by adding `data-confirm="Your question"` (or the longer
+             `data-confirm-text` for body copy). --}}
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+        <script>
+            (function () {
+                const PRIMARY = '#0e4f79';
+                const t = {
+                    confirmYes: @json(__('Yes, do it')),
+                    cancel:     @json(__('Cancel')),
+                };
+
+                // Single delegated submit handler — covers every <form
+                // data-confirm="…"> on the page without each form needing
+                // its own onsubmit attribute.
+                document.addEventListener('submit', function (e) {
+                    const form = e.target;
+                    if (! (form instanceof HTMLFormElement)) return;
+                    if (! form.dataset.confirm) return;
+                    if (form.dataset.confirmed === '1') return; // second pass after user clicks Yes
+
+                    e.preventDefault();
+                    Swal.fire({
+                        title: form.dataset.confirm,
+                        text:  form.dataset.confirmText || '',
+                        icon:  form.dataset.confirmIcon || 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: form.dataset.confirmYes || t.confirmYes,
+                        cancelButtonText:  t.cancel,
+                        confirmButtonColor: form.dataset.confirmDanger === '1' ? '#dc2626' : PRIMARY,
+                        cancelButtonColor: '#6b7280',
+                        reverseButtons: true,
+                    }).then((res) => {
+                        if (res.isConfirmed) {
+                            form.dataset.confirmed = '1';
+                            form.submit();
+                        }
+                    });
+                }, true);
+
+                // Programmatic helper for non-form actions (e.g. an inline
+                // <button> that submits a different form via JS). Returns a
+                // Promise<boolean>.
+                window.nautiqsConfirm = function (opts) {
+                    return Swal.fire({
+                        title: opts.title || '',
+                        text:  opts.text  || '',
+                        icon:  opts.icon  || 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: opts.confirmText || t.confirmYes,
+                        cancelButtonText:  opts.cancelText  || t.cancel,
+                        confirmButtonColor: opts.danger ? '#dc2626' : PRIMARY,
+                        cancelButtonColor: '#6b7280',
+                        reverseButtons: true,
+                    }).then(r => r.isConfirmed);
+                };
+            })();
+        </script>
+
         @livewireScripts
         @stack('scripts')
     </body>

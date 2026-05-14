@@ -73,6 +73,14 @@
                 <option value="{{ $ym }}" @selected($month === $ym)>{{ \Carbon\Carbon::createFromFormat('Y-m', $ym)->translatedFormat('F Y') }}</option>
             @endforeach
         </select>
+        @if (($creators ?? collect())->count() > 1)
+            <select name="created_by" onchange="this.form.submit()" class="rounded-lg border-gray-200 text-sm focus:border-primary-800 focus:ring-primary-800">
+                <option value="">{{ __('All creators') }}</option>
+                @foreach ($creators as $c)
+                    <option value="{{ $c['id'] }}" @selected(($createdBy ?? '') === $c['id'])>{{ $c['name'] }}</option>
+                @endforeach
+            </select>
+        @endif
         @if ($status) <input type="hidden" name="status" value="{{ $status }}" /> @endif
         <noscript><button class="px-3 py-2 rounded-lg bg-primary-800 text-white text-sm">{{ __('Apply') }}</button></noscript>
     </form>
@@ -98,6 +106,13 @@
                     <span class="text-xs px-1.5 py-0.5 rounded-full {{ $active ? 'bg-white/20' : $tab['color'] }}">{{ $tab['count'] }}</span>
                 </a>
             @endforeach
+            @if (($counts['trashed'] ?? 0) > 0)
+                <a href="{{ route('quotes.trash') }}"
+                    class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-50 transition ml-2">
+                    <i class="ri-delete-bin-line"></i> {{ __('Trash') }}
+                    <span class="text-xs px-1.5 py-0.5 rounded-full text-gray-500 bg-gray-100">{{ $counts['trashed'] }}</span>
+                </a>
+            @endif
             <span class="ml-auto text-xs text-gray-500">
                 {{ $quotes->total() }} {{ $quotes->total() === 1 ? __('quote') : __('quotes') }}
                 @if ($quotes->total() > 0) · {{ __('sorted by date') }} <i class="ri-arrow-down-s-line"></i> @endif
@@ -129,6 +144,7 @@
                             <th class="px-4 py-3 text-left font-semibold">{{ __('Boat') }}</th>
                             <th class="px-4 py-3 text-right font-semibold">{{ __('Amount excl. VAT') }}</th>
                             <th class="px-4 py-3 text-left font-semibold">{{ __('Status') }}</th>
+                            <th class="px-4 py-3 text-left font-semibold">{{ __('Created by') }}</th>
                             <th class="px-4 py-3 text-left font-semibold">{{ __('Date') }}</th>
                             <th class="px-4 py-3 text-left font-semibold">{{ __('Expires') }}</th>
                             <th class="px-4 py-3"></th>
@@ -183,6 +199,11 @@
 
                                 {{-- Status --}}
                                 <td class="px-4 py-3"><x-app.status-pill :status="$quote->status" /></td>
+
+                                {{-- Created by --}}
+                                <td class="px-4 py-3 text-xs text-gray-600">
+                                    {{ $quote->creatorName() ?? '—' }}
+                                </td>
 
                                 {{-- Date --}}
                                 <td class="px-4 py-3 text-gray-700">
@@ -240,6 +261,14 @@
                                             class="w-8 h-8 inline-flex items-center justify-center text-gray-500 hover:text-primary-800 hover:bg-gray-100 rounded-lg">
                                             <i class="ri-eye-line"></i>
                                         </a>
+                                        <form method="POST" action="{{ route('quotes.destroy', $quote->_id) }}" class="inline"
+                                            data-confirm="{{ __('Move this quote to Trash?') }}">
+                                            @csrf @method('DELETE')
+                                            <button type="submit" title="{{ __('Move to Trash') }}"
+                                                class="w-8 h-8 inline-flex items-center justify-center text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg">
+                                                <i class="ri-delete-bin-line"></i>
+                                            </button>
+                                        </form>
                                     </div>
                                 </td>
                             </tr>

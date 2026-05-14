@@ -46,6 +46,11 @@ class QuoteController extends Controller
             $query->whereBetween('created_at', [$start, $end]);
         }
 
+        $createdBy = $request->query('created_by');
+        if ($createdBy) {
+            $query->where('created_by_user_id', $createdBy);
+        }
+
         $q = trim((string) $request->query('q', ''));
         if ($q !== '') {
             $query->where(function ($w) use ($q) {
@@ -59,11 +64,12 @@ class QuoteController extends Controller
         $quotes = $query->paginate(20)->withQueryString();
 
         $counts = [
-            'all'   => Quote::count(),
-            'draft' => Quote::where('status', Quote::STATUS_DRAFT)->count(),
-            'sent'  => Quote::where('status', Quote::STATUS_SENT)->count(),
-            'won'   => Quote::where('status', Quote::STATUS_WON)->count(),
-            'lost'  => Quote::where('status', Quote::STATUS_LOST)->count(),
+            'all'     => Quote::count(),
+            'draft'   => Quote::where('status', Quote::STATUS_DRAFT)->count(),
+            'sent'    => Quote::where('status', Quote::STATUS_SENT)->count(),
+            'won'     => Quote::where('status', Quote::STATUS_WON)->count(),
+            'lost'    => Quote::where('status', Quote::STATUS_LOST)->count(),
+            'trashed' => Quote::onlyTrashed()->count(),
         ];
 
         // Stats strip (top of page)
@@ -106,9 +112,19 @@ class QuoteController extends Controller
             ->sortDesc()
             ->values();
 
+        // Creator filter — list of teammates who have actually authored a
+        // quote, sorted by name. Skips the dropdown when there's only one
+        // possible creator (no point filtering).
+        $creators = \App\Models\User::where('company_id', auth()->user()->company_id)
+            ->whereIn('role', [\App\Models\User::ROLE_TENANT_ADMIN, \App\Models\User::ROLE_TENANT_USER])
+            ->orderBy('name')
+            ->get(['_id', 'name'])
+            ->map(fn ($u) => ['id' => (string) $u->_id, 'name' => $u->name]);
+
         return view('quotes.index', compact(
             'quotes', 'status', 'q', 'counts', 'stats',
-            'brands', 'models', 'months', 'brand', 'modelCode', 'month'
+            'brands', 'models', 'months', 'brand', 'modelCode', 'month',
+            'creators', 'createdBy'
         ));
     }
 
@@ -186,14 +202,54 @@ class QuoteController extends Controller
         return view('quotes.edit', ['quote' => $quote]);
     }
 
+    /**
+     * Move a quote to the Trash. Works on any status — drafts, sent, won,
+     * lost — so dealers can clear out clutter without losing history.
+     * Restore via untrash() below.
+     */
     public function destroy(string $id)
     {
         $quote = Quote::findOrFail($id);
-        if ($quote->status !== Quote::STATUS_DRAFT) {
-            return back()->withErrors(['delete' => __('Only draft quotes can be deleted.')]);
+        $quote->trash();
+        return redirect()->route('quotes.index')->with('status', __('Quote moved to Trash.'));
+    }
+
+    /**
+     * Trash listing — like the main index but only shows soft-deleted
+     * quotes, with Restore + Permanently delete actions.
+     */
+    public function trash(Request $request)
+    {
+        $query = Quote::onlyTrashed()->with('client')->orderBy('trashed_at', 'desc');
+
+        $q = trim((string) $request->query('q', ''));
+        if ($q !== '') {
+            $query->where(function ($w) use ($q) {
+                $w->where('number', 'like', "%{$q}%")
+                  ->orWhere('client_snapshot.first_name', 'like', "%{$q}%")
+                  ->orWhere('client_snapshot.last_name',  'like', "%{$q}%")
+                  ->orWhere('model_snapshot.name',        'like', "%{$q}%");
+            });
         }
+
+        $quotes = $query->paginate(20)->withQueryString();
+
+        return view('quotes.trash', compact('quotes', 'q'));
+    }
+
+    public function restore(string $id)
+    {
+        // Trashed quotes are hidden by the global scope, so query withTrashed.
+        $quote = Quote::withTrashed()->where('_id', $id)->firstOrFail();
+        $quote->untrash();
+        return back()->with('status', __('Quote restored.'));
+    }
+
+    public function forceDelete(string $id)
+    {
+        $quote = Quote::withTrashed()->where('_id', $id)->firstOrFail();
         $quote->delete();
-        return redirect()->route('quotes.index')->with('status', __('Draft deleted.'));
+        return redirect()->route('quotes.trash')->with('status', __('Quote permanently deleted.'));
     }
 
     // §11.2 status transitions

@@ -81,6 +81,13 @@ class QuoteBuilder extends Component
     // Internal notes (§11.4)
     public string $internal_notes = '';
 
+    // §12 Terms & conditions — printed on the PDF. Blank → falls back to the
+    // hardcoded defaults in the PDF template.
+    public string $terms_payment   = '';
+    public string $terms_delivery  = '';
+    public string $terms_warranty  = '';
+    public ?string $expires_at     = null; // ISO date string for the date input
+
     public function mount(?string $quoteId = null, ?string $preselectedClientId = null)
     {
         if ($quoteId) {
@@ -134,6 +141,10 @@ class QuoteBuilder extends Component
         $this->vat_rate            = (float) ($quote->vat_rate ?? 20);
         $this->display_mode        = $quote->display_mode ?? 'TTC';
         $this->internal_notes      = $quote->internal_notes ?? '';
+        $this->terms_payment       = $quote->terms['payment']  ?? '';
+        $this->terms_delivery      = $quote->terms['delivery'] ?? '';
+        $this->terms_warranty      = $quote->terms['warranty'] ?? '';
+        $this->expires_at          = $quote->expires_at?->format('Y-m-d');
 
         if (is_array($quote->trade_in) && (($quote->trade_in['value'] ?? 0) > 0)) {
             $this->hasTradeIn = true;
@@ -519,7 +530,17 @@ class QuoteBuilder extends Component
             'display_mode'        => $this->display_mode,
             'totals'              => $totals,
             'internal_notes'      => $this->internal_notes ?: null,
+            'terms'               => [
+                'payment'  => trim($this->terms_payment)  ?: null,
+                'delivery' => trim($this->terms_delivery) ?: null,
+                'warranty' => trim($this->terms_warranty) ?: null,
+            ],
         ];
+
+        // Validity date — user-picked overrides the default 30 days.
+        if ($this->expires_at) {
+            $payload['expires_at'] = \Carbon\Carbon::parse($this->expires_at)->endOfDay();
+        }
 
         if ($this->isEdit) {
             $quote = Quote::findOrFail($this->quoteId);
@@ -528,8 +549,14 @@ class QuoteBuilder extends Component
             $payload['company_id'] = $companyId;
             $payload['number']     = QuoteCounter::nextReference($companyId, 'quote', (int) date('Y'));
             $payload['status']     = Quote::STATUS_DRAFT;
-            $payload['expires_at'] = now()->addDays(30); // default validity
+            if (empty($payload['expires_at'])) {
+                $payload['expires_at'] = now()->addDays(30); // default validity
+            }
             $payload['tracking']   = null;
+            // Attribution — record which sub-account drafted this quote.
+            // Name snapshot persists even if the user is later deactivated.
+            $payload['created_by_user_id'] = (string) auth()->id();
+            $payload['created_by_name']    = auth()->user()->name;
             $quote = Quote::create($payload);
         }
 

@@ -48,7 +48,7 @@
                                 </a>
                                 @php $resetMessage = __('Reset the :name template to the default?', ['name' => __($m['name'])]); @endphp
                                 <form method="POST" action="{{ route('email-templates.reset', $type) }}"
-                                    onsubmit="return confirm({{ Js::from($resetMessage) }});">
+                                    data-confirm="{{ $resetMessage }}">
                                     @csrf
                                     <button class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg">
                                         <i class="ri-refresh-line"></i> {{ __('Reset') }}

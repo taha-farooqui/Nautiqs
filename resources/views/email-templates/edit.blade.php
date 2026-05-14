@@ -113,8 +113,7 @@
 
             {{-- Action bar --}}
             <div class="flex flex-wrap items-center justify-between gap-2 pt-2">
-                <button type="button"
-                    onclick="if (confirm('{{ __('Reset this template to the factory default? Your edits will be lost.') }}')) document.getElementById('reset-form').submit();"
+                <button type="submit" form="reset-form"
                     class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100">
                     <i class="ri-refresh-line"></i> {{ __('Reset to default') }}
                 </button>
@@ -180,7 +179,9 @@
         </div>
     </div>
 
-    <form id="reset-form" method="POST" action="{{ route('email-templates.reset', $type) }}" class="hidden">
+    <form id="reset-form" method="POST" action="{{ route('email-templates.reset', $type) }}" class="hidden"
+        data-confirm="{{ __('Reset this template to the factory default?') }}"
+        data-confirm-text="{{ __('Your edits will be lost.') }}">
         @csrf
     </form>
 </x-app-layout>

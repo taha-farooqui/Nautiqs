@@ -232,16 +232,7 @@
             @else
                 @foreach ($this->options as $category => $items)
                     <div class="mb-4 last:mb-0">
-                        <div class="flex items-center justify-between mb-2">
-                            <h4 class="text-sm font-semibold text-gray-700">{{ $category }}</h4>
-                            <div class="flex items-center gap-2 text-xs">
-                                <span class="text-gray-500">{{ __('Category discount:') }}</span>
-                                <input type="number" min="0" max="100" step="0.5"
-                                    wire:model.live.debounce.300ms="category_discounts.{{ $category }}"
-                                    class="w-16 text-right rounded border-gray-300 text-xs py-1 focus:border-primary-800 focus:ring-primary-800" />
-                                <span class="text-gray-500">%</span>
-                            </div>
-                        </div>
+                        <h4 class="text-sm font-semibold text-gray-700 mb-2">{{ $category }}</h4>
                         <div class="space-y-1">
                             @foreach ($items as $opt)
                                 @php $oid = (string) $opt->_id; $checked = isset($selectedOptions[$oid]); @endphp
@@ -254,10 +245,13 @@
                                             wire:model.live.debounce.300ms="selectedOptions.{{ $oid }}"
                                             class="w-14 text-right rounded border-gray-300 text-xs py-1 focus:border-primary-800 focus:ring-primary-800"
                                             title="{{ __('Quantity') }}" />
-                                        <input type="number" min="0" max="100" step="0.5" placeholder="0"
-                                            wire:model.live.debounce.300ms="optionDiscounts.{{ $oid }}"
-                                            class="w-16 text-right rounded border-gray-300 text-xs py-1 focus:border-primary-800 focus:ring-primary-800"
-                                            title="{{ __('Discount %') }}" />
+                                        <div class="flex items-center gap-1">
+                                            <input type="number" min="0" max="100" step="0.5" placeholder="0"
+                                                wire:model.live.debounce.300ms="optionDiscounts.{{ $oid }}"
+                                                class="w-16 text-right rounded border-gray-300 text-xs py-1 focus:border-primary-800 focus:ring-primary-800"
+                                                title="{{ __('Discount %') }}" />
+                                            <span class="text-xs text-gray-400">%</span>
+                                        </div>
                                     @endif
                                     <div class="w-24 text-right text-sm font-medium text-gray-900">
                                         €{{ number_format($opt->price, 0, ',', ' ') }}
@@ -514,7 +508,41 @@
                         placeholder="e.g. 0.92" />
                 </div>
             </div>
-            <div class="mt-4">
+            {{-- Terms & conditions — printed on the PDF. Leave a field blank
+                 to fall back to the system default for that line. --}}
+            <div class="mt-5 pt-4 border-t border-gray-100">
+                <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-3">
+                    {{ __('Terms & conditions') }}
+                    <span class="text-gray-400 normal-case font-normal">— {{ __('printed on the PDF') }}</span>
+                </p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Payment') }}</label>
+                        <input type="text" wire:model.live.debounce.500ms="terms_payment" @disabled(! $hasVariant)
+                            placeholder="{{ __('30% on order · 70% on delivery') }}"
+                            class="w-full rounded border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800 disabled:bg-gray-100" />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Delivery') }}</label>
+                        <input type="text" wire:model.live.debounce.500ms="terms_delivery" @disabled(! $hasVariant)
+                            placeholder="{{ __('8 to 12 weeks depending on availability') }}"
+                            class="w-full rounded border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800 disabled:bg-gray-100" />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Quote valid until') }}</label>
+                        <input type="date" wire:model.live="expires_at" @disabled(! $hasVariant)
+                            class="w-full rounded border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800 disabled:bg-gray-100" />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Warranty') }}</label>
+                        <input type="text" wire:model.live.debounce.500ms="terms_warranty" @disabled(! $hasVariant)
+                            placeholder="{{ __('Manufacturer warranty + dealer prep') }}"
+                            class="w-full rounded border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800 disabled:bg-gray-100" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-5 pt-4 border-t border-gray-100">
                 <label class="text-xs font-medium text-gray-700 mb-1 flex items-center gap-2">
                     {{ __('Internal notes') }}
                     <span class="text-xs px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">

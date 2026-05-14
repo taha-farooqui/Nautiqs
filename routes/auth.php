@@ -45,6 +45,12 @@ Route::middleware('guest')->group(function () {
     Route::post('verification-resend', ResendVerificationController::class)
         ->middleware('throttle:6,1')
         ->name('verification.resend');
+
+    // Accept-invitation flow — token in URL, no other auth needed.
+    Route::get('invitations/accept/{token}',  [\App\Http\Controllers\Auth\AcceptInvitationController::class, 'show'])
+        ->name('invitations.accept');
+    Route::post('invitations/accept/{token}', [\App\Http\Controllers\Auth\AcceptInvitationController::class, 'store'])
+        ->name('invitations.accept.store');
 });
 
 Route::middleware('auth')->group(function () {

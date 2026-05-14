@@ -56,7 +56,9 @@
                                         <i class="ri-pencil-line"></i>
                                     </a>
                                     <form method="POST" action="{{ route('engines.destroy', $engine->_id) }}"
-                                        onsubmit="return confirm('{{ __('Delete this engine?') }}');" class="inline">
+                                        data-confirm="{{ __('Delete this engine?') }}"
+                                        data-confirm-danger="1"
+                                        class="inline">
                                         @csrf @method('DELETE')
                                         <button class="inline-flex items-center justify-center w-8 h-8 text-red-600 hover:bg-red-50 rounded-lg" title="{{ __('Delete') }}">
                                             <i class="ri-delete-bin-line"></i>

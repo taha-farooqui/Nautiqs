@@ -56,6 +56,12 @@ class GoogleController extends Controller
             $provisioner->forNewUser($user);
         }
 
+        if (! $user->isActive()) {
+            return redirect()->route('login')->withErrors([
+                'email' => __('Your account has been deactivated. Contact your administrator.'),
+            ]);
+        }
+
         Auth::login($user, remember: true);
 
         return redirect()->intended(route('dashboard', absolute: false));

@@ -157,60 +157,71 @@
                     <i class="ri-add-line"></i> {{ __('Add version') }}
                 </button>
 
-                {{-- Paste-equipment modal — single instance, targets versions[modalIndex] --}}
+                {{-- Equipment modal — pre-checked current items, sortable, with a paste box for new items. --}}
                 <div x-show="equipmentModalOpen" x-cloak x-transition.opacity
                     @keydown.escape.window="closeEquipmentModal()"
                     class="fixed inset-0 z-50 bg-gray-900/70 flex items-center justify-center p-4">
                     <div @click.outside="closeEquipmentModal()"
-                        class="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
+                        class="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
                         <div class="px-5 py-4 border-b border-gray-100 flex items-center gap-3">
                             <span class="w-9 h-9 rounded-lg bg-primary-50 text-primary-800 flex items-center justify-center shrink-0">
-                                <i class="ri-clipboard-line"></i>
+                                <i class="ri-tools-line"></i>
                             </span>
                             <div class="flex-1 min-w-0">
-                                <h3 class="font-semibold text-gray-900">{{ __('Paste a list of equipment') }}</h3>
-                                <p class="text-xs text-gray-500">{{ __('One item per line. Each line becomes a ticked checkbox below.') }}</p>
+                                <h3 class="font-semibold text-gray-900">{{ __('Included equipment') }}</h3>
+                                <p class="text-xs text-gray-500">{{ __('Drag to reorder · untick to remove · paste below to add more.') }}</p>
                             </div>
                             <button type="button" @click="closeEquipmentModal()"
                                 class="w-8 h-8 inline-flex items-center justify-center text-gray-500 hover:bg-gray-100 rounded-lg">
                                 <i class="ri-close-line text-xl"></i>
                             </button>
                         </div>
-                        <div class="p-5 space-y-3">
-                            <textarea x-model="equipmentPasteBuffer" rows="6"
-                                placeholder="Bathing platform&#10;Bimini top&#10;Bow rail"
-                                class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800 font-mono"></textarea>
 
-                            <template x-if="equipmentPreview.length > 0">
-                                <div class="rounded-lg border border-gray-200 p-3 bg-gray-50">
-                                    <p class="text-xs font-semibold text-gray-600 mb-2">
-                                        {{ __('Preview') }} <span class="text-gray-400 font-normal">(<span x-text="equipmentPreview.length"></span>)</span>
-                                    </p>
-                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-60 overflow-y-auto">
-                                        <template x-for="(label, pi) in equipmentPreview" :key="pi">
-                                            <label class="flex items-center gap-2 px-2 py-1.5 rounded bg-white border border-gray-200 text-xs">
-                                                <input type="checkbox" checked disabled
-                                                    class="rounded border-gray-300 text-primary-800" />
-                                                <span class="text-gray-800 truncate" x-text="label"></span>
-                                            </label>
-                                        </template>
-                                    </div>
-                                </div>
-                            </template>
-                        </div>
-                        <div class="px-5 py-4 border-t border-gray-100 bg-gray-50 flex items-center justify-between gap-2">
-                            <span class="text-xs text-gray-500">{{ __('One item per line. Click OK when done.') }}</span>
-                            <div class="flex items-center gap-2">
-                                <button type="button" @click="closeEquipmentModal()"
-                                    class="px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">
-                                    {{ __('Cancel') }}
-                                </button>
-                                <button type="button" @click="confirmEquipmentPaste()"
-                                    :disabled="equipmentPreview.length === 0 && equipmentPasteBuffer.trim().length === 0"
-                                    class="inline-flex items-center gap-1 px-4 py-1.5 text-sm font-semibold bg-primary-800 hover:bg-primary-900 text-white rounded-lg disabled:opacity-50">
-                                    <i class="ri-check-line"></i> {{ __('OK') }}
-                                </button>
+                        <div class="p-5 space-y-4 overflow-y-auto">
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">
+                                    {{ __('Current items') }} <span class="text-gray-400 font-normal normal-case">(<span x-text="equipmentWorkingList.length"></span>)</span>
+                                </p>
+                                <template x-if="equipmentWorkingList.length === 0">
+                                    <p class="text-xs text-gray-400 italic">{{ __('No items yet — paste some below.') }}</p>
+                                </template>
+                                <ul x-ref="equipmentSortableList" class="space-y-1.5">
+                                    <template x-for="(item, i) in equipmentWorkingList" :key="item.id">
+                                        <li class="flex items-center gap-2 px-2 py-1.5 rounded border border-gray-200 bg-white"
+                                            :data-id="item.id">
+                                            <span class="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-700 eq-handle">
+                                                <i class="ri-draggable text-lg"></i>
+                                            </span>
+                                            <input type="checkbox" x-model="item.checked"
+                                                class="rounded border-gray-300 text-primary-800 focus:ring-primary-800" />
+                                            <span class="text-sm text-gray-800 flex-1 truncate"
+                                                :class="item.checked ? '' : 'line-through text-gray-400'"
+                                                x-text="item.label"></span>
+                                        </li>
+                                    </template>
+                                </ul>
                             </div>
+
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">
+                                    {{ __('Add more') }}
+                                </p>
+                                <textarea x-model="equipmentPasteBuffer" rows="4"
+                                    placeholder="Bathing platform&#10;Bimini top&#10;Bow rail"
+                                    class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800 font-mono"></textarea>
+                                <p class="text-xs text-gray-500 mt-1">{{ __('One item per line.') }}</p>
+                            </div>
+                        </div>
+
+                        <div class="px-5 py-4 border-t border-gray-100 bg-gray-50 flex items-center justify-end gap-2">
+                            <button type="button" @click="closeEquipmentModal()"
+                                class="px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">
+                                {{ __('Cancel') }}
+                            </button>
+                            <button type="button" @click="confirmEquipmentPaste()"
+                                class="inline-flex items-center gap-1 px-4 py-1.5 text-sm font-semibold bg-primary-800 hover:bg-primary-900 text-white rounded-lg">
+                                <i class="ri-check-line"></i> {{ __('OK') }}
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -340,7 +351,8 @@
                 <div class="bg-white rounded-2xl border border-red-200 p-5">
                     <p class="text-sm text-gray-600 mb-3">Delete this boat and all its versions/options. Existing quotes are preserved (snapshots).</p>
                     <form method="POST" action="{{ route('catalogue.models.destroy', $model->_id) }}"
-                        onsubmit="return confirm('Delete «{{ $model->name }}»?');">
+                        data-confirm="{{ __('Delete') }} «{{ $model->name }}»?"
+                        data-confirm-danger="1">
                         @csrf @method('DELETE')
                         <button class="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium bg-red-50 hover:bg-red-100 text-red-700 rounded-lg">
                             <i class="ri-delete-bin-line"></i> Delete boat
@@ -437,7 +449,9 @@
                                 </div>
                             </div>
                             <form method="POST" action="{{ route('catalogue.variants.destroy', $v->_id) }}"
-                                onsubmit="return confirm('{{ __('Remove') }} «{{ $v->name }}»?');" class="-mt-3 text-right">
+                                data-confirm="{{ __('Remove') }} «{{ $v->name }}»?"
+                                data-confirm-danger="1"
+                                class="-mt-3 text-right">
                                 @csrf @method('DELETE')
                                 <button class="text-xs text-red-600 hover:underline"><i class="ri-delete-bin-line"></i> {{ __('Remove') }}</button>
                             </form>
@@ -514,61 +528,77 @@
                 </div>
             </div>
 
-            {{-- Shared paste modal — single instance for this section, targets
-                 whichever variant row called openModalFor(). --}}
+            {{-- Shared equipment modal — single instance per section. Shows
+                 the current items pre-checked + sortable, plus a paste box
+                 for new entries. Commit overwrites the target's list with
+                 the modal's working copy so reorders + removals are saved
+                 together. --}}
             <div x-show="modalOpen" x-cloak x-transition.opacity
                 @keydown.escape.window="closeModal()"
                 class="fixed inset-0 z-50 bg-gray-900/70 flex items-center justify-center p-4">
                 <div @click.outside="closeModal()"
-                    class="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
+                    class="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
                     <div class="px-5 py-4 border-b border-gray-100 flex items-center gap-3">
                         <span class="w-9 h-9 rounded-lg bg-primary-50 text-primary-800 flex items-center justify-center shrink-0">
-                            <i class="ri-clipboard-line"></i>
+                            <i class="ri-tools-line"></i>
                         </span>
                         <div class="flex-1 min-w-0">
-                            <h3 class="font-semibold text-gray-900">{{ __('Paste a list of equipment') }}</h3>
-                            <p class="text-xs text-gray-500">{{ __('One item per line. Each line becomes a ticked checkbox below.') }}</p>
+                            <h3 class="font-semibold text-gray-900">{{ __('Included equipment') }}</h3>
+                            <p class="text-xs text-gray-500">{{ __('Drag to reorder · untick to remove · paste below to add more.') }}</p>
                         </div>
                         <button type="button" @click="closeModal()"
                             class="w-8 h-8 inline-flex items-center justify-center text-gray-500 hover:bg-gray-100 rounded-lg">
                             <i class="ri-close-line text-xl"></i>
                         </button>
                     </div>
-                    <div class="p-5 space-y-3">
-                        <textarea x-model="pasteBuffer" rows="6"
-                            placeholder="Bathing platform&#10;Bimini top&#10;Bow rail"
-                            class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800 font-mono"></textarea>
 
-                        <template x-if="preview.length > 0">
-                            <div class="rounded-lg border border-gray-200 p-3 bg-gray-50">
-                                <p class="text-xs font-semibold text-gray-600 mb-2">
-                                    {{ __('Preview') }} <span class="text-gray-400 font-normal">(<span x-text="preview.length"></span>)</span>
-                                </p>
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-60 overflow-y-auto">
-                                    <template x-for="(label, pi) in preview" :key="pi">
-                                        <label class="flex items-center gap-2 px-2 py-1.5 rounded bg-white border border-gray-200 text-xs">
-                                            <input type="checkbox" checked disabled
-                                                class="rounded border-gray-300 text-primary-800" />
-                                            <span class="text-gray-800 truncate" x-text="label"></span>
-                                        </label>
-                                    </template>
-                                </div>
-                            </div>
-                        </template>
-                    </div>
-                    <div class="px-5 py-4 border-t border-gray-100 bg-gray-50 flex items-center justify-between gap-2">
-                        <span class="text-xs text-gray-500">{{ __('One item per line. Click OK when done.') }}</span>
-                        <div class="flex items-center gap-2">
-                            <button type="button" @click="closeModal()"
-                                class="px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">
-                                {{ __('Cancel') }}
-                            </button>
-                            <button type="button" @click="commit()"
-                                :disabled="preview.length === 0"
-                                class="inline-flex items-center gap-1 px-4 py-1.5 text-sm font-semibold bg-primary-800 hover:bg-primary-900 text-white rounded-lg disabled:opacity-50">
-                                <i class="ri-check-line"></i> {{ __('OK') }}
-                            </button>
+                    <div class="p-5 space-y-4 overflow-y-auto">
+                        {{-- Existing items, sortable --}}
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">
+                                {{ __('Current items') }} <span class="text-gray-400 font-normal normal-case">(<span x-text="workingList.length"></span>)</span>
+                            </p>
+                            <template x-if="workingList.length === 0">
+                                <p class="text-xs text-gray-400 italic">{{ __('No items yet — paste some below.') }}</p>
+                            </template>
+                            <ul x-ref="sortableList" class="space-y-1.5">
+                                <template x-for="(item, i) in workingList" :key="item.id">
+                                    <li class="flex items-center gap-2 px-2 py-1.5 rounded border border-gray-200 bg-white"
+                                        :data-id="item.id">
+                                        <span class="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-700 eq-handle">
+                                            <i class="ri-draggable text-lg"></i>
+                                        </span>
+                                        <input type="checkbox" x-model="item.checked"
+                                            class="rounded border-gray-300 text-primary-800 focus:ring-primary-800" />
+                                        <span class="text-sm text-gray-800 flex-1 truncate"
+                                            :class="item.checked ? '' : 'line-through text-gray-400'"
+                                            x-text="item.label"></span>
+                                    </li>
+                                </template>
+                            </ul>
                         </div>
+
+                        {{-- Paste box for new items --}}
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">
+                                {{ __('Add more') }}
+                            </p>
+                            <textarea x-model="pasteBuffer" rows="4"
+                                placeholder="Bathing platform&#10;Bimini top&#10;Bow rail"
+                                class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800 font-mono"></textarea>
+                            <p class="text-xs text-gray-500 mt-1">{{ __('One item per line.') }}</p>
+                        </div>
+                    </div>
+
+                    <div class="px-5 py-4 border-t border-gray-100 bg-gray-50 flex items-center justify-end gap-2">
+                        <button type="button" @click="closeModal()"
+                            class="px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">
+                            {{ __('Cancel') }}
+                        </button>
+                        <button type="button" @click="commit()"
+                            class="inline-flex items-center gap-1 px-4 py-1.5 text-sm font-semibold bg-primary-800 hover:bg-primary-900 text-white rounded-lg">
+                            <i class="ri-check-line"></i> {{ __('OK') }}
+                        </button>
                     </div>
                 </div>
             </div>
@@ -625,7 +655,9 @@
                                     </div>
                                 </form>
                                 <form method="POST" action="{{ route('catalogue.options.destroy', $o->_id) }}"
-                                    onsubmit="return confirm('Remove «{{ $o->label }}»?');" class="-mt-1 text-right">
+                                    data-confirm="{{ __('Remove') }} «{{ $o->label }}»?"
+                                data-confirm-danger="1"
+                                class="-mt-1 text-right">
                                     @csrf @method('DELETE')
                                     <button class="text-xs text-red-600 hover:underline"><i class="ri-delete-bin-line"></i> Remove</button>
                                 </form>
@@ -732,19 +764,25 @@
         }
 
         // Repeater state for the create-mode page (versions + custom options).
-        // Each version owns its own `equipment` array — populated via the
-        // paste-modal targeting `modalIndex`.
+        // Each version owns its own `equipment` array — managed via the
+        // equipment modal that shows current items (pre-checked, sortable)
+        // plus a paste box for new ones.
         function boatCreator() {
+            // Auto-increment id generator for working-list items so
+            // SortableJS can match :key bindings stably.
+            let eqIdCounter = 1;
+            const nextEqId = () => `e${eqIdCounter++}`;
+
             return {
                 versions: [{ name: '', base_price: '', cost: '', currency: 'EUR', equipment: [] }],
                 newOptions: [],
 
-                // Equipment paste modal state — single modal instance shared
-                // across all version rows; `modalIndex` says which version
-                // we're editing.
+                // Equipment modal state — single instance shared across rows.
                 equipmentModalOpen: false,
                 modalIndex: null,
                 equipmentPasteBuffer: '',
+                equipmentWorkingList: [],   // [{id, label, checked}]
+                equipmentSortable: null,
 
                 addVersion() {
                     this.versions.push({ name: '', base_price: '', cost: '', currency: 'EUR', equipment: [] });
@@ -753,44 +791,72 @@
                     this.newOptions.push({ category: '', label: '', price: '', cost: '' });
                 },
 
-                openEquipmentModal(i) {
+                async openEquipmentModal(i) {
                     this.modalIndex = i;
                     this.equipmentPasteBuffer = '';
+                    // Seed the working list from the version's current equipment.
+                    this.equipmentWorkingList = (this.versions[i].equipment || []).map(label => ({
+                        id: nextEqId(),
+                        label,
+                        checked: true,
+                    }));
                     this.equipmentModalOpen = true;
+                    // Wait for DOM to render then attach SortableJS.
+                    await this.$nextTick();
+                    await this.ensureSortable();
+                    if (this.equipmentSortable) this.equipmentSortable.destroy();
+                    this.equipmentSortable = window.Sortable.create(this.$refs.equipmentSortableList, {
+                        handle: '.eq-handle',
+                        animation: 150,
+                        ghostClass: 'opacity-50',
+                        onEnd: (evt) => this.applySortableOrder(),
+                    });
                 },
                 closeEquipmentModal() {
+                    if (this.equipmentSortable) { this.equipmentSortable.destroy(); this.equipmentSortable = null; }
                     this.equipmentModalOpen = false;
                     this.modalIndex = null;
                     this.equipmentPasteBuffer = '';
+                    this.equipmentWorkingList = [];
                 },
-                get equipmentPreview() {
-                    if (! this.equipmentPasteBuffer.trim()) return [];
-                    return this.equipmentPasteBuffer
-                        .split(/\r?\n/)
-                        .map(s => s.trim())
-                        .filter(s => s.length > 0);
+                ensureSortable() {
+                    if (window.Sortable) return Promise.resolve();
+                    return new Promise((resolve, reject) => {
+                        const s = document.createElement('script');
+                        s.src = 'https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js';
+                        s.onload = resolve;
+                        s.onerror = reject;
+                        document.head.appendChild(s);
+                    });
                 },
-                parseEquipmentPaste() {
-                    // No-op — the preview is reactive on equipmentPasteBuffer.
-                    // Bound to Enter so Enter doesn't submit the outer form.
+                applySortableOrder() {
+                    // Read DOM order via data-id and re-shuffle the working list.
+                    const ids = Array.from(this.$refs.equipmentSortableList.querySelectorAll('[data-id]')).map(el => el.dataset.id);
+                    const byId = Object.fromEntries(this.equipmentWorkingList.map(r => [r.id, r]));
+                    this.equipmentWorkingList = ids.map(id => byId[id]).filter(Boolean);
                 },
                 confirmEquipmentPaste() {
                     if (this.modalIndex === null) return;
-                    const lines = this.equipmentPreview;
-                    if (lines.length === 0) {
-                        this.closeEquipmentModal();
-                        return;
-                    }
-                    const existing = new Set(
-                        (this.versions[this.modalIndex].equipment || []).map(s => s.toLowerCase())
-                    );
-                    const next = [...(this.versions[this.modalIndex].equipment || [])];
-                    for (const line of lines) {
+                    // Read DOM order one more time in case the user dragged.
+                    this.applySortableOrder();
+
+                    // 1. Keep checked items in their current order.
+                    const kept = this.equipmentWorkingList
+                        .filter(item => item.checked)
+                        .map(item => item.label);
+
+                    // 2. Append pasted lines (deduped, case-insensitive).
+                    const pasted = this.equipmentPasteBuffer
+                        .split(/\r?\n/)
+                        .map(s => s.trim())
+                        .filter(s => s.length > 0);
+                    const existing = new Set(kept.map(s => s.toLowerCase()));
+                    for (const line of pasted) {
                         if (existing.has(line.toLowerCase())) continue;
-                        next.push(line);
+                        kept.push(line);
                         existing.add(line.toLowerCase());
                     }
-                    this.versions[this.modalIndex].equipment = next;
+                    this.versions[this.modalIndex].equipment = kept;
                     this.closeEquipmentModal();
                 },
             };
@@ -800,47 +866,85 @@
         // variant rows. Each row registers its `equipment` array reference
         // here so the modal can mutate the right variant's list on commit.
         function variantsEditor() {
+            let eqIdCounter = 1;
+            const nextEqId = () => `e${eqIdCounter++}`;
+
             return {
                 modalOpen: false,
                 target: null,        // ref to { equipment: [...] }
                 pasteBuffer: '',
+                workingList: [],     // [{id, label, checked}]
+                sortable: null,
 
                 register(el, equipment) {
-                    // No-op placeholder; the row's reactive data is exposed
-                    // to openModalFor() via $data so we don't need to track
-                    // it here.
+                    // Kept as a no-op so existing x-init bindings on rows
+                    // still resolve without errors.
                 },
 
-                openModalFor(rowData) {
+                async openModalFor(rowData) {
                     this.target = rowData;
                     this.pasteBuffer = '';
+                    // Seed the working list from the target's current items.
+                    this.workingList = (rowData.equipment || []).map(label => ({
+                        id: nextEqId(),
+                        label,
+                        checked: true,
+                    }));
                     this.modalOpen = true;
+                    await this.$nextTick();
+                    await this.ensureSortable();
+                    if (this.sortable) this.sortable.destroy();
+                    this.sortable = window.Sortable.create(this.$refs.sortableList, {
+                        handle: '.eq-handle',
+                        animation: 150,
+                        ghostClass: 'opacity-50',
+                        onEnd: (evt) => this.applySortableOrder(),
+                    });
                 },
                 closeModal() {
+                    if (this.sortable) { this.sortable.destroy(); this.sortable = null; }
                     this.modalOpen = false;
                     this.target = null;
                     this.pasteBuffer = '';
+                    this.workingList = [];
                 },
-                get preview() {
-                    if (! this.pasteBuffer.trim()) return [];
-                    return this.pasteBuffer
-                        .split(/\r?\n/)
-                        .map(s => s.trim())
-                        .filter(s => s.length > 0);
+                ensureSortable() {
+                    if (window.Sortable) return Promise.resolve();
+                    return new Promise((resolve, reject) => {
+                        const s = document.createElement('script');
+                        s.src = 'https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js';
+                        s.onload = resolve;
+                        s.onerror = reject;
+                        document.head.appendChild(s);
+                    });
+                },
+                applySortableOrder() {
+                    const ids = Array.from(this.$refs.sortableList.querySelectorAll('[data-id]')).map(el => el.dataset.id);
+                    const byId = Object.fromEntries(this.workingList.map(r => [r.id, r]));
+                    this.workingList = ids.map(id => byId[id]).filter(Boolean);
                 },
                 commit() {
                     if (! this.target) { this.closeModal(); return; }
-                    const lines = this.preview;
-                    if (lines.length === 0) { this.closeModal(); return; }
-                    const existing = new Set((this.target.equipment || []).map(s => s.toLowerCase()));
-                    const next = [...(this.target.equipment || [])];
-                    for (const line of lines) {
+                    this.applySortableOrder();
+
+                    const kept = this.workingList
+                        .filter(item => item.checked)
+                        .map(item => item.label);
+
+                    const pasted = this.pasteBuffer
+                        .split(/\r?\n/)
+                        .map(s => s.trim())
+                        .filter(s => s.length > 0);
+                    const existing = new Set(kept.map(s => s.toLowerCase()));
+                    for (const line of pasted) {
                         if (existing.has(line.toLowerCase())) continue;
-                        next.push(line);
+                        kept.push(line);
                         existing.add(line.toLowerCase());
                     }
-                    // Mutate in place so all references stay reactive.
-                    this.target.equipment.splice(0, this.target.equipment.length, ...next);
+
+                    // Mutate in place so Alpine's :key="ei + '-' + eq" bindings
+                    // on the row's chip list re-render correctly.
+                    this.target.equipment.splice(0, this.target.equipment.length, ...kept);
                     this.closeModal();
                 },
             };

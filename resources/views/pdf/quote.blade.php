@@ -201,9 +201,14 @@
         {{-- Left: terms & conditions --}}
         <td class="left">
             <div class="qcond-title">{{ __('Terms & conditions') }}</div>
+            @php
+                $termsPayment  = $quote->terms['payment']  ?? null;
+                $termsDelivery = $quote->terms['delivery'] ?? null;
+                $termsWarranty = $quote->terms['warranty'] ?? null;
+            @endphp
             <table class="qcond">
-                <tr><td class="label">{{ __('Payment') }}</td><td class="val">{{ __('30% on order · 70% on delivery') }}</td></tr>
-                <tr><td class="label">{{ __('Delivery') }}</td><td class="val">{{ __('8 to 12 weeks depending on availability') }}</td></tr>
+                <tr><td class="label">{{ __('Payment') }}</td><td class="val">{{ $termsPayment ?: __('30% on order · 70% on delivery') }}</td></tr>
+                <tr><td class="label">{{ __('Delivery') }}</td><td class="val">{{ $termsDelivery ?: __('8 to 12 weeks depending on availability') }}</td></tr>
                 <tr><td class="label">{{ __('Quote valid') }}</td>
                     <td class="val">
                         @if ($quote->expires_at)
@@ -212,7 +217,7 @@
                             {{ __('30 days from issue') }}
                         @endif
                     </td></tr>
-                <tr><td class="label">{{ __('Warranty') }}</td><td class="val">{{ __('Manufacturer warranty + dealer prep') }}</td></tr>
+                <tr><td class="label">{{ __('Warranty') }}</td><td class="val">{{ $termsWarranty ?: __('Manufacturer warranty + dealer prep') }}</td></tr>
             </table>
 
             @if (! empty($quote->trade_in) && (($quote->trade_in['value'] ?? 0) > 0))

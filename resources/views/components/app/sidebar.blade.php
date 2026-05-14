@@ -1,6 +1,7 @@
 @php
     $user = auth()->user();
     $isSuperadmin = $user?->role === \App\Models\User::ROLE_SUPERADMIN;
+    $isTenantAdmin = $user?->role === \App\Models\User::ROLE_TENANT_ADMIN;
     $unreadCount = $unreadNotificationsCount ?? 0;
 
     $userInitials = collect(explode(' ', $user?->name ?? 'U'))
@@ -32,8 +33,11 @@
         ],
         [
             'section' => 'Settings',
-            'items' => [
+            'items' => array_filter([
                 ['label' => 'Company settings',  'icon' => 'ri-building-line',           'route' => 'company.settings', 'active' => 'company.settings'],
+                $isTenantAdmin
+                    ? ['label' => 'Team',        'icon' => 'ri-team-line',               'route' => 'team.index',       'active' => 'team.*']
+                    : null,
                 [
                     'label'    => 'Email settings',
                     'icon'     => 'ri-mail-settings-line',
@@ -43,7 +47,7 @@
                         ['label' => 'Email log',       'icon' => 'ri-mail-check-line', 'route' => 'email-log.index',       'active' => 'email-log.*'],
                     ],
                 ],
-            ],
+            ]),
         ],
         [
             'section' => 'Activity',

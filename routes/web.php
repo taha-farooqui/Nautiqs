@@ -97,9 +97,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Quotes — §11, §16.2
     Route::get('/quotes',                   [QuoteController::class, 'index'])->name('quotes.index');
     Route::get('/quotes/create',            [QuoteController::class, 'create'])->name('quotes.create');
+    Route::get('/quotes/trash',             [QuoteController::class, 'trash'])->name('quotes.trash');
     Route::get('/quotes/{id}',              [QuoteController::class, 'show'])->name('quotes.show');
     Route::get('/quotes/{id}/edit',         [QuoteController::class, 'edit'])->name('quotes.edit');
     Route::delete('/quotes/{id}',           [QuoteController::class, 'destroy'])->name('quotes.destroy');
+    Route::post('/quotes/{id}/restore',     [QuoteController::class, 'restore'])->name('quotes.restore');
+    Route::delete('/quotes/{id}/force',     [QuoteController::class, 'forceDelete'])->name('quotes.force-delete');
     Route::post('/quotes/{id}/mark-sent',   [QuoteController::class, 'markSent'])->name('quotes.mark-sent');
     Route::post('/quotes/{id}/mark-won',    [QuoteController::class, 'markWon'])->name('quotes.mark-won');
     Route::post('/quotes/{id}/mark-lost',   [QuoteController::class, 'markLost'])->name('quotes.mark-lost');
@@ -111,6 +114,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Company settings — §17
     Route::get('/settings/company',    [CompanySettingsController::class, 'edit'])->name('company.settings');
     Route::patch('/settings/company',  [CompanySettingsController::class, 'update'])->name('company.settings.update');
+
+    // Team — multi-user sub-accounts. Admin-gated; the role middleware
+    // returns 403 to salespeople who try to reach these.
+    Route::middleware('role:tenant_admin')->group(function () {
+        Route::get('/settings/team',                        [\App\Http\Controllers\TeamController::class, 'index'])->name('team.index');
+        Route::post('/settings/team/invite',                [\App\Http\Controllers\TeamController::class, 'invite'])->name('team.invite');
+        Route::post('/settings/team/invite/{id}/resend',    [\App\Http\Controllers\TeamController::class, 'resend'])->name('team.invite.resend');
+        Route::delete('/settings/team/invite/{id}',         [\App\Http\Controllers\TeamController::class, 'revoke'])->name('team.invite.revoke');
+        Route::post('/settings/team/{userId}/deactivate',   [\App\Http\Controllers\TeamController::class, 'deactivate'])->name('team.deactivate');
+        Route::post('/settings/team/{userId}/activate',     [\App\Http\Controllers\TeamController::class, 'activate'])->name('team.activate');
+        Route::patch('/settings/team/{userId}/role',        [\App\Http\Controllers\TeamController::class, 'updateRole'])->name('team.role');
+    });
 
     // Notifications + global search
     Route::get('/notifications',            [NotificationController::class, 'index'])->name('notifications.index');

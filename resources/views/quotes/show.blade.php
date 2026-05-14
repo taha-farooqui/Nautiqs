@@ -88,8 +88,14 @@
 
     <div class="mb-6 bg-white rounded-2xl border border-gray-200 p-5">
         <div class="flex items-center justify-between mb-4 gap-3">
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-3 flex-wrap">
                 <h3 class="font-semibold text-gray-900 text-sm">{{ __('Lifecycle') }}</h3>
+                @if ($quote->creatorName())
+                    <span class="text-xs text-gray-500">
+                        <i class="ri-user-line"></i> {{ __('Created by') }}
+                        <span class="font-medium text-gray-700">{{ $quote->creatorName() }}</span>
+                    </span>
+                @endif
                 @if ($quote->duplicated_from)
                     <span class="text-xs text-gray-500">{{ __('Duplicated from') }} <span class="font-mono">{{ $quote->duplicated_from }}</span></span>
                 @endif
@@ -211,15 +217,14 @@
             </button>
         </form>
 
-        @if ($quote->status === \App\Models\Quote::STATUS_DRAFT)
-            <form method="POST" action="{{ route('quotes.destroy', $quote->_id) }}"
-                onsubmit="return confirm('{{ __('Delete this draft? This cannot be undone.') }}');">
-                @csrf @method('DELETE')
-                <button class="inline-flex items-center justify-center w-9 h-9 text-red-600 hover:bg-red-50 rounded-lg">
-                    <i class="ri-delete-bin-line"></i>
-                </button>
-            </form>
-        @endif
+        <form method="POST" action="{{ route('quotes.destroy', $quote->_id) }}"
+            data-confirm="{{ __('Move this quote to Trash?') }}">
+            @csrf @method('DELETE')
+            <button class="inline-flex items-center justify-center w-9 h-9 text-red-600 hover:bg-red-50 rounded-lg"
+                title="{{ __('Move to Trash') }}">
+                <i class="ri-delete-bin-line"></i>
+            </button>
+        </form>
     </div>
 
     <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">

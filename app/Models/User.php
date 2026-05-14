@@ -26,6 +26,9 @@ class User extends Authenticatable implements MustVerifyEmail
         'google_id',
         'avatar',
         'email_verified_at',
+        'is_active',
+        'invited_by_user_id',
+        'invitation_accepted_at',
     ];
 
     protected $hidden = [
@@ -36,9 +39,20 @@ class User extends Authenticatable implements MustVerifyEmail
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
-            'password'          => 'hashed',
+            'email_verified_at'       => 'datetime',
+            'invitation_accepted_at'  => 'datetime',
+            'password'                => 'hashed',
+            'is_active'               => 'boolean',
         ];
+    }
+
+    /**
+     * Treat a missing/null is_active as active so existing user rows from
+     * before this feature don't get locked out.
+     */
+    public function isActive(): bool
+    {
+        return $this->is_active === null || (bool) $this->is_active;
     }
 
     public function company()

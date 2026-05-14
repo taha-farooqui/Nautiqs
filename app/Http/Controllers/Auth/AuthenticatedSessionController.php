@@ -26,6 +26,19 @@ class AuthenticatedSessionController extends Controller
     {
         $request->authenticate();
 
+        // Block deactivated users from completing login. Their credentials
+        // still pass, but the workspace is closed to them until an admin
+        // reactivates the account.
+        $user = Auth::user();
+        if ($user && ! $user->isActive()) {
+            Auth::guard('web')->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+            return back()->withErrors([
+                'email' => __('Your account has been deactivated. Contact your administrator.'),
+            ]);
+        }
+
         $request->session()->regenerate();
 
         return redirect()->intended(route('dashboard', absolute: false));

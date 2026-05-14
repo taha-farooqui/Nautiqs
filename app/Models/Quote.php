@@ -80,6 +80,15 @@ class Quote extends Model
         // Internal
         'internal_notes',     // §11.4 — never in PDF
 
+        // Terms & conditions (override the hardcoded PDF defaults per quote).
+        // Blank/null → PDF falls back to the company default copy.
+        'terms',              // [payment, delivery, warranty]
+
+        // Soft-delete / trash. Set when the user moves the quote to Trash;
+        // global scope in BelongsToTenant filters these out. The trash
+        // controller restores by setting it back to null.
+        'trashed_at',
+
         // Validity (mockup-driven)
         'expires_at',         // when the quote offer expires; defaults to created_at + 30d
 
@@ -93,6 +102,11 @@ class Quote extends Model
         'order_confirmation_number',  // BC-YYYY-NNN, set when Won → BC generated
         'order_confirmation_at',
         'duplicated_from',             // reference of the quote this was duplicated from (§11.3)
+
+        // Multi-user attribution. We snapshot the name at creation so the
+        // label survives deactivation of the user record.
+        'created_by_user_id',
+        'created_by_name',
     ];
 
     protected $casts = [
@@ -106,6 +120,8 @@ class Quote extends Model
         'trade_in'           => 'array',
         'totals'             => 'array',
         'tracking'           => 'array',
+        'terms'              => 'array',
+        'trashed_at'         => 'datetime',
         'boat_discount_pct'    => 'float',
         'options_discount_pct' => 'float',
         'global_discount_pct'  => 'float',
@@ -118,6 +134,43 @@ class Quote extends Model
         'lost_at'            => 'datetime',
         'order_confirmation_at' => 'datetime',
     ];
+
+    /**
+     * Filter out trashed quotes from every default query. Trash views opt in
+     * via withTrashed() / onlyTrashed() below. Mongo doesn't ship Laravel's
+     * SoftDeletes trait, so this is the hand-rolled equivalent for one model.
+     */
+    public static function bootQuote(): void
+    {
+        static::addGlobalScope('not_trashed', function ($builder) {
+            $builder->whereNull('trashed_at');
+        });
+    }
+
+    public function scopeWithTrashed($q)
+    {
+        return $q->withoutGlobalScope('not_trashed');
+    }
+
+    public function scopeOnlyTrashed($q)
+    {
+        return $q->withoutGlobalScope('not_trashed')->whereNotNull('trashed_at');
+    }
+
+    public function isTrashed(): bool
+    {
+        return $this->trashed_at !== null;
+    }
+
+    public function trash(): void
+    {
+        $this->update(['trashed_at' => now()]);
+    }
+
+    public function untrash(): void
+    {
+        $this->update(['trashed_at' => null]);
+    }
 
     public function company()
     {
@@ -163,5 +216,20 @@ class Quote extends Model
     public function openCount(): int
     {
         return (int) ($this->tracking['open_count'] ?? 0);
+    }
+
+    /**
+     * Display name of whoever created this quote. Falls back to the live
+     * User record's name if the snapshot is empty (older quotes), then to
+     * "—" so the UI never crashes on a deleted-and-purged user.
+     */
+    public function creatorName(): ?string
+    {
+        if (! empty($this->created_by_name)) return $this->created_by_name;
+        if ($this->created_by_user_id) {
+            $u = User::find($this->created_by_user_id);
+            if ($u) return $u->name;
+        }
+        return null;
     }
 }

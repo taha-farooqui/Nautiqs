@@ -108,7 +108,9 @@
                                             @endif
                                         @else
                                             <form method="POST" action="{{ route('catalogue.brands.private.destroy', $brand->_id) }}"
-                                                onsubmit="return confirm('Delete this private brand and all its models, variants, and options? This cannot be undone.');">
+                                                data-confirm="{{ __('Delete this private brand?') }}"
+                                                data-confirm-text="{{ __('All its models, variants, and options will be removed. This cannot be undone.') }}"
+                                                data-confirm-danger="1">
                                                 @csrf @method('DELETE')
                                                 <button class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium bg-red-50 hover:bg-red-100 text-red-700 rounded-lg">
                                                     <i class="ri-delete-bin-line"></i> Delete
