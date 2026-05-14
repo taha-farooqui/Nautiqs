@@ -92,7 +92,12 @@ class Quote extends Model
         // Validity (mockup-driven)
         'expires_at',         // when the quote offer expires; defaults to created_at + 30d
 
-        // Email open-tracking (mockup-driven; populated when email module fires)
+        // Email open-tracking. The tracking_token is a per-quote secret
+        // embedded as a 1x1 pixel URL parameter in every outbound email
+        // body; hitting it increments tracking.open_count and stamps
+        // first/last opened timestamps. Stored on the quote so the same
+        // counter survives across follow-ups and re-sends.
+        'tracking_token',
         'tracking',           // [open_count: int, first_opened_at, last_opened_at]
 
         // Lifecycle
@@ -139,8 +144,12 @@ class Quote extends Model
      * Filter out trashed quotes from every default query. Trash views opt in
      * via withTrashed() / onlyTrashed() below. Mongo doesn't ship Laravel's
      * SoftDeletes trait, so this is the hand-rolled equivalent for one model.
+     *
+     * Note: must use `booted()` (Eloquent's official extension point), not a
+     * bare `bootQuote()` — Laravel only auto-runs boot hooks named after
+     * traits, not after the model class itself.
      */
-    public static function bootQuote(): void
+    protected static function booted(): void
     {
         static::addGlobalScope('not_trashed', function ($builder) {
             $builder->whereNull('trashed_at');
@@ -216,6 +225,23 @@ class Quote extends Model
     public function openCount(): int
     {
         return (int) ($this->tracking['open_count'] ?? 0);
+    }
+
+    public function hasBeenOpened(): bool
+    {
+        return $this->openCount() > 0;
+    }
+
+    public function firstOpenedAt(): ?\Carbon\Carbon
+    {
+        $v = $this->tracking['first_opened_at'] ?? null;
+        return $v ? \Carbon\Carbon::parse($v) : null;
+    }
+
+    public function lastOpenedAt(): ?\Carbon\Carbon
+    {
+        $v = $this->tracking['last_opened_at'] ?? null;
+        return $v ? \Carbon\Carbon::parse($v) : null;
     }
 
     /**

@@ -631,5 +631,13 @@
     "You cannot change your own role. Ask another admin.": "Vous ne pouvez pas changer votre propre rôle. Demandez à un autre administrateur.",
     "Role updated.": "Rôle mis à jour.",
     "Your account has been deactivated. Contact your administrator.": "Votre compte a été désactivé. Contactez votre administrateur.",
-    "Welcome to :company.": "Bienvenue chez :company."
+    "Welcome to :company.": "Bienvenue chez :company.",
+    "Library": "Bibliothèque",
+    "Yours": "Vôtre",
+    "Read-only": "Lecture seule",
+    "Opens": "Ouvertures",
+    "open": "ouverture",
+    "opens": "ouvertures",
+    "Never opened": "Jamais ouvert",
+    "Last opened": "Dernière ouverture"
 }

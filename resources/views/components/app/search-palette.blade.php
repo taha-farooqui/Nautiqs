@@ -39,7 +39,7 @@
             <template x-if="! loading && query.length < 2 && ! hasResults()">
                 <div class="p-8 text-center">
                     <i class="ri-search-line text-4xl text-gray-300"></i>
-                    <p class="text-sm text-gray-600 mt-3">Start typing to search across quotes &amp; clients.</p>
+                    <p class="text-sm text-gray-600 mt-3">Start typing to search across quotes, clients &amp; models.</p>
                     <div class="mt-3 flex flex-wrap items-center justify-center gap-2 text-xs text-gray-500">
                         <span><kbd class="font-mono px-1.5 py-0.5 bg-gray-100 border border-gray-200 rounded">↑</kbd> <kbd class="font-mono px-1.5 py-0.5 bg-gray-100 border border-gray-200 rounded">↓</kbd> navigate</span>
                         <span><kbd class="font-mono px-1.5 py-0.5 bg-gray-100 border border-gray-200 rounded">Enter</kbd> open</span>
@@ -111,6 +111,31 @@
                     </template>
                 </div>
             </template>
+
+            {{-- Models group --}}
+            <template x-if="! loading && results.models && results.models.length > 0">
+                <div>
+                    <div class="px-5 py-2 text-[11px] font-semibold uppercase tracking-wider text-gray-500 bg-gray-50 border-y border-gray-100">
+                        Models
+                    </div>
+                    <template x-for="(m, i) in results.models" :key="'m-' + m.id">
+                        <a :href="m.url"
+                            @mouseenter="activeIndex = results.quotes.length + results.clients.length + i"
+                            :class="activeIndex === results.quotes.length + results.clients.length + i ? 'bg-primary-50' : 'hover:bg-gray-50'"
+                            class="flex items-center gap-3 px-5 py-3 cursor-pointer">
+                            <span class="w-9 h-9 rounded-lg bg-primary-50 text-primary-800 flex items-center justify-center shrink-0">
+                                <i class="ri-sailboat-line"></i>
+                            </span>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-medium text-gray-900 truncate" x-text="m.name"></p>
+                                <p class="text-xs text-gray-500 truncate" x-text="m.sub"></p>
+                            </div>
+                            <i class="ri-corner-down-left-line text-gray-300"
+                                x-show="activeIndex === results.quotes.length + results.clients.length + i"></i>
+                        </a>
+                    </template>
+                </div>
+            </template>
         </div>
     </div>
 </div>
@@ -118,17 +143,19 @@
 @push('scripts')
 <script>
     function searchPalette() {
+        const empty = () => ({ quotes: [], clients: [], models: [] });
+
         return {
             isOpen: false,
             query: '',
             loading: false,
             activeIndex: 0,
-            results: { quotes: [], clients: [] },
+            results: empty(),
 
             open() {
                 this.isOpen = true;
                 this.query = '';
-                this.results = { quotes: [], clients: [] };
+                this.results = empty();
                 this.activeIndex = 0;
                 this.$nextTick(() => this.$refs.input?.focus());
             },
@@ -138,11 +165,17 @@
             },
 
             hasResults() {
-                return this.results.quotes.length > 0 || this.results.clients.length > 0;
+                return this.results.quotes.length > 0
+                    || this.results.clients.length > 0
+                    || (this.results.models?.length ?? 0) > 0;
             },
 
             allHits() {
-                return [...this.results.quotes, ...this.results.clients];
+                return [
+                    ...this.results.quotes,
+                    ...this.results.clients,
+                    ...(this.results.models ?? []),
+                ];
             },
 
             navigate(delta) {
@@ -158,7 +191,7 @@
 
             async search() {
                 if (this.query.trim().length < 2) {
-                    this.results = { quotes: [], clients: [] };
+                    this.results = empty();
                     return;
                 }
                 this.loading = true;
@@ -168,7 +201,8 @@
                         credentials: 'same-origin',
                     });
                     const data = await res.json();
-                    this.results = data;
+                    // Defensive merge so missing keys don't crash hasResults() etc.
+                    this.results = { ...empty(), ...data };
                     this.activeIndex = 0;
                 } catch (e) {
                     console.error('search failed', e);

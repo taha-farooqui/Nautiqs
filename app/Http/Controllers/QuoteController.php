@@ -383,6 +383,16 @@ class QuoteController extends Controller
         $subject  = $request->filled('subject') ? $request->input('subject') : $rendered['subject'];
         $bodyHtml = $request->filled('message') ? $request->input('message') : $rendered['body'];
 
+        // Email open-tracking pixel. Mint a per-quote token on first send
+        // and re-use it for every follow-up so the open-count keeps
+        // accumulating against the same quote. The pixel hits
+        // /e/p/{token} which bumps tracking.open_count.
+        if (empty($quote->tracking_token)) {
+            $quote->update(['tracking_token' => \Illuminate\Support\Str::random(40)]);
+        }
+        $pixelUrl = route('email.pixel', $quote->tracking_token);
+        $bodyHtml .= '<img src="' . e($pixelUrl) . '" width="1" height="1" alt="" style="display:block;width:1px;height:1px;border:0;" />';
+
         // Order-confirmation emails attach the BC PDF; everything else
         // attaches the quote PDF.
         if ($type === EmailLog::TYPE_ORDER_CONFIRMATION && ! empty($quote->order_confirmation_number)) {

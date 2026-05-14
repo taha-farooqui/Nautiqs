@@ -34,6 +34,7 @@
                         <th class="px-5 py-3 font-semibold">{{ __('Brand') }}</th>
                         <th class="px-5 py-3 font-semibold">{{ __('Code') }}</th>
                         <th class="px-5 py-3 font-semibold">{{ __('HP') }}</th>
+                        <th class="px-5 py-3 font-semibold">{{ __('Source') }}</th>
                         <th class="px-5 py-3 font-semibold text-right">{{ __('Public HT') }}</th>
                         <th class="px-5 py-3 font-semibold text-right">{{ __('VAT') }}</th>
                         <th class="px-5 py-3 font-semibold text-right">{{ __('TTC') }}</th>
@@ -46,24 +47,35 @@
                             <td class="px-5 py-3 font-medium text-gray-900">{{ $engine->brand }}</td>
                             <td class="px-5 py-3 font-mono text-xs text-gray-700">{{ $engine->code }}</td>
                             <td class="px-5 py-3 text-gray-700">{{ $engine->horsepower ? number_format($engine->horsepower, 0) . ' ' . __('HP') : '—' }}</td>
-                            <td class="px-5 py-3 text-right font-semibold text-gray-900">€{{ number_format($engine->price ?? 0, 2, ',', ' ') }}</td>
-                            <td class="px-5 py-3 text-right text-gray-700">{{ number_format($engine->vat_rate ?? 0, 2) }}%</td>
-                            <td class="px-5 py-3 text-right font-semibold text-gray-900">€{{ number_format($engine->priceTtc(), 2, ',', ' ') }}</td>
+                            <td class="px-5 py-3">
+                                @if ($engine->source === 'global')
+                                    <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide bg-gray-100 text-gray-700">{{ __('Library') }}</span>
+                                @else
+                                    <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide bg-primary-50 text-primary-800">{{ __('Yours') }}</span>
+                                @endif
+                            </td>
+                            <td class="px-5 py-3 text-right font-semibold text-gray-900">€{{ number_format($engine->price, 2, ',', ' ') }}</td>
+                            <td class="px-5 py-3 text-right text-gray-700">{{ number_format($engine->vat_rate, 2) }}%</td>
+                            <td class="px-5 py-3 text-right font-semibold text-gray-900">€{{ number_format($engine->ttc, 2, ',', ' ') }}</td>
                             <td class="px-5 py-3">
                                 <div class="flex items-center justify-end gap-1">
-                                    <a href="{{ route('engines.edit', $engine->_id) }}"
-                                        class="inline-flex items-center justify-center w-8 h-8 text-gray-500 hover:text-primary-800 hover:bg-gray-100 rounded-lg" title="{{ __('Edit') }}">
-                                        <i class="ri-pencil-line"></i>
-                                    </a>
-                                    <form method="POST" action="{{ route('engines.destroy', $engine->_id) }}"
-                                        data-confirm="{{ __('Delete this engine?') }}"
-                                        data-confirm-danger="1"
-                                        class="inline">
-                                        @csrf @method('DELETE')
-                                        <button class="inline-flex items-center justify-center w-8 h-8 text-red-600 hover:bg-red-50 rounded-lg" title="{{ __('Delete') }}">
-                                            <i class="ri-delete-bin-line"></i>
-                                        </button>
-                                    </form>
+                                    @if ($engine->source === 'private')
+                                        <a href="{{ route('engines.edit', $engine->id) }}"
+                                            class="inline-flex items-center justify-center w-8 h-8 text-gray-500 hover:text-primary-800 hover:bg-gray-100 rounded-lg" title="{{ __('Edit') }}">
+                                            <i class="ri-pencil-line"></i>
+                                        </a>
+                                        <form method="POST" action="{{ route('engines.destroy', $engine->id) }}"
+                                            data-confirm="{{ __('Delete this engine?') }}"
+                                            data-confirm-danger="1"
+                                            class="inline">
+                                            @csrf @method('DELETE')
+                                            <button class="inline-flex items-center justify-center w-8 h-8 text-red-600 hover:bg-red-50 rounded-lg" title="{{ __('Delete') }}">
+                                                <i class="ri-delete-bin-line"></i>
+                                            </button>
+                                        </form>
+                                    @else
+                                        <span class="text-xs text-gray-400 italic pr-2">{{ __('Read-only') }}</span>
+                                    @endif
                                 </div>
                             </td>
                         </tr>

@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Engine;
+use App\Models\GlobalEngine;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Pagination\Paginator;
 
 class EngineController extends Controller
 {
@@ -11,22 +14,71 @@ class EngineController extends Controller
     {
         $q = trim((string) $request->query('q', ''));
 
-        $query = Engine::query()
+        // Per-dealer engines (private) — same as before.
+        $privateQuery = Engine::query()
             ->where('is_archived', false)
-            ->orderBy('brand')
-            ->orderBy('code');
+            ->orderBy('brand')->orderBy('code');
+
+        // Platform global engines — visible to every dealer.
+        $globalQuery = GlobalEngine::query()
+            ->where('is_active', true)
+            ->orderBy('brand')->orderBy('code');
 
         if ($q !== '') {
-            $query->where(function ($w) use ($q) {
-                $w->where('brand', 'like', "%{$q}%")
-                  ->orWhere('code', 'like', "%{$q}%")
-                  ->orWhere('description', 'like', "%{$q}%");
+            $needle = $q;
+            $privateQuery->where(function ($w) use ($needle) {
+                $w->where('brand', 'like', "%{$needle}%")
+                  ->orWhere('code', 'like', "%{$needle}%")
+                  ->orWhere('description', 'like', "%{$needle}%");
+            });
+            $globalQuery->where(function ($w) use ($needle) {
+                $w->where('brand', 'like', "%{$needle}%")
+                  ->orWhere('code', 'like', "%{$needle}%")
+                  ->orWhere('description', 'like', "%{$needle}%");
             });
         }
 
-        $engines = $query->paginate(50)->withQueryString();
+        // Normalise into a single shape so the view can iterate without
+        // caring which collection a row came from.
+        $private = $privateQuery->get()->map(fn ($e) => $this->normalise($e, 'private'));
+        $globals = $globalQuery->get()->map(fn ($e) => $this->normalise($e, 'global'));
+
+        $merged = $private
+            ->concat($globals)
+            ->sortBy([['brand','asc'], ['code','asc']])
+            ->values();
+
+        // Manual paginator since we're merging two Eloquent collections.
+        $perPage     = 50;
+        $currentPage = (int) ($request->query('page') ?: 1);
+        $engines     = new LengthAwarePaginator(
+            $merged->forPage($currentPage, $perPage)->values(),
+            $merged->count(),
+            $perPage,
+            $currentPage,
+            ['path' => Paginator::resolveCurrentPath(), 'query' => $request->query()]
+        );
 
         return view('engines.index', compact('engines', 'q'));
+    }
+
+    /**
+     * Flatten an Engine | GlobalEngine row into the shape the view uses.
+     * `source` lets the view decide whether to show edit/delete buttons.
+     */
+    private function normalise($row, string $source): object
+    {
+        return (object) [
+            'id'         => (string) $row->_id,
+            'source'     => $source,
+            'brand'      => $row->brand,
+            'code'       => $row->code,
+            'horsepower' => $row->horsepower,
+            'fuel'       => $row->fuel,
+            'price'      => (float) ($row->price ?? 0),
+            'vat_rate'   => (float) ($row->vat_rate ?? 0),
+            'ttc'        => $row->priceTtc(),
+        ];
     }
 
     public function create()

@@ -19,6 +19,11 @@ Route::get('/', function () {
         : redirect()->route('login');
 });
 
+// Email open-tracking pixel. Public on purpose — the only credential is
+// the random per-quote token in the URL. Always returns a 1x1 GIF.
+Route::get('/e/p/{token}', \App\Http\Controllers\EmailPixelController::class)
+    ->name('email.pixel');
+
 // UI locale switcher — drops a 1-year `locale` cookie and bounces the user
 // back where they came from. Reachable while logged in or out so the login
 // screen language toggle works.

@@ -146,7 +146,7 @@
                             <th class="px-4 py-3 text-left font-semibold">{{ __('Status') }}</th>
                             <th class="px-4 py-3 text-left font-semibold">{{ __('Created by') }}</th>
                             <th class="px-4 py-3 text-left font-semibold">{{ __('Date') }}</th>
-                            <th class="px-4 py-3 text-left font-semibold">{{ __('Expires') }}</th>
+                            <th class="px-4 py-3 text-left font-semibold">{{ __('Opens') }}</th>
                             <th class="px-4 py-3"></th>
                         </tr>
                     </thead>
@@ -157,7 +157,6 @@
                                 $last  = $quote->client_snapshot['last_name']  ?? '';
                                 $clientName = trim($first . ' ' . $last) ?: __('Guest');
                                 $initials = strtoupper(mb_substr($first, 0, 1) . mb_substr($last, 0, 1)) ?: 'G';
-                                $daysToExpiry = $quote->daysUntilExpiry();
                             @endphp
                             <tr class="hover:bg-gray-50 cursor-pointer"
                                 data-href="{{ route('quotes.show', $quote->_id) }}"
@@ -211,22 +210,17 @@
                                     <div class="text-xs text-gray-400">{{ $quote->created_at?->diffForHumans() }}</div>
                                 </td>
 
-                                {{-- Expires --}}
+                                {{-- Opens (email tracking) --}}
                                 <td class="px-4 py-3">
-                                    @if ($quote->status === \App\Models\Quote::STATUS_WON || $quote->status === \App\Models\Quote::STATUS_LOST)
-                                        <span class="text-xs text-gray-400">—</span>
-                                    @elseif ($daysToExpiry === null)
-                                        <span class="text-xs text-gray-400">—</span>
-                                    @elseif ($daysToExpiry < 0)
-                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-50 text-red-700 text-xs font-semibold">
-                                            <i class="ri-error-warning-line"></i> {{ __('Expired') }}
-                                        </span>
-                                    @elseif ($daysToExpiry <= 3)
-                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-xs font-semibold">
-                                            <i class="ri-time-line"></i> {{ $daysToExpiry }} {{ $daysToExpiry === 1 ? __('day') : __('days') }}
-                                        </span>
+                                    @php $opens = $quote->openCount(); $lastOpen = $quote->lastOpenedAt(); @endphp
+                                    @if ($opens === 0)
+                                        <span class="text-xs text-gray-400 italic">{{ __('Never opened') }}</span>
                                     @else
-                                        <span class="text-xs text-gray-600">{{ $daysToExpiry }} {{ __('days') }}</span>
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold"
+                                            title="{{ __('Last opened') }}: {{ $lastOpen?->translatedFormat('j M Y, H:i') }}">
+                                            <i class="ri-eye-line"></i>
+                                            {{ $opens }} {{ $opens === 1 ? __('open') : __('opens') }}
+                                        </span>
                                     @endif
                                 </td>
 
