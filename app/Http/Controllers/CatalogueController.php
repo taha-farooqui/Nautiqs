@@ -89,20 +89,53 @@ class CatalogueController extends Controller
     }
 
     /**
-     * Inline brand picker — JSON list of active brands for the catalogue
-     * form's autocomplete. Optional ?q= filter for live search.
+     * Inline brand picker — JSON list of brands for the catalogue form's
+     * autocomplete. Merges:
+     *   1. The dealer's active workspace brands (CompanyBrand)
+     *   2. Every global brand they haven't activated yet (GlobalBrand)
+     *
+     * Workspace brands are returned with a bare _id; globals are prefixed
+     * with `global:<id>` so storeModel() / updateModel() can detect them
+     * and auto-activate before persisting the boat.
      */
     public function brandLookup(Request $request)
     {
         $q = trim((string) $request->query('q', ''));
-        $brands = CompanyBrand::where('is_active', true)
+
+        $workspace = CompanyBrand::where('is_active', true)
             ->when($q !== '', fn ($w) => $w->where('name', 'like', "%{$q}%"))
             ->orderBy('name')
-            ->limit(50)
+            ->limit(30)
             ->get(['_id', 'name'])
-            ->map(fn ($b) => ['id' => (string) $b->_id, 'name' => $b->name])
+            ->map(fn ($b) => [
+                'id'     => (string) $b->_id,
+                'name'   => $b->name,
+                'source' => 'workspace',
+            ]);
+
+        // Names already in the workspace — don't surface their global twin
+        // a second time. Compared case-insensitively.
+        $skip = $workspace->pluck('name')->map(fn ($n) => mb_strtolower($n));
+
+        $globals = \App\Models\GlobalBrand::where('is_active', true)
+            ->when($q !== '', fn ($w) => $w->where('name', 'like', "%{$q}%"))
+            ->orderBy('name')
+            ->limit(30)
+            ->get(['_id', 'name'])
+            ->reject(fn ($b) => $skip->contains(mb_strtolower($b->name)))
+            ->map(fn ($b) => [
+                'id'     => 'global:' . (string) $b->_id,
+                'name'   => $b->name,
+                'source' => 'global',
+            ]);
+
+        $merged = $workspace
+            ->concat($globals)
+            ->sortBy(fn ($r) => mb_strtolower($r['name']))
+            ->take(50)
             ->values();
-        return response()->json($brands);
+
+        return response()->json($merged);
     }
 
     /**
@@ -545,7 +578,10 @@ class CatalogueController extends Controller
             'included_equipment_refs.*' => 'string',
         ]);
 
-        CompanyBrand::findOrFail($data['company_brand_id']);
+        // Inline picker may have handed us a `global:<id>` reference; swap
+        // it for a real CompanyBrand id, activating the global brand into
+        // the workspace if this is the first time the dealer's used it.
+        $data['company_brand_id'] = $this->resolveBrandId($data['company_brand_id']);
 
         // Pull nested arrays out of the boat payload before persisting.
         $versions       = $data['versions'] ?? [];
@@ -660,9 +696,10 @@ class CatalogueController extends Controller
         // Equipment refs come from the form as "source:id" strings; store as is.
         $data['is_active'] = (bool) ($data['is_active'] ?? false);
 
-        // If the brand changed, validate that the new brand belongs to this tenant.
+        // If the brand changed, resolve `global:<id>` references and verify
+        // ownership of any workspace brand id.
         if (! empty($data['company_brand_id'])) {
-            CompanyBrand::findOrFail($data['company_brand_id']);
+            $data['company_brand_id'] = $this->resolveBrandId($data['company_brand_id']);
         } else {
             unset($data['company_brand_id']);
         }
@@ -722,7 +759,9 @@ class CatalogueController extends Controller
         ]);
 
         // Both ids are tenant-scoped, so findOrFail enforces ownership.
-        CompanyBrand::findOrFail($data['company_brand_id']);
+        // Brand may arrive as `global:<id>` from the inline picker —
+        // resolve + auto-activate if so.
+        $data['company_brand_id'] = $this->resolveBrandId($data['company_brand_id']);
         $model = CompanyBoatModel::findOrFail($data['company_model_id']);
 
         // Drop blank equipment rows.
@@ -799,6 +838,49 @@ class CatalogueController extends Controller
             'included_equipment' => $this->normaliseEquipmentList($data['equipment'] ?? []),
         ]);
         return back()->with('status', __('Variant «:name» updated.', ['name' => $variant->name]));
+    }
+
+    /**
+     * Brand IDs coming from the inline picker are either:
+     *   - a real `CompanyBrand._id` (workspace brand), or
+     *   - `global:<GlobalBrand._id>` — meaning the dealer picked a brand
+     *     from the platform library that's not yet in their workspace.
+     *
+     * In the global case we auto-activate the brand on the fly (idempotent:
+     * if a CompanyBrand for that global already exists we re-use it, even
+     * if it was deactivated) and return its `_id`. Plain workspace IDs are
+     * returned unchanged after a tenant ownership check.
+     *
+     * Throws ModelNotFoundException for unknown IDs.
+     */
+    private function resolveBrandId(string $id): string
+    {
+        if (str_starts_with($id, 'global:')) {
+            $globalId = substr($id, strlen('global:'));
+            $global   = \App\Models\GlobalBrand::findOrFail($globalId);
+            $companyId = auth()->user()->company_id;
+
+            // Re-use an existing CompanyBrand row that snapshots this
+            // global (whether active or not) so dealers don't end up with
+            // duplicates after activate/deactivate cycles.
+            $existing = CompanyBrand::where('company_id', $companyId)
+                ->where('global_brand_id', (string) $global->_id)
+                ->first();
+
+            if ($existing) {
+                if (! $existing->is_active) {
+                    $existing->update(['is_active' => true]);
+                }
+                return (string) $existing->_id;
+            }
+
+            $companyBrand = $this->catalogue->activateGlobalBrand($companyId, $global);
+            return (string) $companyBrand->_id;
+        }
+
+        // Workspace ID — findOrFail enforces tenant ownership via the
+        // TenantScope on CompanyBrand.
+        return (string) CompanyBrand::findOrFail($id)->_id;
     }
 
     /**

@@ -191,6 +191,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Engines — per-company library of motor SKUs (Suzuki DF200, Yamaha
     // F300, etc.) referenced from the catalogue and the quote builder.
+    // Bulk-import routes declared BEFORE the resource so they win
+    // against any future {engine} route binding on the same prefix.
+    Route::get('/engines/template', [EngineController::class, 'template'])->name('engines.template');
+    Route::post('/engines/import',  [EngineController::class, 'import'])->name('engines.import');
     Route::resource('engines', EngineController::class)->except(['show']);
 
     // Inline brand picker for the catalogue form — used by the autocomplete

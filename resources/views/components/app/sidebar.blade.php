@@ -21,7 +21,7 @@
             'items' => [
                 ['label' => 'Dashboard',         'icon' => 'ri-dashboard-3-line',        'route' => 'dashboard',       'active' => 'dashboard'],
                 ['label' => 'Quotes',            'icon' => 'ri-file-list-3-line',        'route' => 'quotes.index',    'active' => 'quotes.*'],
-                ['label' => 'Clients',           'icon' => 'ri-user-smile-line',         'route' => 'clients.index',   'active' => 'clients.*'],
+                ['label' => 'Clients',           'icon' => 'ri-account-box-line',        'route' => 'clients.index',   'active' => 'clients.*'],
             ],
         ],
         [

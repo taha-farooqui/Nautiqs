@@ -30,6 +30,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Email Tracking Base URL
+    |--------------------------------------------------------------------------
+    |
+    | Public hostname used to generate the open-tracking pixel URL inside
+    | outbound emails. Set this to your production app URL so emails sent
+    | from local dev still produce pixels recipients can actually reach.
+    | Leave blank to fall back to APP_URL (the default route helper).
+    |
+    */
+
+    'tracking_base_url' => env('EMAIL_TRACKING_BASE_URL', ''),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Debug Mode
     |--------------------------------------------------------------------------
     |

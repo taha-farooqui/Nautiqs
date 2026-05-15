@@ -5,12 +5,25 @@ namespace App\Http\Controllers;
 use App\Models\Quote;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 /**
- * 1x1 transparent GIF that lives inside outbound quote emails. When the
- * client opens the email, the embedded <img> hits this endpoint and we
- * bump the quote's open counter + stamp first/last open timestamps.
+ * 1x1 transparent GIF embedded in outbound quote emails. When a real
+ * recipient opens the email, the <img> hits this endpoint and we bump
+ * the quote's open counter.
+ *
+ * Filters that PREVENT a hit from counting:
+ *   - HEAD requests (link-warmers, bots).
+ *   - User-Agent matching known outbound-provider / scanner patterns.
+ *   - Hits within :GRACE_SECONDS of the quote being marked sent
+ *     (catches the immediate Brevo / Gmail-proxy prefetch).
+ *   - Same client IP hitting the same token within :DEDUP_SECONDS
+ *     (Gmail's image proxy re-fetches the pixel multiple times during a
+ *     single inbox view — we count those as one open).
+ *
+ * IMPORTANT: GoogleImageProxy is NOT in the bot list — that's the User-
+ * Agent for genuine Gmail opens. Blocking it would zero out the count.
  *
  * Public route — no auth. The tracking_token in the URL is the only
  * credential; it's a 40-char random string scoped to a single quote.
@@ -21,14 +34,34 @@ class EmailPixelController extends Controller
     // whether the token matched so we never give 200/404 timing hints.
     private const GIF_BYTES = "GIF89a\x01\x00\x01\x00\x80\x00\x00\x00\x00\x00\xff\xff\xff!\xf9\x04\x01\x00\x00\x00\x00,\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02D\x01\x00;";
 
+    // Ignore hits within this many seconds of `sent_at` — covers the
+    // outbound provider's link-warmer and the inbox image-proxy
+    // prefetch that fires the moment the email lands.
+    private const GRACE_SECONDS = 60;
+
+    // Per-IP dedup window. Gmail's image proxy re-hits the pixel a few
+    // times in quick succession during a single inbox view — we treat
+    // those as one open. A fresh open from the same client more than
+    // this many seconds later counts as a new open.
+    private const DEDUP_SECONDS = 60;
+
+    // User-Agent substrings we treat as non-human. We DO NOT include
+    // GoogleImageProxy / ggpht.com here: those are real Gmail opens.
+    private const BOT_AGENTS = [
+        'mailgun', 'sendgrid', 'brevo', 'sib-msys', 'sib-tracker',
+        'mailchimp', 'campaign-monitor',
+        'mimecast', 'barracuda', 'symantec', 'ironport', 'proofpoint',
+        'spamassassin', 'spamcop',
+        'curl/', 'wget/', 'python-requests', 'go-http-client', 'okhttp',
+        'headlesschrome', 'phantomjs', 'puppeteer',
+        'facebookexternalhit', 'twitterbot', 'linkedinbot', 'slackbot',
+    ];
+
     public function __invoke(string $token, Request $request): Response
     {
-        // The Quote model has a `not_trashed` global scope — that's fine;
-        // we don't want trashed quotes resurrecting on open. Soft-failing
-        // (no token match) just serves the pixel without logging.
         $quote = Quote::where('tracking_token', $token)->first();
 
-        if ($quote) {
+        if ($quote && $this->shouldCount($request, $quote)) {
             try {
                 $existing = $quote->tracking ?? [];
                 $count    = (int) ($existing['open_count'] ?? 0) + 1;
@@ -42,9 +75,6 @@ class EmailPixelController extends Controller
                     ],
                 ]);
             } catch (\Throwable $e) {
-                // Never let a tracking failure break the pixel response —
-                // the recipient's email client would surface a broken
-                // image and the open would be lost anyway.
                 Log::warning('Email pixel tracking failed', [
                     'token' => substr($token, 0, 8) . '…',
                     'error' => $e->getMessage(),
@@ -52,7 +82,7 @@ class EmailPixelController extends Controller
             }
         }
 
-        // Aggressive no-cache so opens count every time the mail is viewed.
+        // Aggressive no-cache so genuine re-opens still re-fetch.
         return response(self::GIF_BYTES, 200, [
             'Content-Type'                  => 'image/gif',
             'Content-Length'                => (string) strlen(self::GIF_BYTES),
@@ -62,5 +92,42 @@ class EmailPixelController extends Controller
             // Privacy: don't leak the dealer's tracking URL via Referer.
             'Referrer-Policy'               => 'no-referrer',
         ]);
+    }
+
+    /**
+     * Should this pixel hit increment the counter? Filters out the
+     * provider-side link-warmer + inbox image-proxy multi-fire that
+     * otherwise inflates the count.
+     */
+    private function shouldCount(Request $request, Quote $quote): bool
+    {
+        // 1. Anything that isn't a regular GET is suspicious.
+        if (! $request->isMethod('GET')) return false;
+
+        // 2. Drop empty / known-provider user agents.
+        $ua = strtolower((string) $request->userAgent());
+        if ($ua === '') return false;
+        foreach (self::BOT_AGENTS as $needle) {
+            if (str_contains($ua, $needle)) return false;
+        }
+
+        // 3. Ignore the immediate post-send window. Brevo's link-warmer
+        // and most spam scanners fire within the first minute.
+        $sentAt = $quote->sent_at;
+        if ($sentAt && now()->diffInSeconds($sentAt) < self::GRACE_SECONDS) {
+            return false;
+        }
+
+        // 4. Per-IP dedup: same IP hitting the same token within the
+        // dedup window = one open. A genuine re-open >60s later (or any
+        // hit from a different IP) gets a fresh count. Cache::add() is
+        // atomic — only the first concurrent caller wins, so two
+        // simultaneous Gmail proxy hits can't both pass through.
+        $key = 'pixel:' . (string) $quote->_id . ':' . (string) $request->ip();
+        if (! Cache::add($key, 1, self::DEDUP_SECONDS)) {
+            return false;
+        }
+
+        return true;
     }
 }

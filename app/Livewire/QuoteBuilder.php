@@ -86,7 +86,7 @@ class QuoteBuilder extends Component
     public string $terms_payment   = '';
     public string $terms_delivery  = '';
     public string $terms_warranty  = '';
-    public ?string $expires_at     = null; // ISO date string for the date input
+    public string $terms_notes     = '';
 
     public function mount(?string $quoteId = null, ?string $preselectedClientId = null)
     {
@@ -144,7 +144,7 @@ class QuoteBuilder extends Component
         $this->terms_payment       = $quote->terms['payment']  ?? '';
         $this->terms_delivery      = $quote->terms['delivery'] ?? '';
         $this->terms_warranty      = $quote->terms['warranty'] ?? '';
-        $this->expires_at          = $quote->expires_at?->format('Y-m-d');
+        $this->terms_notes         = $quote->terms['notes']    ?? '';
 
         if (is_array($quote->trade_in) && (($quote->trade_in['value'] ?? 0) > 0)) {
             $this->hasTradeIn = true;
@@ -534,13 +534,9 @@ class QuoteBuilder extends Component
                 'payment'  => trim($this->terms_payment)  ?: null,
                 'delivery' => trim($this->terms_delivery) ?: null,
                 'warranty' => trim($this->terms_warranty) ?: null,
+                'notes'    => trim($this->terms_notes)    ?: null,
             ],
         ];
-
-        // Validity date — user-picked overrides the default 30 days.
-        if ($this->expires_at) {
-            $payload['expires_at'] = \Carbon\Carbon::parse($this->expires_at)->endOfDay();
-        }
 
         if ($this->isEdit) {
             $quote = Quote::findOrFail($this->quoteId);
@@ -549,9 +545,6 @@ class QuoteBuilder extends Component
             $payload['company_id'] = $companyId;
             $payload['number']     = QuoteCounter::nextReference($companyId, 'quote', (int) date('Y'));
             $payload['status']     = Quote::STATUS_DRAFT;
-            if (empty($payload['expires_at'])) {
-                $payload['expires_at'] = now()->addDays(30); // default validity
-            }
             $payload['tracking']   = null;
             // Attribution — record which sub-account drafted this quote.
             // Name snapshot persists even if the user is later deactivated.

@@ -206,10 +206,10 @@
                                 <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">
                                     {{ __('Add more') }}
                                 </p>
-                                <textarea x-model="equipmentPasteBuffer" rows="4"
+                                <textarea x-model="equipmentPasteBuffer" @input="promoteBufferLines()" rows="4"
                                     placeholder="Bathing platform&#10;Bimini top&#10;Bow rail"
                                     class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800 font-mono"></textarea>
-                                <p class="text-xs text-gray-500 mt-1">{{ __('One item per line.') }}</p>
+                                <p class="text-xs text-gray-500 mt-1">{{ __('Press Enter after each item to add it to the list above.') }}</p>
                             </div>
                         </div>
 
@@ -583,10 +583,10 @@
                             <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">
                                 {{ __('Add more') }}
                             </p>
-                            <textarea x-model="pasteBuffer" rows="4"
+                            <textarea x-model="pasteBuffer" @input="promoteBufferLines()" rows="4"
                                 placeholder="Bathing platform&#10;Bimini top&#10;Bow rail"
                                 class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800 font-mono"></textarea>
-                            <p class="text-xs text-gray-500 mt-1">{{ __('One item per line.') }}</p>
+                            <p class="text-xs text-gray-500 mt-1">{{ __('Press Enter after each item to add it to the list above.') }}</p>
                         </div>
                     </div>
 
@@ -835,27 +835,45 @@
                     const byId = Object.fromEntries(this.equipmentWorkingList.map(r => [r.id, r]));
                     this.equipmentWorkingList = ids.map(id => byId[id]).filter(Boolean);
                 },
+                /**
+                 * Called on every keystroke in the paste textarea. Any line
+                 * that's terminated by a newline gets promoted to a ticked
+                 * checkbox in the working list immediately; the unfinished
+                 * tail stays in the buffer so the user can keep typing.
+                 * Deduped case-insensitively against the existing list.
+                 */
+                promoteBufferLines() {
+                    const buf = this.equipmentPasteBuffer;
+                    const lastNl = Math.max(buf.lastIndexOf('\n'), buf.lastIndexOf('\r'));
+                    if (lastNl < 0) return; // no completed line yet
+                    const completed = buf.substring(0, lastNl);
+                    const tail      = buf.substring(lastNl + 1);
+
+                    const existing = new Set(this.equipmentWorkingList.map(r => r.label.toLowerCase()));
+                    for (const raw of completed.split(/\r?\n/)) {
+                        const line = raw.trim();
+                        if (! line) continue;
+                        if (existing.has(line.toLowerCase())) continue;
+                        this.equipmentWorkingList.push({ id: nextEqId(), label: line, checked: true });
+                        existing.add(line.toLowerCase());
+                    }
+                    this.equipmentPasteBuffer = tail;
+                },
                 confirmEquipmentPaste() {
                     if (this.modalIndex === null) return;
+                    // Flush any trailing line still in the buffer (user
+                    // didn't hit Enter before clicking OK).
+                    if (this.equipmentPasteBuffer.trim()) {
+                        this.equipmentPasteBuffer += '\n';
+                        this.promoteBufferLines();
+                    }
                     // Read DOM order one more time in case the user dragged.
                     this.applySortableOrder();
 
-                    // 1. Keep checked items in their current order.
                     const kept = this.equipmentWorkingList
                         .filter(item => item.checked)
                         .map(item => item.label);
 
-                    // 2. Append pasted lines (deduped, case-insensitive).
-                    const pasted = this.equipmentPasteBuffer
-                        .split(/\r?\n/)
-                        .map(s => s.trim())
-                        .filter(s => s.length > 0);
-                    const existing = new Set(kept.map(s => s.toLowerCase()));
-                    for (const line of pasted) {
-                        if (existing.has(line.toLowerCase())) continue;
-                        kept.push(line);
-                        existing.add(line.toLowerCase());
-                    }
                     this.versions[this.modalIndex].equipment = kept;
                     this.closeEquipmentModal();
                 },
@@ -923,24 +941,40 @@
                     const byId = Object.fromEntries(this.workingList.map(r => [r.id, r]));
                     this.workingList = ids.map(id => byId[id]).filter(Boolean);
                 },
+                /**
+                 * Mirror of boatCreator's version — promote each completed
+                 * line in the paste buffer into the working list as the
+                 * user types, deduped against the existing list.
+                 */
+                promoteBufferLines() {
+                    const buf = this.pasteBuffer;
+                    const lastNl = Math.max(buf.lastIndexOf('\n'), buf.lastIndexOf('\r'));
+                    if (lastNl < 0) return;
+                    const completed = buf.substring(0, lastNl);
+                    const tail      = buf.substring(lastNl + 1);
+
+                    const existing = new Set(this.workingList.map(r => r.label.toLowerCase()));
+                    for (const raw of completed.split(/\r?\n/)) {
+                        const line = raw.trim();
+                        if (! line) continue;
+                        if (existing.has(line.toLowerCase())) continue;
+                        this.workingList.push({ id: nextEqId(), label: line, checked: true });
+                        existing.add(line.toLowerCase());
+                    }
+                    this.pasteBuffer = tail;
+                },
                 commit() {
                     if (! this.target) { this.closeModal(); return; }
+                    // Flush any trailing line the user typed without Enter.
+                    if (this.pasteBuffer.trim()) {
+                        this.pasteBuffer += '\n';
+                        this.promoteBufferLines();
+                    }
                     this.applySortableOrder();
 
                     const kept = this.workingList
                         .filter(item => item.checked)
                         .map(item => item.label);
-
-                    const pasted = this.pasteBuffer
-                        .split(/\r?\n/)
-                        .map(s => s.trim())
-                        .filter(s => s.length > 0);
-                    const existing = new Set(kept.map(s => s.toLowerCase()));
-                    for (const line of pasted) {
-                        if (existing.has(line.toLowerCase())) continue;
-                        kept.push(line);
-                        existing.add(line.toLowerCase());
-                    }
 
                     // Mutate in place so Alpine's :key="ei + '-' + eq" bindings
                     // on the row's chip list re-render correctly.

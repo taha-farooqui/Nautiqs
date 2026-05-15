@@ -39,9 +39,9 @@
             <template x-for="(item, i) in results" :key="item.id">
                 <button type="button" @click="select(item)"
                     :class="i === cursor ? 'bg-primary-50 text-primary-900' : 'hover:bg-gray-50'"
-                    class="w-full text-left px-3 py-2 text-sm flex items-center justify-between">
-                    <span x-text="item.name"></span>
-                    <i class="ri-check-line text-emerald-600" x-show="item.id === selectedId"></i>
+                    class="w-full text-left px-3 py-2 text-sm flex items-center justify-between gap-2">
+                    <span class="truncate" x-text="item.name"></span>
+                    <i class="ri-check-line text-emerald-600 shrink-0" x-show="item.id === selectedId"></i>
                 </button>
             </template>
             <template x-if="results.length === 0 && query.length > 0">

@@ -387,10 +387,20 @@ class QuoteController extends Controller
         // and re-use it for every follow-up so the open-count keeps
         // accumulating against the same quote. The pixel hits
         // /e/p/{token} which bumps tracking.open_count.
-        if (empty($quote->tracking_token)) {
-            $quote->update(['tracking_token' => \Illuminate\Support\Str::random(40)]);
+        //
+        // The pixel URL must be PUBLICLY reachable — Gmail / Outlook can't
+        // hit http://127.0.0.1 if the email is sent from a local dev box.
+        // We let EMAIL_TRACKING_BASE_URL override the route's host so a
+        // dealer testing locally still produces clickable production URLs.
+        $trackingToken = $quote->tracking_token;
+        if (empty($trackingToken)) {
+            $trackingToken = \Illuminate\Support\Str::random(40);
+            $quote->update(['tracking_token' => $trackingToken]);
         }
-        $pixelUrl = route('email.pixel', $quote->tracking_token);
+        $trackingBase = rtrim(config('app.tracking_base_url') ?: '', '/');
+        $pixelUrl = $trackingBase !== ''
+            ? $trackingBase . '/e/p/' . $trackingToken
+            : route('email.pixel', $trackingToken);
         $bodyHtml .= '<img src="' . e($pixelUrl) . '" width="1" height="1" alt="" style="display:block;width:1px;height:1px;border:0;" />';
 
         // Order-confirmation emails attach the BC PDF; everything else
@@ -459,7 +469,11 @@ class QuoteController extends Controller
             EmailLog::TYPE_FOLLOW_UP          => __('Follow-up'),
             default                           => __('Quote'),
         };
-        return back()->with('status', __(':verb sent to :to.', ['verb' => $verb, 'to' => $to]));
+        // Always redirect to a clean show URL after sending — back() would
+        // preserve `?preview=1` from the Save & Generate PDF redirect and
+        // make the PDF modal pop again on top of the success toast.
+        return redirect()->route('quotes.show', $quote->_id)
+            ->with('status', __(':verb sent to :to.', ['verb' => $verb, 'to' => $to]));
     }
 
     // §13 Order confirmation PDF (bon de commande)

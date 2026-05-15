@@ -519,24 +519,21 @@
                     <div>
                         <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Payment') }}</label>
                         <input type="text" wire:model.live.debounce.500ms="terms_payment" @disabled(! $hasVariant)
-                            placeholder="{{ __('30% on order · 70% on delivery') }}"
                             class="w-full rounded border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800 disabled:bg-gray-100" />
                     </div>
                     <div>
                         <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Delivery') }}</label>
                         <input type="text" wire:model.live.debounce.500ms="terms_delivery" @disabled(! $hasVariant)
-                            placeholder="{{ __('8 to 12 weeks depending on availability') }}"
-                            class="w-full rounded border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800 disabled:bg-gray-100" />
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Quote valid until') }}</label>
-                        <input type="date" wire:model.live="expires_at" @disabled(! $hasVariant)
                             class="w-full rounded border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800 disabled:bg-gray-100" />
                     </div>
                     <div>
                         <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Warranty') }}</label>
                         <input type="text" wire:model.live.debounce.500ms="terms_warranty" @disabled(! $hasVariant)
-                            placeholder="{{ __('Manufacturer warranty + dealer prep') }}"
+                            class="w-full rounded border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800 disabled:bg-gray-100" />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Notes') }}</label>
+                        <input type="text" wire:model.live.debounce.500ms="terms_notes" @disabled(! $hasVariant)
                             class="w-full rounded border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800 disabled:bg-gray-100" />
                     </div>
                 </div>

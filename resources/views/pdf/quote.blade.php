@@ -46,9 +46,6 @@
             <div class="qhead-doctype">{{ __('Quotation') }}</div>
             <div class="qhead-ref">{{ $quote->number }}</div>
             <div class="qhead-date">{{ $quote->created_at?->translatedFormat('F j, Y') }}</div>
-            @if ($quote->expires_at)
-                <div class="qhead-validity">{{ __('Valid until') }} {{ $quote->expires_at->translatedFormat('F j, Y') }}</div>
-            @endif
         </td>
     </tr>
 </table>
@@ -205,19 +202,13 @@
                 $termsPayment  = $quote->terms['payment']  ?? null;
                 $termsDelivery = $quote->terms['delivery'] ?? null;
                 $termsWarranty = $quote->terms['warranty'] ?? null;
+                $termsNotes    = $quote->terms['notes']    ?? null;
             @endphp
             <table class="qcond">
-                <tr><td class="label">{{ __('Payment') }}</td><td class="val">{{ $termsPayment ?: __('30% on order · 70% on delivery') }}</td></tr>
-                <tr><td class="label">{{ __('Delivery') }}</td><td class="val">{{ $termsDelivery ?: __('8 to 12 weeks depending on availability') }}</td></tr>
-                <tr><td class="label">{{ __('Quote valid') }}</td>
-                    <td class="val">
-                        @if ($quote->expires_at)
-                            {{ __('until') }} {{ $quote->expires_at->translatedFormat('F j, Y') }}
-                        @else
-                            {{ __('30 days from issue') }}
-                        @endif
-                    </td></tr>
-                <tr><td class="label">{{ __('Warranty') }}</td><td class="val">{{ $termsWarranty ?: __('Manufacturer warranty + dealer prep') }}</td></tr>
+                <tr><td class="label">{{ __('Payment') }}</td><td class="val">{{ $termsPayment  ?: '—' }}</td></tr>
+                <tr><td class="label">{{ __('Delivery') }}</td><td class="val">{{ $termsDelivery ?: '—' }}</td></tr>
+                <tr><td class="label">{{ __('Warranty') }}</td><td class="val">{{ $termsWarranty ?: '—' }}</td></tr>
+                <tr><td class="label">{{ __('Notes') }}</td>   <td class="val">{{ $termsNotes    ?: '—' }}</td></tr>
             </table>
 
             @if (! empty($quote->trade_in) && (($quote->trade_in['value'] ?? 0) > 0))
