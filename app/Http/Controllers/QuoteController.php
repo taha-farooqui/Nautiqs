@@ -252,6 +252,23 @@ class QuoteController extends Controller
         return redirect()->route('quotes.trash')->with('status', __('Quote permanently deleted.'));
     }
 
+    public function emptyTrash()
+    {
+        $trashed = Quote::onlyTrashed()->get();
+        $count = $trashed->count();
+
+        foreach ($trashed as $quote) {
+            $quote->delete();
+        }
+
+        return redirect()->route('quotes.trash')->with(
+            'status',
+            $count > 0
+                ? __(':count quote(s) permanently deleted.', ['count' => $count])
+                : __('Trash is already empty.')
+        );
+    }
+
     // §11.2 status transitions
     public function markSent(string $id)
     {

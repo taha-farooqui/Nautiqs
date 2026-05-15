@@ -7,10 +7,22 @@
         <div class="mb-4 rounded-lg border border-red-200 bg-red-50 text-red-700 px-4 py-3 text-sm">{{ $errors->first() }}</div>
     @endif
 
-    <div class="mb-4 flex items-center gap-2 text-sm text-gray-500">
+    <div class="mb-4 flex items-center justify-between gap-2 text-sm text-gray-500">
         <a href="{{ route('quotes.index') }}" class="hover:text-primary-800">
             <i class="ri-arrow-left-line"></i> {{ __('Back to all quotes') }}
         </a>
+        @if ($quotes->isNotEmpty())
+            <form method="POST" action="{{ route('quotes.empty-trash') }}"
+                data-confirm="{{ __('Empty the Trash?') }}"
+                data-confirm-text="{{ __('All quotes in the Trash will be permanently deleted. This cannot be undone.') }}"
+                data-confirm-danger="1">
+                @csrf @method('DELETE')
+                <button type="submit"
+                    class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-lg">
+                    <i class="ri-delete-bin-2-line"></i> {{ __('Empty Trash') }}
+                </button>
+            </form>
+        @endif
     </div>
 
     <form action="{{ route('quotes.trash') }}" method="GET" class="bg-white rounded-2xl border border-gray-200 p-3 mb-4">

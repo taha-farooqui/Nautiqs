@@ -103,6 +103,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/quotes',                   [QuoteController::class, 'index'])->name('quotes.index');
     Route::get('/quotes/create',            [QuoteController::class, 'create'])->name('quotes.create');
     Route::get('/quotes/trash',             [QuoteController::class, 'trash'])->name('quotes.trash');
+    Route::delete('/quotes/trash/empty',    [QuoteController::class, 'emptyTrash'])->name('quotes.empty-trash');
     Route::get('/quotes/{id}',              [QuoteController::class, 'show'])->name('quotes.show');
     Route::get('/quotes/{id}/edit',         [QuoteController::class, 'edit'])->name('quotes.edit');
     Route::delete('/quotes/{id}',           [QuoteController::class, 'destroy'])->name('quotes.destroy');
