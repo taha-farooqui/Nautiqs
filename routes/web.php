@@ -146,6 +146,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/brands',   [CatalogueController::class, 'brands'])->name('brands');
         Route::get('/updates',  [CatalogueController::class, 'updates'])->name('updates');
 
+        // Bulk options import — declared before the {modelId} routes so the
+        // literal "options" path segment is not swallowed as an id.
+        Route::get('/options/template',  [CatalogueController::class, 'optionsTemplate'])->name('options.template');
+        Route::post('/options/import',   [CatalogueController::class, 'importOptions'])->name('options.import-bulk');
+
         // Brand activation
         Route::post('/brands/activate/{globalBrandId}',          [CatalogueController::class, 'activateBrand'])->name('brands.activate');
         Route::post('/brands/{companyBrandId}/deactivate',       [CatalogueController::class, 'deactivateBrand'])->name('brands.deactivate');

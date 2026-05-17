@@ -11,6 +11,7 @@ use App\Models\GlobalBoatVariant;
 use App\Models\GlobalBrand;
 use App\Models\GlobalOption;
 use App\Services\CatalogueService;
+use App\Services\OptionImporter;
 use Illuminate\Http\Request;
 
 /**
@@ -1041,5 +1042,170 @@ class CatalogueController extends Controller
         // Phase 2 — actual notification list. For now empty state but with
         // the new wiring already pointing here.
         return view('catalogue.updates');
+    }
+
+    /* ----------------------------------------------- OPTIONS BULK IMPORT */
+
+    /**
+     * Stream the option-import template (XLSX). Matches the column layout
+     * of the client's existing software so dealers can re-use files they
+     * already have.
+     */
+    public function optionsTemplate()
+    {
+        $path = $this->buildOptionsTemplateXlsx();
+        return response()->download($path, 'nautiqs-options-template.xlsx', [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ])->deleteFileAfterSend(true);
+    }
+
+    public function importOptions(Request $request, OptionImporter $importer)
+    {
+        $request->validate([
+            'file' => 'required|file|max:10240|mimes:csv,txt,xlsx,xlsm',
+        ], [], [
+            'file' => __('File'),
+        ]);
+
+        $companyId = (string) auth()->user()->company_id;
+        $result = $importer->import($request->file('file'), $companyId);
+
+        $msg = __(':created created, :updated updated, :skipped skipped.', [
+            'created' => $result['created'],
+            'updated' => $result['updated'],
+            'skipped' => $result['skipped'],
+        ]);
+
+        return redirect()->route('catalogue.models')
+            ->with('status', $msg)
+            ->with('import_result', $result);
+    }
+
+    /**
+     * Build a temp XLSX with the option-import columns and a single sample
+     * row so dealers can see exactly how it should look. Returns the path.
+     */
+    private function buildOptionsTemplateXlsx(): string
+    {
+        $headers = ['CODE', 'CODE MODELE', 'MARQUE', 'DESIGNATION FR', 'DESIGNATION GB', 'FAMILLE', 'PA HT', 'PV HT', 'TVA', 'OPTION CHANTIER'];
+
+        $samples = [
+            ['ANT7OB_TRA_0001', 'ANT7OB', '', 'TRANSPORT - BANDOL', 'TRANSPORT - BANDOL', 'transport', 3400, 4858.60, 0.2, 0],
+            ['ANT7OB_ELE_0001', 'ANT7OB', '', 'Garmin GPSMAP 1243xsv',  'Garmin GPSMAP 1243xsv',  'electronique', 2100, 3200, 0.2, 0],
+            ['ANT7OB_CON_0001', 'ANT7OB', '', 'Plancher teck cockpit',  'Teak cockpit floor',     'confort',      2800, 4500, 0.2, 1],
+            ['CC75WA_ELE_0001', 'CC75WA', '', 'Stéréo + caisson basse', 'Stereo + subwoofer',     'electronique',  450,  800, 0.2, 0],
+        ];
+
+        $strings = []; $sMap = [];
+        $idx = function (string $s) use (&$strings, &$sMap): int {
+            if (isset($sMap[$s])) return $sMap[$s];
+            $i = count($strings);
+            $strings[] = $s;
+            $sMap[$s] = $i;
+            return $i;
+        };
+        $colLetter = function (int $i): string {
+            $i++; $s = '';
+            while ($i > 0) { $r = ($i - 1) % 26; $s = chr(65 + $r) . $s; $i = intdiv($i - 1, 26); }
+            return $s;
+        };
+
+        $rowsXml = '<row r="1">';
+        foreach ($headers as $c => $h) {
+            $rowsXml .= '<c r="' . $colLetter($c) . '1" t="s" s="1"><v>' . $idx($h) . '</v></c>';
+        }
+        $rowsXml .= '</row>';
+
+        foreach ($samples as $r => $row) {
+            $rowNum = $r + 2;
+            $rowsXml .= '<row r="' . $rowNum . '">';
+            foreach ($row as $c => $val) {
+                $ref = $colLetter($c) . $rowNum;
+                if ($val === '' || $val === null) continue;
+                if (is_int($val) || is_float($val)) {
+                    $rowsXml .= '<c r="' . $ref . '"><v>' . $val . '</v></c>';
+                } else {
+                    $rowsXml .= '<c r="' . $ref . '" t="s"><v>' . $idx((string) $val) . '</v></c>';
+                }
+            }
+            $rowsXml .= '</row>';
+        }
+
+        $sstCount = 0;
+        foreach (array_merge([$headers], $samples) as $row) {
+            foreach ($row as $v) if (is_string($v) && $v !== '') $sstCount++;
+        }
+        $sstXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            . '<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="' . $sstCount . '" uniqueCount="' . count($strings) . '">';
+        foreach ($strings as $s) {
+            $sstXml .= '<si><t xml:space="preserve">' . htmlspecialchars($s, ENT_XML1 | ENT_QUOTES, 'UTF-8') . '</t></si>';
+        }
+        $sstXml .= '</sst>';
+
+        $widths = [22, 14, 14, 32, 32, 16, 12, 12, 8, 16];
+        $colsXml = '<cols>';
+        foreach ($widths as $i => $w) {
+            $colsXml .= '<col min="' . ($i + 1) . '" max="' . ($i + 1) . '" width="' . $w . '" customWidth="1"/>';
+        }
+        $colsXml .= '</cols>';
+
+        $sheetXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            . '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+            . '<sheetViews><sheetView tabSelected="1" workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>'
+            . $colsXml
+            . '<sheetData>' . $rowsXml . '</sheetData>'
+            . '</worksheet>';
+
+        $workbookXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            . '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+            . '<sheets><sheet name="Options" sheetId="1" r:id="rId1"/></sheets>'
+            . '</workbook>';
+
+        $workbookRelsXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            . '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+            . '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>'
+            . '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings" Target="sharedStrings.xml"/>'
+            . '<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>'
+            . '</Relationships>';
+
+        $stylesXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            . '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+            . '<fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font></fonts>'
+            . '<fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF0E4F79"/></patternFill></fill></fills>'
+            . '<borders count="1"><border/></borders>'
+            . '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
+            . '<cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'
+            . '<xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf></cellXfs>'
+            . '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>'
+            . '</styleSheet>';
+
+        $contentTypesXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            . '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+            . '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+            . '<Default Extension="xml" ContentType="application/xml"/>'
+            . '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'
+            . '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
+            . '<Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/>'
+            . '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'
+            . '</Types>';
+
+        $rootRelsXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            . '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+            . '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>'
+            . '</Relationships>';
+
+        $path = tempnam(sys_get_temp_dir(), 'nautiqs-options-') . '.xlsx';
+        $zip = new \ZipArchive();
+        $zip->open($path, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
+        $zip->addFromString('[Content_Types].xml', $contentTypesXml);
+        $zip->addFromString('_rels/.rels', $rootRelsXml);
+        $zip->addFromString('xl/workbook.xml', $workbookXml);
+        $zip->addFromString('xl/_rels/workbook.xml.rels', $workbookRelsXml);
+        $zip->addFromString('xl/sharedStrings.xml', $sstXml);
+        $zip->addFromString('xl/styles.xml', $stylesXml);
+        $zip->addFromString('xl/worksheets/sheet1.xml', $sheetXml);
+        $zip->close();
+
+        return $path;
     }
 }

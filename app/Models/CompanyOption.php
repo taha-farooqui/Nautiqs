@@ -24,17 +24,24 @@ class CompanyOption extends Model
         'source',             // global | private
         'category',
         'label',
+        'label_en',           // optional English label (filled from import)
+        'brand',              // optional, e.g. Mercury-specific option
+        'code',               // dealer SKU — e.g. ANT7OB_TRA_0001 (upsert key)
         'price',
         'cost',
+        'vat_rate',
         'currency',
         'position',
+        'yard_option',        // option chantier — installed at dealership
         'is_archived',
     ];
 
     protected $casts = [
         'price'       => 'float',
         'cost'        => 'float',
+        'vat_rate'    => 'float',
         'position'    => 'integer',
+        'yard_option' => 'boolean',
         'is_archived' => 'boolean',
     ];
 
