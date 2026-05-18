@@ -79,7 +79,7 @@
         [
             'section' => 'Customisation',
             'items' => [
-                ['label' => 'Dictionary',      'icon' => 'ri-translate-2',          'route' => null, 'active' => 'admin.dictionary.*'],
+                ['label' => 'Dictionary',      'icon' => 'ri-translate-2',          'route' => 'admin.dictionary.index', 'active' => 'admin.dictionary.*'],
             ],
         ],
         [

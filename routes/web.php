@@ -222,6 +222,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
      ----------------------------------------------------------------- */
     Route::prefix('admin')->name('admin.')->middleware('superadmin')->group(function () {
         Route::get('/', [\App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('dashboard');
+
+        // Translation dictionary — search any user-facing string in the
+        // app and customise it. Falls back to lang/{locale}.json defaults.
+        Route::get('/dictionary',           [\App\Http\Controllers\Admin\DictionaryController::class, 'index'])->name('dictionary.index');
+        Route::get('/dictionary/export',    [\App\Http\Controllers\Admin\DictionaryController::class, 'export'])->name('dictionary.export');
+        Route::post('/dictionary/update',   [\App\Http\Controllers\Admin\DictionaryController::class, 'update'])->name('dictionary.update');
+        Route::post('/dictionary/reset',    [\App\Http\Controllers\Admin\DictionaryController::class, 'reset'])->name('dictionary.reset');
     });
 });
 
