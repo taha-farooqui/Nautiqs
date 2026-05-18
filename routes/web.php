@@ -146,10 +146,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/brands',   [CatalogueController::class, 'brands'])->name('brands');
         Route::get('/updates',  [CatalogueController::class, 'updates'])->name('updates');
 
-        // Bulk options import — declared before the {modelId} routes so the
-        // literal "options" path segment is not swallowed as an id.
-        Route::get('/options/template',  [CatalogueController::class, 'optionsTemplate'])->name('options.template');
-        Route::post('/options/import',   [CatalogueController::class, 'importOptions'])->name('options.import-bulk');
+        // Per-boat options bulk import (button lives inside the Options tab
+        // of the boat editor). The boat is implied by {modelId} so the file
+        // omits the CODE MODELE column entirely — the dealer doesn't need to
+        // remember or type the boat's internal code.
+        Route::get('/models/{modelId}/options/template',   [CatalogueController::class, 'optionsTemplateForBoat'])->name('options.template-for-boat');
+        Route::post('/models/{modelId}/options/import-file', [CatalogueController::class, 'importOptionsForBoat'])->name('options.import-for-boat');
 
         // Brand activation
         Route::post('/brands/activate/{globalBrandId}',          [CatalogueController::class, 'activateBrand'])->name('brands.activate');

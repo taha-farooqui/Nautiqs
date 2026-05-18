@@ -1047,19 +1047,25 @@ class CatalogueController extends Controller
     /* ----------------------------------------------- OPTIONS BULK IMPORT */
 
     /**
-     * Stream the option-import template (XLSX). Matches the column layout
-     * of the client's existing software so dealers can re-use files they
-     * already have.
+     * Stream the option-import template for a specific boat — the boat is
+     * implied by the URL so the file omits the CODE MODELE column entirely.
+     * The dealer doesn't need to know or type the boat's internal code.
      */
-    public function optionsTemplate()
+    public function optionsTemplateForBoat(string $modelId)
     {
-        $path = $this->buildOptionsTemplateXlsx();
-        return response()->download($path, 'nautiqs-options-template.xlsx', [
+        $companyId = (string) auth()->user()->company_id;
+        $boat = CompanyBoatModel::where('_id', $modelId)
+            ->where('company_id', $companyId)
+            ->firstOrFail();
+
+        $path = $this->buildOptionsTemplateXlsx(boatName: $boat->name);
+        $safeName = preg_replace('/[^A-Za-z0-9_-]+/', '-', $boat->name);
+        return response()->download($path, "nautiqs-options-{$safeName}.xlsx", [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         ])->deleteFileAfterSend(true);
     }
 
-    public function importOptions(Request $request, OptionImporter $importer)
+    public function importOptionsForBoat(string $modelId, Request $request, OptionImporter $importer)
     {
         $request->validate([
             'file' => 'required|file|max:10240|mimes:csv,txt,xlsx,xlsm',
@@ -1068,7 +1074,11 @@ class CatalogueController extends Controller
         ]);
 
         $companyId = (string) auth()->user()->company_id;
-        $result = $importer->import($request->file('file'), $companyId);
+        $boat = CompanyBoatModel::where('_id', $modelId)
+            ->where('company_id', $companyId)
+            ->firstOrFail();
+
+        $result = $importer->import($request->file('file'), $companyId, (string) $boat->_id);
 
         $msg = __(':created created, :updated updated, :skipped skipped.', [
             'created' => $result['created'],
@@ -1076,25 +1086,39 @@ class CatalogueController extends Controller
             'skipped' => $result['skipped'],
         ]);
 
-        return redirect()->route('catalogue.models')
+        return redirect()->route('catalogue.models.edit', $boat->_id)
             ->with('status', $msg)
             ->with('import_result', $result);
     }
 
     /**
-     * Build a temp XLSX with the option-import columns and a single sample
-     * row so dealers can see exactly how it should look. Returns the path.
+     * Build a temp XLSX with the option-import columns and a few sample
+     * rows so dealers can see exactly how it should look.
+     *
+     * When $boatName is set, the file is tailored for a single boat: the
+     * CODE MODELE column is omitted (the import knows which boat from the
+     * URL) and the samples reference the boat by name. This is the flow
+     * launched from inside the boat editor's Options tab.
      */
-    private function buildOptionsTemplateXlsx(): string
+    private function buildOptionsTemplateXlsx(?string $boatName = null): string
     {
-        $headers = ['CODE', 'CODE MODELE', 'MARQUE', 'DESIGNATION FR', 'DESIGNATION GB', 'FAMILLE', 'PA HT', 'PV HT', 'TVA', 'OPTION CHANTIER'];
-
-        $samples = [
-            ['ANT7OB_TRA_0001', 'ANT7OB', '', 'TRANSPORT - BANDOL', 'TRANSPORT - BANDOL', 'transport', 3400, 4858.60, 0.2, 0],
-            ['ANT7OB_ELE_0001', 'ANT7OB', '', 'Garmin GPSMAP 1243xsv',  'Garmin GPSMAP 1243xsv',  'electronique', 2100, 3200, 0.2, 0],
-            ['ANT7OB_CON_0001', 'ANT7OB', '', 'Plancher teck cockpit',  'Teak cockpit floor',     'confort',      2800, 4500, 0.2, 1],
-            ['CC75WA_ELE_0001', 'CC75WA', '', 'Stéréo + caisson basse', 'Stereo + subwoofer',     'electronique',  450,  800, 0.2, 0],
-        ];
+        if ($boatName === null) {
+            $headers = ['CODE', 'CODE MODELE', 'MARQUE', 'DESIGNATION FR', 'DESIGNATION GB', 'FAMILLE', 'PA HT', 'PV HT', 'TVA', 'OPTION CHANTIER'];
+            $samples = [
+                ['ANT7OB_TRA_0001', 'ANT7OB', '', 'TRANSPORT - BANDOL', 'TRANSPORT - BANDOL', 'transport', 3400, 4858.60, 0.2, 0],
+                ['ANT7OB_ELE_0001', 'ANT7OB', '', 'Garmin GPSMAP 1243xsv',  'Garmin GPSMAP 1243xsv',  'electronique', 2100, 3200, 0.2, 0],
+                ['ANT7OB_CON_0001', 'ANT7OB', '', 'Plancher teck cockpit',  'Teak cockpit floor',     'confort',      2800, 4500, 0.2, 1],
+                ['CC75WA_ELE_0001', 'CC75WA', '', 'Stéréo + caisson basse', 'Stereo + subwoofer',     'electronique',  450,  800, 0.2, 0],
+            ];
+        } else {
+            $headers = ['CODE', 'MARQUE', 'DESIGNATION FR', 'DESIGNATION GB', 'FAMILLE', 'PA HT', 'PV HT', 'TVA', 'OPTION CHANTIER'];
+            $samples = [
+                ['TRA_0001', '', 'TRANSPORT - BANDOL',      'TRANSPORT - BANDOL',      'transport',     3400, 4858.60, 0.2, 0],
+                ['ELE_0001', '', 'Garmin GPSMAP 1243xsv',   'Garmin GPSMAP 1243xsv',   'electronique',  2100, 3200,    0.2, 0],
+                ['CON_0001', '', 'Plancher teck cockpit',   'Teak cockpit floor',      'confort',       2800, 4500,    0.2, 1],
+                ['CON_0002', '', 'Bimini + rideaux',        'Bimini with side curtains', 'confort',      950, 1800,    0.2, 0],
+            ];
+        }
 
         $strings = []; $sMap = [];
         $idx = function (string $s) use (&$strings, &$sMap): int {
@@ -1142,7 +1166,9 @@ class CatalogueController extends Controller
         }
         $sstXml .= '</sst>';
 
-        $widths = [22, 14, 14, 32, 32, 16, 12, 12, 8, 16];
+        $widths = $boatName === null
+            ? [22, 14, 14, 32, 32, 16, 12, 12, 8, 16]
+            : [22, 14, 32, 32, 16, 12, 12, 8, 16];
         $colsXml = '<cols>';
         foreach ($widths as $i => $w) {
             $colsXml .= '<col min="' . ($i + 1) . '" max="' . ($i + 1) . '" width="' . $w . '" customWidth="1"/>';

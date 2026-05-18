@@ -605,7 +605,128 @@
         </section>
 
         {{-- Options tab --}}
-        <section x-show="tab === 'options'" x-cloak class="space-y-4">
+        <section x-show="tab === 'options'" x-cloak class="space-y-4"
+            x-data="{ importOpen: false }">
+
+            @php $importResult = session('import_result'); @endphp
+            @if ($importResult && ! empty($importResult['errors']))
+                <div class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                    <p class="font-medium mb-2">
+                        {{ __(':count row(s) could not be imported', ['count' => count($importResult['errors'])]) }}:
+                    </p>
+                    <ul class="list-disc list-inside space-y-0.5 text-xs">
+                        @foreach (array_slice($importResult['errors'], 0, 20) as $err)
+                            <li>{{ __('Row') }} {{ $err['row'] }} — {{ $err['message'] }}</li>
+                        @endforeach
+                        @if (count($importResult['errors']) > 20)
+                            <li class="italic">{{ __('…and :count more', ['count' => count($importResult['errors']) - 20]) }}</li>
+                        @endif
+                    </ul>
+                </div>
+            @endif
+
+            <div class="flex items-center justify-end">
+                <button type="button" @click="importOpen = true"
+                    class="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium bg-white hover:bg-gray-50 text-gray-800 border border-gray-300 rounded-lg">
+                    <i class="ri-upload-2-line"></i> {{ __('Import options from file') }}
+                </button>
+            </div>
+
+            {{-- Import-options modal (scoped to this boat) --}}
+            <div x-show="importOpen" x-cloak x-transition.opacity
+                @keydown.escape.window="importOpen = false"
+                class="fixed inset-0 z-50 bg-gray-900/70 flex items-center justify-center p-4">
+                <div @click.outside="importOpen = false"
+                    class="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
+                    <div class="px-5 py-4 border-b border-gray-100 flex items-center gap-3">
+                        <span class="w-9 h-9 rounded-lg bg-primary-50 text-primary-800 flex items-center justify-center shrink-0">
+                            <i class="ri-upload-2-line"></i>
+                        </span>
+                        <div class="flex-1 min-w-0">
+                            <h3 class="font-semibold text-gray-900">{{ __('Import options for this boat') }}</h3>
+                            <p class="text-xs text-gray-500 truncate">{{ $model->name }}</p>
+                        </div>
+                        <button type="button" @click="importOpen = false"
+                            class="w-8 h-8 inline-flex items-center justify-center text-gray-500 hover:bg-gray-100 rounded-lg">
+                            <i class="ri-close-line text-xl"></i>
+                        </button>
+                    </div>
+
+                    <div class="p-5 space-y-4">
+                        <div class="rounded-lg border border-primary-200 bg-primary-50/40 px-4 py-3">
+                            <p class="text-sm font-semibold text-primary-900 mb-1">
+                                <i class="ri-information-line"></i> {{ __('Need a template?') }}
+                            </p>
+                            <p class="text-xs text-gray-700 mb-2">
+                                {{ __('Download the sample file, fill in your options, then upload it back here.') }}
+                            </p>
+                            <a href="{{ route('catalogue.options.template-for-boat', $model->_id) }}"
+                                class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold bg-white border border-primary-200 hover:bg-primary-50 text-primary-800 rounded-lg">
+                                <i class="ri-download-2-line"></i> {{ __('Download template (XLSX)') }}
+                            </a>
+                        </div>
+
+                        <form method="POST" action="{{ route('catalogue.options.import-for-boat', $model->_id) }}"
+                            enctype="multipart/form-data"
+                            class="space-y-3"
+                            x-data="{ filename: '', submitting: false, helpOpen: false }"
+                            @submit="submitting = true">
+                            @csrf
+                            <div>
+                                <div class="flex items-center gap-1.5 mb-1">
+                                    <label class="block text-sm font-medium text-gray-700">{{ __('File') }} <span class="text-red-500">*</span></label>
+                                    <div class="relative" @mouseleave="helpOpen = false">
+                                        <button type="button"
+                                            @mouseenter="helpOpen = true"
+                                            @click="helpOpen = !helpOpen"
+                                            class="w-4 h-4 inline-flex items-center justify-center rounded-full bg-gray-200 hover:bg-primary-100 text-gray-600 hover:text-primary-800 text-[10px] font-bold transition"
+                                            aria-label="{{ __('What columns does the file need?') }}">
+                                            ?
+                                        </button>
+                                        <div x-show="helpOpen" x-cloak x-transition.opacity
+                                            class="absolute left-0 top-6 z-10 w-80 bg-gray-900 text-white rounded-lg shadow-xl p-3 text-xs">
+                                            <p class="font-semibold mb-1.5">{{ __('Expected columns') }}</p>
+                                            <ul class="space-y-0.5 text-white/90">
+                                                <li><span class="font-mono text-primary-200">CODE</span> — {{ __('required, the option SKU') }}</li>
+                                                <li><span class="font-mono text-primary-200">MARQUE</span> — {{ __('optional') }}</li>
+                                                <li><span class="font-mono text-primary-200">DESIGNATION FR</span> — {{ __('required, French label') }}</li>
+                                                <li><span class="font-mono text-primary-200">DESIGNATION GB</span> — {{ __('optional, English label') }}</li>
+                                                <li><span class="font-mono text-primary-200">FAMILLE</span> — {{ __('optional, category') }}</li>
+                                                <li><span class="font-mono text-primary-200">PA HT</span> — {{ __('optional, purchase cost') }}</li>
+                                                <li><span class="font-mono text-primary-200">PV HT</span> — {{ __('required, public HT price') }}</li>
+                                                <li><span class="font-mono text-primary-200">TVA</span> — {{ __('optional, VAT (20 or 0.2)') }}</li>
+                                                <li><span class="font-mono text-primary-200">OPTION CHANTIER</span> — {{ __('optional, 0/1') }}</li>
+                                            </ul>
+                                            <p class="text-white/70 mt-2 pt-2 border-t border-white/10">
+                                                {{ __('All rows are attached to this boat. Existing options matching the CODE are updated; the rest are created.') }}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <input type="file" name="file" required
+                                    accept=".csv,.xlsx,.xlsm,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+                                    @change="filename = $event.target.files[0]?.name || ''"
+                                    class="w-full text-sm file:mr-3 file:px-3 file:py-1.5 file:rounded-lg file:border-0 file:bg-primary-50 file:text-primary-800 file:font-semibold hover:file:bg-primary-100" />
+                                <p class="text-xs text-gray-500 mt-1">{{ __('CSV or XLSX. Max 10 MB. Up to 5000 rows.') }}</p>
+                                <x-input-error :messages="$errors->get('file')" class="mt-1" />
+                            </div>
+
+                            <div class="flex items-center justify-end gap-2 pt-2">
+                                <button type="button" @click="importOpen = false"
+                                    class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">
+                                    {{ __('Cancel') }}
+                                </button>
+                                <button type="submit" :disabled="submitting"
+                                    class="inline-flex items-center gap-1 px-4 py-2 text-sm font-semibold bg-primary-800 hover:bg-primary-900 text-white rounded-lg disabled:opacity-50">
+                                    <span x-show="!submitting"><i class="ri-upload-2-line"></i> {{ __('Import') }}</span>
+                                    <span x-show="submitting" x-cloak><i class="ri-loader-4-line animate-spin"></i> {{ __('Importing…') }}</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
             {{-- Per-boat options list --}}
             <div class="bg-white rounded-2xl border border-gray-200 p-6">
                 <h2 class="text-base font-semibold text-gray-900 mb-4">Options on this boat</h2>

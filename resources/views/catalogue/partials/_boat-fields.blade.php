@@ -78,16 +78,10 @@
             class="w-full rounded-lg border-gray-300 font-mono text-sm focus:border-primary-800 focus:ring-primary-800" />
     </div>
     <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">
-            {{ __('Internal code') }}
-            <span class="ml-1 text-[10px] font-semibold text-primary-800 bg-primary-50 px-1.5 py-0.5 rounded uppercase tracking-wide">{{ __('Import key') }}</span>
-        </label>
+        <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Internal code') }}</label>
         <input type="text" name="internal_code" value="{{ old('internal_code', $model->internal_code ?? '') }}"
-            placeholder="e.g. ANT7OB"
+            placeholder="Your own ref"
             class="w-full rounded-lg border-gray-300 font-mono text-sm focus:border-primary-800 focus:ring-primary-800" />
-        <p class="text-[11px] text-gray-500 mt-1">
-            {{ __('Used as the link key when you bulk-import options for this boat (matches the CODE MODELE column).') }}
-        </p>
     </div>
     <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Default margin (%)</label>

@@ -81,10 +81,19 @@ class OptionImporter
         'chantier'          => 'yard_option',
     ];
 
-    private const REQUIRED = ['code', 'model_code', 'label', 'price'];
+    private const REQUIRED          = ['code', 'model_code', 'label', 'price'];
+    private const REQUIRED_FIXED    = ['code', 'label', 'price'];  // when the boat is implied by the URL
     private const MAX_ROWS = 5000;
 
-    public function import(UploadedFile $file, string $companyId): array
+    /**
+     * Import options for a tenant.
+     *
+     * @param  string|null  $fixedBoatId  If set, all rows are assigned to this boat
+     *                                    and the CODE MODELE column is ignored. Used
+     *                                    when the import is launched from inside a
+     *                                    specific boat's Options tab.
+     */
+    public function import(UploadedFile $file, string $companyId, ?string $fixedBoatId = null): array
     {
         $rows = $this->readFile($file);
         if (empty($rows)) {
@@ -96,11 +105,12 @@ class OptionImporter
         if (empty($headerMap)) {
             return $this->result(errors: [[
                 'row'     => 1,
-                'message' => 'Could not detect any known column. Expected at least CODE, CODE MODELE, DESIGNATION FR, PV HT.',
+                'message' => 'Could not detect any known column. Expected at least CODE, DESIGNATION FR, PV HT.',
             ]]);
         }
 
-        $missing = array_diff(self::REQUIRED, array_values($headerMap));
+        $requiredCols = $fixedBoatId ? self::REQUIRED_FIXED : self::REQUIRED;
+        $missing = array_diff($requiredCols, array_values($headerMap));
         if (! empty($missing)) {
             $human = array_map(fn ($m) => match ($m) {
                 'code'       => 'CODE',
@@ -141,6 +151,21 @@ class OptionImporter
             return $boatCache[$key] = $boat;
         };
 
+        // In fixed-boat mode we resolve the boat once up-front and use it
+        // for every row — the CODE MODELE column is ignored.
+        $fixedBoat = null;
+        if ($fixedBoatId) {
+            $fixedBoat = CompanyBoatModel::where('company_id', $companyId)
+                ->where('_id', $fixedBoatId)
+                ->first();
+            if (! $fixedBoat) {
+                return $this->result(errors: [[
+                    'row'     => 0,
+                    'message' => 'Target boat not found.',
+                ]]);
+            }
+        }
+
         $created = 0; $updated = 0; $skipped = 0; $errors = [];
 
         foreach ($rows as $i => $rawRow) {
@@ -153,19 +178,23 @@ class OptionImporter
 
             $data = $this->extract($rawRow, $headerMap);
 
-            $error = $this->validate($data);
+            $error = $this->validate($data, $fixedBoat !== null);
             if ($error) {
                 $errors[] = ['row' => $rowNumber, 'message' => $error];
                 continue;
             }
 
-            $boat = $resolveBoat($data['model_code']);
-            if (! $boat) {
-                $errors[] = [
-                    'row'     => $rowNumber,
-                    'message' => 'No boat found with internal code "' . $data['model_code'] . '". Create the boat first, then re-import.',
-                ];
-                continue;
+            if ($fixedBoat) {
+                $boat = $fixedBoat;
+            } else {
+                $boat = $resolveBoat($data['model_code']);
+                if (! $boat) {
+                    $errors[] = [
+                        'row'     => $rowNumber,
+                        'message' => 'No boat found with internal code "' . $data['model_code'] . '". Create the boat first, then re-import.',
+                    ];
+                    continue;
+                }
             }
 
             // Upsert by (company_id, company_model_id, code) — case-insensitive
@@ -380,11 +409,11 @@ class OptionImporter
         return $out;
     }
 
-    private function validate(array $data): ?string
+    private function validate(array $data, bool $fixedBoat = false): ?string
     {
         if ($data['code'] === '')       return 'CODE is required.';
         if (mb_strlen($data['code']) > 120) return 'CODE must be 120 characters or fewer.';
-        if ($data['model_code'] === '') return 'CODE MODELE is required.';
+        if (! $fixedBoat && $data['model_code'] === '') return 'CODE MODELE is required.';
         if ($data['label'] === '')      return 'DESIGNATION FR is required.';
         if (mb_strlen($data['label']) > 255) return 'DESIGNATION FR must be 255 characters or fewer.';
         if ($data['price'] < 0)         return 'PV HT must be zero or positive.';
