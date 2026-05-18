@@ -12,8 +12,10 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
-            'role'       => \App\Http\Middleware\EnsureUserHasRole::class,
-            'superadmin' => \App\Http\Middleware\RequireSuperadmin::class,
+            'role'         => \App\Http\Middleware\EnsureUserHasRole::class,
+            'superadmin'   => \App\Http\Middleware\RequireSuperadmin::class,
+            'signups'      => \App\Http\Middleware\AllowSignups::class,
+            'maintenance'  => \App\Http\Middleware\MaintenanceGate::class,
         ]);
 
         // Apply the dealership's configured timezone (§17.3) to every web

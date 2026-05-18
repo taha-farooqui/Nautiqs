@@ -43,6 +43,20 @@ class AppServiceProvider extends ServiceProvider
             URL::forceScheme('https');
         }
 
+        // Let the superadmin override the email-tracking base URL at runtime
+        // from /admin/settings. Falls back to the EMAIL_TRACKING_BASE_URL env
+        // variable when blank. Wrapped in a try/catch so a missing Mongo
+        // connection during artisan commands (migrations, route:cache) won't
+        // explode boot.
+        try {
+            $override = \App\Models\PlatformSetting::singleton()->email_tracking_base_url;
+            if (! empty($override)) {
+                config(['app.tracking_base_url' => $override]);
+            }
+        } catch (\Throwable $e) {
+            // Database not reachable yet (CI, fresh install) — skip override.
+        }
+
         // Wire up CRUD observers so notifications fire automatically.
         Quote::observe(QuoteObserver::class);
         Client::observe(ClientObserver::class);

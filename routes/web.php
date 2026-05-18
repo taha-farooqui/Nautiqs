@@ -91,7 +91,7 @@ Route::get('/_diag/mail', function (\Illuminate\Http\Request $request) {
     }
 })->name('diag.mail');
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth', 'verified', 'maintenance'])->group(function () {
 
     // Dashboard — §16.3
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
