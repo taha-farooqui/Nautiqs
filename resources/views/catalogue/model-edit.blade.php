@@ -632,7 +632,12 @@
                 </button>
             </div>
 
-            {{-- Import-options modal (scoped to this boat) --}}
+            {{-- Import-options modal (scoped to this boat).
+                 Teleported to <body> so it escapes any ancestor with a
+                 transform / filter — otherwise position:fixed gets re-
+                 anchored to that ancestor (Chromium behaviour) and the
+                 overlay only covers part of the viewport. --}}
+            <template x-teleport="body">
             <div x-show="importOpen" x-cloak x-transition.opacity
                 @keydown.escape.window="importOpen = false"
                 class="fixed inset-0 z-50 bg-gray-900/70 flex items-center justify-center p-4">
@@ -721,6 +726,7 @@
                     </div>
                 </div>
             </div>
+            </template>
 
             {{-- Per-boat options list --}}
             <div class="bg-white rounded-2xl border border-gray-200 p-6">
