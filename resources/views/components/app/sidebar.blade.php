@@ -61,7 +61,7 @@
         [
             'section' => 'Platform',
             'items' => [
-                ['label' => 'Overview',        'icon' => 'ri-line-chart-line',      'route' => null, 'active' => 'admin.dashboard'],
+                ['label' => 'Overview',        'icon' => 'ri-line-chart-line',      'route' => 'admin.dashboard', 'active' => 'admin.dashboard'],
                 ['label' => 'Tenants',         'icon' => 'ri-store-2-line',         'route' => null, 'active' => 'admin.tenants.*'],
             ],
         ],
@@ -77,9 +77,16 @@
             ],
         ],
         [
+            'section' => 'Customisation',
+            'items' => [
+                ['label' => 'Dictionary',      'icon' => 'ri-translate-2',          'route' => null, 'active' => 'admin.dictionary.*'],
+            ],
+        ],
+        [
             'section' => 'Activity',
             'items' => [
                 ['label' => 'Update log',      'icon' => 'ri-history-line',         'route' => null, 'active' => 'admin.log'],
+                ['label' => 'Audit log',       'icon' => 'ri-shield-check-line',    'route' => null, 'active' => 'admin.audit'],
             ],
         ],
     ];

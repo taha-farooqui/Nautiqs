@@ -214,6 +214,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/profile',    [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile',  [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    /* -----------------------------------------------------------------
+     | Superadmin platform area — spec §4. Gated by RequireSuperadmin
+     | which returns 404 (not 403) on auth failure so the panel's
+     | existence isn't leaked.
+     ----------------------------------------------------------------- */
+    Route::prefix('admin')->name('admin.')->middleware('superadmin')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('dashboard');
+    });
 });
 
 require __DIR__.'/auth.php';
