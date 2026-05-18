@@ -1102,23 +1102,17 @@ class CatalogueController extends Controller
      */
     private function buildOptionsTemplateXlsx(?string $boatName = null): string
     {
-        if ($boatName === null) {
-            $headers = ['CODE', 'CODE MODELE', 'MARQUE', 'DESIGNATION FR', 'DESIGNATION GB', 'FAMILLE', 'PA HT', 'PV HT', 'TVA', 'OPTION CHANTIER'];
-            $samples = [
-                ['ANT7OB_TRA_0001', 'ANT7OB', '', 'TRANSPORT - BANDOL', 'TRANSPORT - BANDOL', 'transport', 3400, 4858.60, 0.2, 0],
-                ['ANT7OB_ELE_0001', 'ANT7OB', '', 'Garmin GPSMAP 1243xsv',  'Garmin GPSMAP 1243xsv',  'electronique', 2100, 3200, 0.2, 0],
-                ['ANT7OB_CON_0001', 'ANT7OB', '', 'Plancher teck cockpit',  'Teak cockpit floor',     'confort',      2800, 4500, 0.2, 1],
-                ['CC75WA_ELE_0001', 'CC75WA', '', 'Stéréo + caisson basse', 'Stereo + subwoofer',     'electronique',  450,  800, 0.2, 0],
-            ];
-        } else {
-            $headers = ['CODE', 'MARQUE', 'DESIGNATION FR', 'DESIGNATION GB', 'FAMILLE', 'PA HT', 'PV HT', 'TVA', 'OPTION CHANTIER'];
-            $samples = [
-                ['TRA_0001', '', 'TRANSPORT - BANDOL',      'TRANSPORT - BANDOL',      'transport',     3400, 4858.60, 0.2, 0],
-                ['ELE_0001', '', 'Garmin GPSMAP 1243xsv',   'Garmin GPSMAP 1243xsv',   'electronique',  2100, 3200,    0.2, 0],
-                ['CON_0001', '', 'Plancher teck cockpit',   'Teak cockpit floor',      'confort',       2800, 4500,    0.2, 1],
-                ['CON_0002', '', 'Bimini + rideaux',        'Bimini with side curtains', 'confort',      950, 1800,    0.2, 0],
-            ];
-        }
+        // Four columns. Dealer only needs to type what actually matters:
+        // the category, the option name, optionally the cost (for margin),
+        // and the selling price. Code is auto-generated server-side from
+        // (category, label) so re-imports update prices in place.
+        $headers = ['FAMILLE', 'DESIGNATION', 'PA HT', 'PV HT'];
+        $samples = [
+            ['Transport',    'Bandol → Marseille',        3400, 4858.60],
+            ['Électronique', 'Garmin GPSMAP 1243xsv',     2100, 3200],
+            ['Confort',      'Plancher teck cockpit',     2800, 4500],
+            ['Confort',      'Bimini + rideaux',           950, 1800],
+        ];
 
         $strings = []; $sMap = [];
         $idx = function (string $s) use (&$strings, &$sMap): int {
@@ -1166,9 +1160,8 @@ class CatalogueController extends Controller
         }
         $sstXml .= '</sst>';
 
-        $widths = $boatName === null
-            ? [22, 14, 14, 32, 32, 16, 12, 12, 8, 16]
-            : [22, 14, 32, 32, 16, 12, 12, 8, 16];
+        // Width per column (FAMILLE, DESIGNATION, PA HT, PV HT).
+        $widths = [18, 40, 12, 12];
         $colsXml = '<cols>';
         foreach ($widths as $i => $w) {
             $colsXml .= '<col min="' . ($i + 1) . '" max="' . ($i + 1) . '" width="' . $w . '" customWidth="1"/>';

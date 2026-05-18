@@ -687,18 +687,13 @@
                                             class="absolute left-0 top-6 z-10 w-80 bg-gray-900 text-white rounded-lg shadow-xl p-3 text-xs">
                                             <p class="font-semibold mb-1.5">{{ __('Expected columns') }}</p>
                                             <ul class="space-y-0.5 text-white/90">
-                                                <li><span class="font-mono text-primary-200">CODE</span> — {{ __('required, the option SKU') }}</li>
-                                                <li><span class="font-mono text-primary-200">MARQUE</span> — {{ __('optional') }}</li>
-                                                <li><span class="font-mono text-primary-200">DESIGNATION FR</span> — {{ __('required, French label') }}</li>
-                                                <li><span class="font-mono text-primary-200">DESIGNATION GB</span> — {{ __('optional, English label') }}</li>
-                                                <li><span class="font-mono text-primary-200">FAMILLE</span> — {{ __('optional, category') }}</li>
+                                                <li><span class="font-mono text-primary-200">FAMILLE</span> — {{ __('required, category') }}</li>
+                                                <li><span class="font-mono text-primary-200">DESIGNATION</span> — {{ __('required, option name') }}</li>
                                                 <li><span class="font-mono text-primary-200">PA HT</span> — {{ __('optional, purchase cost') }}</li>
-                                                <li><span class="font-mono text-primary-200">PV HT</span> — {{ __('required, public HT price') }}</li>
-                                                <li><span class="font-mono text-primary-200">TVA</span> — {{ __('optional, VAT (20 or 0.2)') }}</li>
-                                                <li><span class="font-mono text-primary-200">OPTION CHANTIER</span> — {{ __('optional, 0/1') }}</li>
+                                                <li><span class="font-mono text-primary-200">PV HT</span> — {{ __('required, selling price HT') }}</li>
                                             </ul>
                                             <p class="text-white/70 mt-2 pt-2 border-t border-white/10">
-                                                {{ __('All rows are attached to this boat. Existing options matching the CODE are updated; the rest are created.') }}
+                                                {{ __('Re-uploading the same file with new prices updates the existing options. Renaming an option creates a new one.') }}
                                             </p>
                                         </div>
                                     </div>

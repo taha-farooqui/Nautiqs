@@ -5,19 +5,20 @@ namespace App\Services;
 use App\Models\CompanyBoatModel;
 use App\Models\CompanyOption;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Str;
 
 /**
- * Bulk-import for options (priced add-ons). Mirrors the column layout of
- * the client's existing-software export so dealers can re-use files they
- * already have:
+ * Bulk-import for boat options. Four columns visible to the dealer:
  *
- *   CODE  | CODE MODELE | MARQUE | DESIGNATION FR | DESIGNATION GB |
- *   FAMILLE | PA HT | PV HT | TVA | OPTION CHANTIER
+ *   FAMILLE       (category)  — required
+ *   DESIGNATION   (label)     — required
+ *   PA HT         (cost)      — optional, used for real-margin display only
+ *   PV HT         (price)     — required, selling price excl. VAT
  *
- * Each row creates/updates one CompanyOption attached to the boat whose
- * `internal_code` matches CODE MODELE. Match is upsert on
- * (company_id, company_model_id, code) so re-uploading the same file with
- * new prices just updates in place.
+ * Upsert key is auto-derived from (category, label) so re-importing the
+ * same file with updated prices updates in place — the dealer never has
+ * to manage a SKU. Renaming a label creates a new option, which is what
+ * you'd want (it's a different thing).
  *
  * Dependency-free reader (ZipArchive + DOMDocument for XLSX, fgetcsv for
  * CSV) — same approach as EngineImporter.
@@ -26,74 +27,55 @@ class OptionImporter
 {
     /** Header text (lowercased + trimmed) → internal field. EN + FR aliases. */
     private const HEADER_ALIASES = [
-        'code'              => 'code',
-        'sku'               => 'code',
+        // Category
+        'famille'        => 'category',
+        'category'       => 'category',
+        'categorie'      => 'category',
+        'catégorie'      => 'category',
 
-        'code modele'       => 'model_code',
-        'code modèle'       => 'model_code',
-        'model code'        => 'model_code',
-        'boat code'         => 'model_code',
+        // Label
+        'designation'    => 'label',
+        'désignation'    => 'label',
+        'designation fr' => 'label',
+        'désignation fr' => 'label',
+        'label'          => 'label',
+        'libellé'        => 'label',
+        'libelle'        => 'label',
+        'option'         => 'label',
+        'nom'            => 'label',
+        'name'           => 'label',
 
-        'marque'            => 'brand',
-        'brand'             => 'brand',
+        // Cost
+        'pa ht'          => 'cost',
+        'cost'           => 'cost',
+        'cost ht'        => 'cost',
+        'prix achat'     => 'cost',
+        'prix achat ht'  => 'cost',
+        'purchase price' => 'cost',
+        'coût'           => 'cost',
+        'cout'           => 'cost',
 
-        'designation fr'    => 'label',
-        'désignation fr'    => 'label',
-        'designation'       => 'label',
-        'désignation'       => 'label',
-        'label'             => 'label',
-        'libellé'           => 'label',
-        'libelle'           => 'label',
-
-        'designation gb'    => 'label_en',
-        'désignation gb'    => 'label_en',
-        'designation en'    => 'label_en',
-        'label en'          => 'label_en',
-        'english label'     => 'label_en',
-
-        'famille'           => 'category',
-        'category'          => 'category',
-        'categorie'         => 'category',
-        'catégorie'         => 'category',
-
-        'pa ht'             => 'cost',
-        'cost'              => 'cost',
-        'cost ht'           => 'cost',
-        'prix achat'        => 'cost',
-        'prix achat ht'     => 'cost',
-        'purchase price'    => 'cost',
-
-        'pv ht'             => 'price',
-        'price'             => 'price',
-        'price ht'          => 'price',
-        'public ht'         => 'price',
-        'prix vente'        => 'price',
-        'prix vente ht'     => 'price',
-        'prix ht'           => 'price',
-
-        'tva'               => 'vat_rate',
-        'vat'               => 'vat_rate',
-        'vat rate'          => 'vat_rate',
-        'taux tva'          => 'vat_rate',
-
-        'option chantier'   => 'yard_option',
-        'yard option'       => 'yard_option',
-        'chantier'          => 'yard_option',
+        // Price
+        'pv ht'          => 'price',
+        'price'          => 'price',
+        'price ht'       => 'price',
+        'public ht'      => 'price',
+        'prix vente'     => 'price',
+        'prix vente ht'  => 'price',
+        'prix ht'        => 'price',
+        'prix'           => 'price',
     ];
 
-    private const REQUIRED          = ['code', 'model_code', 'label', 'price'];
-    private const REQUIRED_FIXED    = ['code', 'label', 'price'];  // when the boat is implied by the URL
+    private const REQUIRED = ['category', 'label', 'price'];
     private const MAX_ROWS = 5000;
 
     /**
-     * Import options for a tenant.
-     *
-     * @param  string|null  $fixedBoatId  If set, all rows are assigned to this boat
-     *                                    and the CODE MODELE column is ignored. Used
-     *                                    when the import is launched from inside a
-     *                                    specific boat's Options tab.
+     * Import options for a tenant, attaching every row to $fixedBoatId.
+     * In Nautiqs the import is always launched from inside a boat's
+     * Options tab, so the boat is known up-front and the file doesn't
+     * need to reference it.
      */
-    public function import(UploadedFile $file, string $companyId, ?string $fixedBoatId = null): array
+    public function import(UploadedFile $file, string $companyId, string $fixedBoatId): array
     {
         $rows = $this->readFile($file);
         if (empty($rows)) {
@@ -105,19 +87,17 @@ class OptionImporter
         if (empty($headerMap)) {
             return $this->result(errors: [[
                 'row'     => 1,
-                'message' => 'Could not detect any known column. Expected at least CODE, DESIGNATION FR, PV HT.',
+                'message' => 'Could not detect any known column. Expected at least FAMILLE, DESIGNATION, PV HT.',
             ]]);
         }
 
-        $requiredCols = $fixedBoatId ? self::REQUIRED_FIXED : self::REQUIRED;
-        $missing = array_diff($requiredCols, array_values($headerMap));
+        $missing = array_diff(self::REQUIRED, array_values($headerMap));
         if (! empty($missing)) {
             $human = array_map(fn ($m) => match ($m) {
-                'code'       => 'CODE',
-                'model_code' => 'CODE MODELE',
-                'label'      => 'DESIGNATION FR',
-                'price'      => 'PV HT',
-                default      => $m,
+                'category' => 'FAMILLE',
+                'label'    => 'DESIGNATION',
+                'price'    => 'PV HT',
+                default    => $m,
             }, $missing);
             return $this->result(errors: [[
                 'row'     => 1,
@@ -132,38 +112,14 @@ class OptionImporter
             ]]);
         }
 
-        // Cache boats by internal_code so we look up each one only once
-        // even when the file has 80 rows pointing at the same boat.
-        $boatCache = [];
-        $resolveBoat = function (string $internalCode) use (&$boatCache, $companyId) {
-            $key = mb_strtolower(trim($internalCode));
-            if (array_key_exists($key, $boatCache)) {
-                return $boatCache[$key];
-            }
-            $boat = CompanyBoatModel::where('company_id', $companyId)
-                ->whereRaw([
-                    'internal_code' => [
-                        '$regex'   => '^' . preg_quote($internalCode, '/') . '$',
-                        '$options' => 'i',
-                    ],
-                ])
-                ->first();
-            return $boatCache[$key] = $boat;
-        };
-
-        // In fixed-boat mode we resolve the boat once up-front and use it
-        // for every row — the CODE MODELE column is ignored.
-        $fixedBoat = null;
-        if ($fixedBoatId) {
-            $fixedBoat = CompanyBoatModel::where('company_id', $companyId)
-                ->where('_id', $fixedBoatId)
-                ->first();
-            if (! $fixedBoat) {
-                return $this->result(errors: [[
-                    'row'     => 0,
-                    'message' => 'Target boat not found.',
-                ]]);
-            }
+        $boat = CompanyBoatModel::where('company_id', $companyId)
+            ->where('_id', $fixedBoatId)
+            ->first();
+        if (! $boat) {
+            return $this->result(errors: [[
+                'row'     => 0,
+                'message' => 'Target boat not found.',
+            ]]);
         }
 
         $created = 0; $updated = 0; $skipped = 0; $errors = [];
@@ -176,50 +132,31 @@ class OptionImporter
                 continue;
             }
 
-            $data = $this->extract($rawRow, $headerMap);
-
-            $error = $this->validate($data, $fixedBoat !== null);
+            $data  = $this->extract($rawRow, $headerMap);
+            $error = $this->validate($data);
             if ($error) {
                 $errors[] = ['row' => $rowNumber, 'message' => $error];
                 continue;
             }
 
-            if ($fixedBoat) {
-                $boat = $fixedBoat;
-            } else {
-                $boat = $resolveBoat($data['model_code']);
-                if (! $boat) {
-                    $errors[] = [
-                        'row'     => $rowNumber,
-                        'message' => 'No boat found with internal code "' . $data['model_code'] . '". Create the boat first, then re-import.',
-                    ];
-                    continue;
-                }
-            }
+            // Auto-generated stable key from (category, label). Used for
+            // upsert matching only — the dealer never sees or types it.
+            // Examples:
+            //   "Transport" + "Bandol → Marseille"  → "transport__bandol-marseille"
+            //   "Électronique" + "Garmin 1243xsv"  → "electronique__garmin-1243xsv"
+            $autoCode = Str::slug($data['category']) . '__' . Str::slug($data['label']);
 
-            // Upsert by (company_id, company_model_id, code) — case-insensitive
-            // on the code so "ANT7OB_TRA_0001" and "ant7ob_tra_0001" map to
-            // the same option.
             $existing = CompanyOption::where('company_id', $companyId)
                 ->where('company_model_id', (string) $boat->_id)
-                ->whereRaw([
-                    'code' => [
-                        '$regex'   => '^' . preg_quote($data['code'], '/') . '$',
-                        '$options' => 'i',
-                    ],
-                ])
+                ->where('code', $autoCode)
                 ->first();
 
             $payload = [
                 'category'    => $data['category'],
                 'label'       => $data['label'],
-                'label_en'    => $data['label_en'],
-                'brand'       => $data['brand'],
-                'code'        => $data['code'],
+                'code'        => $autoCode,
                 'price'       => $data['price'],
                 'cost'        => $data['cost'],
-                'vat_rate'    => $data['vat_rate'],
-                'yard_option' => $data['yard_option'],
                 'currency'    => 'EUR',
                 'is_archived' => false,
             ];
@@ -245,6 +182,8 @@ class OptionImporter
 
         return $this->result($created, $updated, $skipped, $errors);
     }
+
+    /* ---------------------------------------------------- File readers */
 
     private function readFile(UploadedFile $file): array
     {
@@ -344,6 +283,8 @@ class OptionImporter
         return $n - 1;
     }
 
+    /* ---------------------------------------------- Row extract + check */
+
     private function mapHeaders(array $headerRow): array
     {
         $map = [];
@@ -359,69 +300,41 @@ class OptionImporter
     private function extract(array $rawRow, array $headerMap): array
     {
         $out = [
-            'code'        => '',
-            'model_code'  => '',
-            'brand'       => '',
-            'label'       => '',
-            'label_en'    => '',
-            'category'    => '',
-            'cost'        => 0.0,
-            'price'       => 0.0,
-            'vat_rate'    => 20.0,
-            'yard_option' => false,
+            'category' => '',
+            'label'    => '',
+            'cost'     => 0.0,
+            'price'    => 0.0,
         ];
 
         foreach ($headerMap as $col => $field) {
             $raw = trim((string) ($rawRow[$col] ?? ''));
             switch ($field) {
-                case 'code':
-                case 'model_code':
-                case 'brand':
-                case 'label':
-                case 'label_en':
                 case 'category':
+                case 'label':
                     $out[$field] = $raw;
                     break;
                 case 'cost':
                 case 'price':
                     if ($raw !== '') {
-                        $out[$field] = (float) str_replace([' ', ','], ['', '.'], $raw);
+                        // Strip currency symbols + thousand spaces; accept FR comma decimals.
+                        $clean = preg_replace('/[€$\s]/u', '', $raw);
+                        $out[$field] = (float) str_replace(',', '.', $clean);
                     }
-                    break;
-                case 'vat_rate':
-                    if ($raw !== '') {
-                        $v = (float) str_replace([' ', ','], ['', '.'], $raw);
-                        // Client file stores TVA as 0.2 (= 20%). Detect the
-                        // decimal form and scale up so the DB always holds
-                        // the percentage representation Nautiqs uses.
-                        if ($v > 0 && $v <= 1) {
-                            $v = $v * 100;
-                        }
-                        $out['vat_rate'] = $v;
-                    }
-                    break;
-                case 'yard_option':
-                    $lower = mb_strtolower($raw);
-                    $out['yard_option'] = in_array($lower, ['1', 'yes', 'y', 'true', 'oui', 'o'], true);
                     break;
             }
         }
         return $out;
     }
 
-    private function validate(array $data, bool $fixedBoat = false): ?string
+    private function validate(array $data): ?string
     {
-        if ($data['code'] === '')       return 'CODE is required.';
-        if (mb_strlen($data['code']) > 120) return 'CODE must be 120 characters or fewer.';
-        if (! $fixedBoat && $data['model_code'] === '') return 'CODE MODELE is required.';
-        if ($data['label'] === '')      return 'DESIGNATION FR is required.';
-        if (mb_strlen($data['label']) > 255) return 'DESIGNATION FR must be 255 characters or fewer.';
+        if ($data['category'] === '') return 'FAMILLE is required.';
+        if (mb_strlen($data['category']) > 80) return 'FAMILLE must be 80 characters or fewer.';
+        if ($data['label']    === '') return 'DESIGNATION is required.';
+        if (mb_strlen($data['label']) > 255) return 'DESIGNATION must be 255 characters or fewer.';
         if ($data['price'] < 0)         return 'PV HT must be zero or positive.';
         if ($data['price'] > 1_000_000) return 'PV HT is implausibly high (> €1M).';
         if ($data['cost']  < 0)         return 'PA HT must be zero or positive.';
-        if ($data['vat_rate'] < 0 || $data['vat_rate'] > 100) {
-            return 'TVA must be between 0 and 100 (or 0 and 1 if decimal).';
-        }
         return null;
     }
 
