@@ -62,11 +62,21 @@ class DealerController extends Controller
             ->groupBy(fn ($b) => (string) $b->company_id)
             ->map->count();
 
+        // Primary user per dealer = tenant_admin if any, otherwise oldest user.
+        // Used as the Contact column on the list — clearer than the
+        // company's salesperson_email which is a PDF/email-from field.
+        $allUsers = User::whereIn('company_id', $ids->all())
+            ->orderBy('created_at')
+            ->get(['name', 'email', 'role', 'company_id']);
+        $primaryByCompany = $allUsers->groupBy(fn ($u) => (string) $u->company_id)
+            ->map(fn ($users) => $users->sortByDesc(fn ($u) => $u->role === User::ROLE_TENANT_ADMIN ? 1 : 0)->first());
+
         foreach ($dealers as $d) {
             $cid = (string) $d->_id;
             $d->_users_count  = $userCounts->get($cid, 0);
             $d->_quotes_count = $quoteCounts->get($cid, 0);
             $d->_brands_count = $brandCounts->get($cid, 0);
+            $d->_primary_user = $primaryByCompany->get($cid);
         }
 
         $totals = [

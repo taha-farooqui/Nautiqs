@@ -68,11 +68,11 @@
         [
             'section' => 'Global catalogue',
             'items' => [
-                ['label' => 'Brands',          'icon' => 'ri-building-4-line',      'route' => null, 'active' => 'admin.brands.*'],
-                ['label' => 'Models',          'icon' => 'ri-sailboat-line',        'route' => null, 'active' => 'admin.models.*'],
-                ['label' => 'Variants',        'icon' => 'ri-layout-grid-line',     'route' => null, 'active' => 'admin.variants.*'],
-                ['label' => 'Equipment',       'icon' => 'ri-tools-line',           'route' => null, 'active' => 'admin.equipment.*'],
-                ['label' => 'Options',         'icon' => 'ri-list-check-2',         'route' => null, 'active' => 'admin.options.*'],
+                ['label' => 'Brands',          'icon' => 'ri-building-4-line',      'route' => 'admin.brands.index',    'active' => 'admin.brands.*'],
+                ['label' => 'Models',          'icon' => 'ri-sailboat-line',        'route' => 'admin.models.index',    'active' => 'admin.models.*'],
+                ['label' => 'Variants',        'icon' => 'ri-layout-grid-line',     'route' => 'admin.variants.index',  'active' => 'admin.variants.*'],
+                ['label' => 'Equipment',       'icon' => 'ri-tools-line',           'route' => 'admin.equipment.index', 'active' => 'admin.equipment.*'],
+                ['label' => 'Options',         'icon' => 'ri-list-check-2',         'route' => 'admin.options.index',   'active' => 'admin.options.*'],
             ],
         ],
         [

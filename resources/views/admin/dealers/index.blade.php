@@ -77,8 +77,12 @@
                                     </div>
                                 </td>
                                 <td class="px-5 py-3">
-                                    <div class="text-sm text-gray-900">{{ $d->salesperson_name ?? '—' }}</div>
-                                    <div class="text-[11px] text-gray-500 truncate max-w-[200px]">{{ $d->salesperson_email ?? '' }}</div>
+                                    @if ($d->_primary_user)
+                                        <div class="text-sm text-gray-900 truncate max-w-[220px]">{{ $d->_primary_user->name }}</div>
+                                        <div class="text-[11px] text-gray-500 truncate max-w-[220px]">{{ $d->_primary_user->email }}</div>
+                                    @else
+                                        <div class="text-sm text-gray-400 italic">{{ __('No user yet') }}</div>
+                                    @endif
                                 </td>
                                 <td class="px-5 py-3 text-right font-medium text-gray-900">{{ $d->_users_count }}</td>
                                 <td class="px-5 py-3 text-right font-medium text-gray-900">{{ $d->_brands_count }}</td>

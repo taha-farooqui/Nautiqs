@@ -232,6 +232,44 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // Activity log (audit trail of superadmin actions).
         Route::get('/audit',                [\App\Http\Controllers\Admin\AuditController::class, 'index'])->name('audit.index');
 
+        // Global catalogue CRUD — spec §4.1. All CRUD pages live on
+        // Admin\CatalogueController so the audit-log call sites stay consistent.
+        $c = \App\Http\Controllers\Admin\CatalogueController::class;
+        Route::get('/brands',              [$c, 'brandsIndex'])->name('brands.index');
+        Route::get('/brands/create',       [$c, 'brandsCreate'])->name('brands.create');
+        Route::post('/brands',             [$c, 'brandsStore'])->name('brands.store');
+        Route::get('/brands/{id}/edit',    [$c, 'brandsEdit'])->name('brands.edit');
+        Route::patch('/brands/{id}',       [$c, 'brandsUpdate'])->name('brands.update');
+        Route::post('/brands/{id}/toggle', [$c, 'brandsToggle'])->name('brands.toggle');
+
+        Route::get('/models',              [$c, 'modelsIndex'])->name('models.index');
+        Route::get('/models/create',       [$c, 'modelsCreate'])->name('models.create');
+        Route::post('/models',             [$c, 'modelsStore'])->name('models.store');
+        Route::get('/models/{id}/edit',    [$c, 'modelsEdit'])->name('models.edit');
+        Route::patch('/models/{id}',      [$c, 'modelsUpdate'])->name('models.update');
+        Route::post('/models/{id}/archive',[$c, 'modelsArchive'])->name('models.archive');
+
+        Route::get('/variants',            [$c, 'variantsIndex'])->name('variants.index');
+        Route::get('/variants/create',     [$c, 'variantsCreate'])->name('variants.create');
+        Route::post('/variants',           [$c, 'variantsStore'])->name('variants.store');
+        Route::get('/variants/{id}/edit',  [$c, 'variantsEdit'])->name('variants.edit');
+        Route::patch('/variants/{id}',     [$c, 'variantsUpdate'])->name('variants.update');
+        Route::post('/variants/{id}/archive', [$c, 'variantsArchive'])->name('variants.archive');
+
+        Route::get('/equipment',           [$c, 'equipmentIndex'])->name('equipment.index');
+        Route::get('/equipment/create',    [$c, 'equipmentCreate'])->name('equipment.create');
+        Route::post('/equipment',          [$c, 'equipmentStore'])->name('equipment.store');
+        Route::get('/equipment/{id}/edit', [$c, 'equipmentEdit'])->name('equipment.edit');
+        Route::patch('/equipment/{id}',    [$c, 'equipmentUpdate'])->name('equipment.update');
+        Route::delete('/equipment/{id}',   [$c, 'equipmentDestroy'])->name('equipment.destroy');
+
+        Route::get('/options',             [$c, 'optionsIndex'])->name('options.index');
+        Route::get('/options/create',      [$c, 'optionsCreate'])->name('options.create');
+        Route::post('/options',            [$c, 'optionsStore'])->name('options.store');
+        Route::get('/options/{id}/edit',   [$c, 'optionsEdit'])->name('options.edit');
+        Route::patch('/options/{id}',      [$c, 'optionsUpdate'])->name('options.update');
+        Route::post('/options/{id}/archive', [$c, 'optionsArchive'])->name('options.archive');
+
         // Translation dictionary — search any user-facing string in the
         // app and customise it. Falls back to lang/{locale}.json defaults.
         Route::get('/dictionary',           [\App\Http\Controllers\Admin\DictionaryController::class, 'index'])->name('dictionary.index');
