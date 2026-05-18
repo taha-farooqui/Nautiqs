@@ -6,8 +6,22 @@
         </div>
     @endif
 
+    <div class="flex items-center gap-1 mb-4 bg-white p-1 rounded-xl border border-gray-200 w-fit">
+        @foreach ([
+            'active'   => __('Active') . ' (' . $tabCounts['active'] . ')',
+            'archived' => __('Archived') . ' (' . $tabCounts['archived'] . ')',
+        ] as $tab => $label)
+            <a href="{{ route('admin.options.index', ['status' => $tab, 'q' => $q, 'model' => $modelId, 'category' => $category]) }}"
+                class="px-3 py-1.5 text-sm font-medium rounded-lg transition
+                    {{ $status === $tab ? 'bg-primary-800 text-white' : 'text-gray-600 hover:bg-gray-100' }}">
+                {{ $label }}
+            </a>
+        @endforeach
+    </div>
+
     <div class="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <form method="GET" action="{{ route('admin.options.index') }}" class="flex flex-1 items-center gap-2 max-w-3xl">
+            <input type="hidden" name="status" value="{{ $status }}" />
             <div class="relative flex-1">
                 <i class="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
                 <input type="search" name="q" value="{{ $q }}"
@@ -29,10 +43,12 @@
                 @endforeach
             </select>
         </form>
-        <a href="{{ route('admin.options.create', $modelId ? ['model' => $modelId] : []) }}"
-            class="inline-flex items-center gap-1 px-3 py-2 text-sm font-semibold bg-primary-800 hover:bg-primary-900 text-white rounded-lg">
-            <i class="ri-add-line"></i> {{ __('Add option') }}
-        </a>
+        @if ($status === 'active')
+            <a href="{{ route('admin.options.create', $modelId ? ['model' => $modelId] : []) }}"
+                class="inline-flex items-center gap-1 px-3 py-2 text-sm font-semibold bg-primary-800 hover:bg-primary-900 text-white rounded-lg">
+                <i class="ri-add-line"></i> {{ __('Add option') }}
+            </a>
+        @endif
     </div>
 
     <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
@@ -64,18 +80,28 @@
                             <td class="px-5 py-3 text-right font-semibold text-gray-900">{{ $o->currency === 'USD' ? '$' : '€' }}{{ number_format($o->price, 2, ',', ' ') }}</td>
                             <td class="px-5 py-3 text-right text-gray-700">{{ $o->cost ? ($o->currency === 'USD' ? '$' : '€') . number_format($o->cost, 2, ',', ' ') : '—' }}</td>
                             <td class="px-5 py-3 text-right whitespace-nowrap">
-                                <a href="{{ route('admin.options.edit', $o->_id) }}"
-                                    class="inline-flex items-center justify-center w-8 h-8 text-gray-500 hover:text-primary-800 hover:bg-gray-100 rounded-lg" title="{{ __('Edit') }}">
-                                    <i class="ri-pencil-line"></i>
-                                </a>
-                                <form method="POST" action="{{ route('admin.options.archive', $o->_id) }}" class="inline"
-                                    data-confirm="{{ __('Archive :name?', ['name' => $o->label]) }}"
-                                    data-confirm-danger="1">
-                                    @csrf
-                                    <button class="inline-flex items-center justify-center w-8 h-8 text-gray-500 hover:bg-gray-100 rounded-lg" title="{{ __('Archive') }}">
-                                        <i class="ri-archive-line"></i>
-                                    </button>
-                                </form>
+                                @if ($status === 'archived')
+                                    <form method="POST" action="{{ route('admin.options.archive', $o->_id) }}" class="inline"
+                                        data-confirm="{{ __('Restore :name?', ['name' => $o->label]) }}">
+                                        @csrf
+                                        <button class="inline-flex items-center justify-center w-8 h-8 text-emerald-600 hover:bg-emerald-50 rounded-lg" title="{{ __('Restore') }}">
+                                            <i class="ri-arrow-go-back-line"></i>
+                                        </button>
+                                    </form>
+                                @else
+                                    <a href="{{ route('admin.options.edit', $o->_id) }}"
+                                        class="inline-flex items-center justify-center w-8 h-8 text-gray-500 hover:text-primary-800 hover:bg-gray-100 rounded-lg" title="{{ __('Edit') }}">
+                                        <i class="ri-pencil-line"></i>
+                                    </a>
+                                    <form method="POST" action="{{ route('admin.options.archive', $o->_id) }}" class="inline"
+                                        data-confirm="{{ __('Archive :name?', ['name' => $o->label]) }}"
+                                        data-confirm-danger="1">
+                                        @csrf
+                                        <button class="inline-flex items-center justify-center w-8 h-8 text-gray-500 hover:bg-gray-100 rounded-lg" title="{{ __('Archive') }}">
+                                            <i class="ri-archive-line"></i>
+                                        </button>
+                                    </form>
+                                @endif
                             </td>
                         </tr>
                     @endforeach

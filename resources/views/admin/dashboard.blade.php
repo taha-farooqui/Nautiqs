@@ -222,7 +222,7 @@
             @endif
         </div>
 
-        {{-- Right rail: top models + top brands --}}
+        {{-- Right rail: top models --}}
         <div class="space-y-4">
             {{-- Top quoted models --}}
             <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
@@ -255,29 +255,6 @@
                 @endif
             </div>
 
-            {{-- Most-activated brands --}}
-            <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-                <div class="px-5 py-4 border-b border-gray-100">
-                    <h3 class="font-semibold text-gray-900">{{ __('Most activated brands') }}</h3>
-                    <p class="text-xs text-gray-500 mt-0.5">{{ __('Across all active dealers') }}</p>
-                </div>
-                @if ($brandCounts->isEmpty())
-                    <div class="px-5 py-6 text-center text-sm text-gray-500">
-                        {{ __('No brand activations yet.') }}
-                    </div>
-                @else
-                    <ul class="divide-y divide-gray-100">
-                        @foreach ($brandCounts as $brand => $count)
-                            <li class="px-5 py-3 flex items-center justify-between">
-                                <span class="text-sm font-medium text-gray-900 truncate">{{ $brand }}</span>
-                                <span class="text-xs font-semibold text-primary-800 bg-primary-50 px-2 py-0.5 rounded-full">
-                                    {{ $count }} {{ \Illuminate\Support\Str::plural(__('dealer'), $count) }}
-                                </span>
-                            </li>
-                        @endforeach
-                    </ul>
-                @endif
-            </div>
         </div>
     </section>
 

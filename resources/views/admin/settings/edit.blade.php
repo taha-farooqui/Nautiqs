@@ -47,43 +47,6 @@
             </div>
         </section>
 
-        {{-- Sign-ups ──────────────────────────────────────────────── --}}
-        <section class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-            <div class="px-6 py-4 border-b border-gray-100">
-                <h2 class="font-semibold text-gray-900">{{ __('Sign-ups') }}</h2>
-                <p class="text-xs text-gray-500 mt-0.5">{{ __('Control whether anyone can register a new dealer account on this platform.') }}</p>
-            </div>
-            <div class="p-6">
-                <label class="flex items-start gap-3 cursor-pointer">
-                    <input type="hidden" name="signups_enabled" value="0" />
-                    <input type="checkbox" name="signups_enabled" value="1"
-                        {{ old('signups_enabled', $settings->signups_enabled ?? true) ? 'checked' : '' }}
-                        class="mt-0.5 rounded border-gray-300 text-primary-800 focus:ring-primary-800" />
-                    <span>
-                        <span class="block text-sm font-medium text-gray-900">{{ __('Allow new dealer sign-ups') }}</span>
-                        <span class="block text-[11px] text-gray-500 mt-0.5">{{ __('When off, the public /register page returns 404. Use this for closed beta or while you onboard dealers manually.') }}</span>
-                    </span>
-                </label>
-            </div>
-        </section>
-
-        {{-- Email tracking ────────────────────────────────────────── --}}
-        <section class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-            <div class="px-6 py-4 border-b border-gray-100">
-                <h2 class="font-semibold text-gray-900">{{ __('Email open tracking') }}</h2>
-                <p class="text-xs text-gray-500 mt-0.5">{{ __('Public URL where the tracking pixel is reachable from Gmail and Outlook.') }}</p>
-            </div>
-            <div class="p-6">
-                <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Tracking base URL') }}</label>
-                <input type="url" name="email_tracking_base_url" value="{{ old('email_tracking_base_url', $settings->email_tracking_base_url ?? '') }}"
-                    placeholder="https://nautiqs-production.up.railway.app"
-                    class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />
-                <p class="text-[11px] text-gray-500 mt-1">
-                    {{ __('Leave blank to use the EMAIL_TRACKING_BASE_URL env variable. Required in production so Gmail can reach the pixel — without it, opens are not counted.') }}
-                </p>
-            </div>
-        </section>
-
         {{-- Maintenance mode ──────────────────────────────────────── --}}
         <section class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
             <div class="px-6 py-4 border-b border-gray-100">

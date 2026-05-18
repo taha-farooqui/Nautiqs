@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\Company;
-use App\Models\CompanyBrand;
 use App\Models\Quote;
 use App\Models\User;
 use Illuminate\Support\Carbon;
@@ -98,14 +97,6 @@ class DashboardController extends Controller
             ->values();
         $topModelMax = $topModels->max('count') ?: 1;
 
-        // ── Most-activated brands (top 5 across tenants) ───────────────
-        $brandCounts = CompanyBrand::where('is_active', true)
-            ->get(['name', 'company_id'])
-            ->groupBy('name')
-            ->map(fn ($rows) => $rows->pluck('company_id')->unique()->count())
-            ->sortDesc()
-            ->take(5);
-
         // ── Recent platform activity (audit log) ───────────────────────
         $recentAudit = AuditLog::orderBy('created_at', 'desc')->take(8)->get();
 
@@ -124,7 +115,7 @@ class DashboardController extends Controller
         ];
 
         return view('admin.dashboard', compact(
-            'kpis', 'trend', 'recent', 'topModels', 'topModelMax', 'brandCounts', 'recentAudit'
+            'kpis', 'trend', 'recent', 'topModels', 'topModelMax', 'recentAudit'
         ));
     }
 }

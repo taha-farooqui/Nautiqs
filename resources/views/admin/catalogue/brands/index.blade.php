@@ -33,7 +33,6 @@
                     <tr>
                         <th class="px-5 py-3 font-semibold">{{ __('Brand') }}</th>
                         <th class="px-5 py-3 font-semibold text-right">{{ __('Models') }}</th>
-                        <th class="px-5 py-3 font-semibold text-right">{{ __('Order') }}</th>
                         <th class="px-5 py-3 font-semibold">{{ __('Status') }}</th>
                         <th class="px-5 py-3"></th>
                     </tr>
@@ -48,7 +47,6 @@
                                 @endif
                             </td>
                             <td class="px-5 py-3 text-right font-medium text-gray-900">{{ $b->_models_count }}</td>
-                            <td class="px-5 py-3 text-right text-xs text-gray-500">{{ $b->display_order ?? '—' }}</td>
                             <td class="px-5 py-3">
                                 @if ($b->is_active)
                                     <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-700">

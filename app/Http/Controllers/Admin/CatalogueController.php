@@ -100,8 +100,14 @@ class CatalogueController extends Controller
     {
         $q       = trim((string) $request->query('q', ''));
         $brandId = $request->query('brand', '');
+        $status  = $request->query('status', 'active'); // active | archived
 
-        $query = GlobalBoatModel::where('is_archived', '!=', true)->orderBy('name');
+        $query = GlobalBoatModel::orderBy('name');
+        if ($status === 'archived') {
+            $query->where('is_archived', true);
+        } else {
+            $query->where('is_archived', '!=', true);
+        }
         if ($q !== '') {
             $query->where(function ($w) use ($q) {
                 $regex = ['$regex' => preg_quote($q, '/'), '$options' => 'i'];
@@ -130,7 +136,12 @@ class CatalogueController extends Controller
 
         $allBrands = GlobalBrand::where('is_active', true)->orderBy('name')->get(['name']);
 
-        return view('admin.catalogue.models.index', compact('models', 'q', 'brandId', 'allBrands'));
+        $tabCounts = [
+            'active'   => GlobalBoatModel::where('is_archived', '!=', true)->count(),
+            'archived' => GlobalBoatModel::where('is_archived', true)->count(),
+        ];
+
+        return view('admin.catalogue.models.index', compact('models', 'q', 'brandId', 'status', 'allBrands', 'tabCounts'));
     }
 
     public function modelsCreate()
@@ -193,7 +204,13 @@ class CatalogueController extends Controller
     public function variantsIndex(Request $request)
     {
         $modelId = $request->query('model', '');
-        $query = GlobalBoatVariant::where('is_archived', '!=', true)->orderBy('name');
+        $status  = $request->query('status', 'active');
+        $query = GlobalBoatVariant::orderBy('name');
+        if ($status === 'archived') {
+            $query->where('is_archived', true);
+        } else {
+            $query->where('is_archived', '!=', true);
+        }
         if ($modelId !== '') {
             $query->where('model_id', $modelId);
         }
@@ -214,7 +231,12 @@ class CatalogueController extends Controller
         $allModels = GlobalBoatModel::where('is_archived', '!=', true)
             ->orderBy('name')->get(['name', 'code'])->take(500);
 
-        return view('admin.catalogue.variants.index', compact('variants', 'q', 'modelId', 'allModels'));
+        $tabCounts = [
+            'active'   => GlobalBoatVariant::where('is_archived', '!=', true)->count(),
+            'archived' => GlobalBoatVariant::where('is_archived', true)->count(),
+        ];
+
+        return view('admin.catalogue.variants.index', compact('variants', 'q', 'modelId', 'status', 'allModels', 'tabCounts'));
     }
 
     public function variantsCreate(Request $request)
@@ -359,9 +381,14 @@ class CatalogueController extends Controller
         $modelId  = $request->query('model', '');
         $category = trim((string) $request->query('category', ''));
         $q        = trim((string) $request->query('q', ''));
+        $status   = $request->query('status', 'active');
 
-        $query = GlobalOption::where('is_archived', '!=', true)
-            ->orderBy('category')->orderBy('position')->orderBy('label');
+        $query = GlobalOption::orderBy('category')->orderBy('position')->orderBy('label');
+        if ($status === 'archived') {
+            $query->where('is_archived', true);
+        } else {
+            $query->where('is_archived', '!=', true);
+        }
         if ($modelId !== '') $query->where('model_id', $modelId);
         if ($category !== '') $query->where('category', $category);
         if ($q !== '') {
@@ -378,7 +405,12 @@ class CatalogueController extends Controller
         $allModels = GlobalBoatModel::where('is_archived', '!=', true)->orderBy('name')->get(['name'])->take(500);
         $allCategories = GlobalOption::distinct()->get(['category'])->pluck('category')->filter()->sort()->values();
 
-        return view('admin.catalogue.options.index', compact('options', 'q', 'modelId', 'category', 'allModels', 'allCategories'));
+        $tabCounts = [
+            'active'   => GlobalOption::where('is_archived', '!=', true)->count(),
+            'archived' => GlobalOption::where('is_archived', true)->count(),
+        ];
+
+        return view('admin.catalogue.options.index', compact('options', 'q', 'modelId', 'category', 'status', 'allModels', 'allCategories', 'tabCounts'));
     }
 
     public function optionsCreate(Request $request)

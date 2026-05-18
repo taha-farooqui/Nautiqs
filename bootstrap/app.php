@@ -14,7 +14,6 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role'         => \App\Http\Middleware\EnsureUserHasRole::class,
             'superadmin'   => \App\Http\Middleware\RequireSuperadmin::class,
-            'signups'      => \App\Http\Middleware\AllowSignups::class,
             'maintenance'  => \App\Http\Middleware\MaintenanceGate::class,
         ]);
 

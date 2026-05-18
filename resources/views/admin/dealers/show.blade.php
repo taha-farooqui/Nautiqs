@@ -140,28 +140,4 @@
             @endif
         </div>
     </div>
-
-    {{-- Activated brands --}}
-    <div class="mt-4 bg-white rounded-2xl border border-gray-200 overflow-hidden">
-        <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-            <h3 class="font-semibold text-gray-900">{{ __('Activated brands') }}</h3>
-            <span class="text-xs text-gray-500">{{ $brands->where('is_active', true)->count() }} {{ __('active') }}</span>
-        </div>
-        @if ($brands->isEmpty())
-            <div class="px-5 py-6 text-center text-sm text-gray-500">{{ __('No brands activated yet.') }}</div>
-        @else
-            <ul class="divide-y divide-gray-100">
-                @foreach ($brands as $b)
-                    <li class="px-5 py-3 flex items-center justify-between">
-                        <span class="text-sm font-medium text-gray-900">{{ $b->name }}</span>
-                        @if ($b->is_active)
-                            <span class="text-[11px] font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">{{ __('Active') }}</span>
-                        @else
-                            <span class="text-[11px] font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">{{ __('Inactive') }}</span>
-                        @endif
-                    </li>
-                @endforeach
-            </ul>
-        @endif
-    </div>
 </x-admin-layout>

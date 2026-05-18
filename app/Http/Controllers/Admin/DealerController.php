@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Client;
 use App\Models\Company;
-use App\Models\CompanyBrand;
 use App\Models\Quote;
 use App\Models\User;
 use App\Services\AuditLogger;
@@ -13,8 +12,8 @@ use Illuminate\Http\Request;
 
 /**
  * Spec §4.3 — superadmin dealer (tenant) management. List all subscribing
- * dealerships, drill into a single one for profile + stats + users +
- * activated brands, toggle suspended status.
+ * dealerships, drill into a single one for profile + stats + users,
+ * toggle suspended status.
  *
  * "Dealer" is the user-facing name; the underlying model is still
  * Company (spec terminology).
@@ -56,11 +55,6 @@ class DealerController extends Controller
             ->get(['company_id'])
             ->groupBy(fn ($q) => (string) $q->company_id)
             ->map->count();
-        $brandCounts = CompanyBrand::whereIn('company_id', $ids->all())
-            ->where('is_active', true)
-            ->get(['company_id'])
-            ->groupBy(fn ($b) => (string) $b->company_id)
-            ->map->count();
 
         // Primary user per dealer = tenant_admin if any, otherwise oldest user.
         // Used as the Contact column on the list — clearer than the
@@ -75,7 +69,6 @@ class DealerController extends Controller
             $cid = (string) $d->_id;
             $d->_users_count  = $userCounts->get($cid, 0);
             $d->_quotes_count = $quoteCounts->get($cid, 0);
-            $d->_brands_count = $brandCounts->get($cid, 0);
             $d->_primary_user = $primaryByCompany->get($cid);
         }
 
@@ -93,10 +86,6 @@ class DealerController extends Controller
         $dealer = Company::where('_id', $id)->firstOrFail();
 
         $users = User::where('company_id', $id)->orderBy('created_at')->get();
-        $brands = CompanyBrand::where('company_id', $id)
-            ->orderBy('is_active', 'desc')
-            ->orderBy('name')
-            ->get();
 
         $now           = now();
         $startOfMonth  = $now->copy()->startOfMonth();
@@ -112,7 +101,7 @@ class DealerController extends Controller
                 ->sum(fn ($q) => (float) ($q->totals['total_ht'] ?? 0)),
         ];
 
-        return view('admin.dealers.show', compact('dealer', 'users', 'brands', 'stats'));
+        return view('admin.dealers.show', compact('dealer', 'users', 'stats'));
     }
 
     public function suspend(string $id)

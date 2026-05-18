@@ -48,7 +48,6 @@
                             <th class="px-5 py-3 font-semibold">{{ __('Dealer') }}</th>
                             <th class="px-5 py-3 font-semibold">{{ __('Contact') }}</th>
                             <th class="px-5 py-3 font-semibold text-right">{{ __('Users') }}</th>
-                            <th class="px-5 py-3 font-semibold text-right">{{ __('Brands') }}</th>
                             <th class="px-5 py-3 font-semibold text-right">{{ __('Quotes') }}</th>
                             <th class="px-5 py-3 font-semibold">{{ __('Status') }}</th>
                             <th class="px-5 py-3 font-semibold">{{ __('Joined') }}</th>
@@ -85,7 +84,6 @@
                                     @endif
                                 </td>
                                 <td class="px-5 py-3 text-right font-medium text-gray-900">{{ $d->_users_count }}</td>
-                                <td class="px-5 py-3 text-right font-medium text-gray-900">{{ $d->_brands_count }}</td>
                                 <td class="px-5 py-3 text-right font-medium text-gray-900">{{ $d->_quotes_count }}</td>
                                 <td class="px-5 py-3">
                                     @if ($isSuspended)
