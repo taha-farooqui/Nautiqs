@@ -61,8 +61,8 @@
         [
             'section' => 'Platform',
             'items' => [
-                ['label' => 'Overview',        'icon' => 'ri-line-chart-line',      'route' => 'admin.dashboard', 'active' => 'admin.dashboard'],
-                ['label' => 'Tenants',         'icon' => 'ri-store-2-line',         'route' => null, 'active' => 'admin.tenants.*'],
+                ['label' => 'Overview',        'icon' => 'ri-line-chart-line',      'route' => 'admin.dashboard',  'active' => 'admin.dashboard'],
+                ['label' => 'Dealers',         'icon' => 'ri-store-2-line',         'route' => 'admin.dealers.index', 'active' => 'admin.dealers.*'],
             ],
         ],
         [
@@ -73,7 +73,6 @@
                 ['label' => 'Variants',        'icon' => 'ri-layout-grid-line',     'route' => null, 'active' => 'admin.variants.*'],
                 ['label' => 'Equipment',       'icon' => 'ri-tools-line',           'route' => null, 'active' => 'admin.equipment.*'],
                 ['label' => 'Options',         'icon' => 'ri-list-check-2',         'route' => null, 'active' => 'admin.options.*'],
-                ['label' => 'Bulk import',     'icon' => 'ri-upload-cloud-2-line',  'route' => null, 'active' => 'admin.import.*'],
             ],
         ],
         [
@@ -85,8 +84,7 @@
         [
             'section' => 'Activity',
             'items' => [
-                ['label' => 'Update log',      'icon' => 'ri-history-line',         'route' => null, 'active' => 'admin.log'],
-                ['label' => 'Audit log',       'icon' => 'ri-shield-check-line',    'route' => null, 'active' => 'admin.audit'],
+                ['label' => 'Activity log',    'icon' => 'ri-shield-check-line',    'route' => 'admin.audit.index', 'active' => 'admin.audit.*'],
             ],
         ],
     ];

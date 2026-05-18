@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Quote;
+use App\Models\User;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Carbon;
 use Illuminate\View\View;
 
@@ -14,8 +16,14 @@ use Illuminate\View\View;
  */
 class DashboardController extends Controller
 {
-    public function __invoke(): View
+    public function __invoke(): View|RedirectResponse
     {
+        // Superadmins don't belong to a tenant and shouldn't see this
+        // tenant-scoped dashboard — bounce them to /admin overview.
+        if (auth()->user()?->role === User::ROLE_SUPERADMIN) {
+            return redirect()->route('admin.dashboard');
+        }
+
         // Heavy aggregation across MongoDB Atlas — 20+ round-trips per render.
         // Cache the KPI scalars for 60s per company so a refresh doesn't
         // re-hammer Atlas. Recent quotes are fetched fresh (single quick

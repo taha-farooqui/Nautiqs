@@ -223,6 +223,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::prefix('admin')->name('admin.')->middleware('superadmin')->group(function () {
         Route::get('/', [\App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('dashboard');
 
+        // Dealers (tenants) — list, detail, suspend, reactivate.
+        Route::get('/dealers',                       [\App\Http\Controllers\Admin\DealerController::class, 'index'])->name('dealers.index');
+        Route::get('/dealers/{id}',                  [\App\Http\Controllers\Admin\DealerController::class, 'show'])->name('dealers.show');
+        Route::post('/dealers/{id}/suspend',         [\App\Http\Controllers\Admin\DealerController::class, 'suspend'])->name('dealers.suspend');
+        Route::post('/dealers/{id}/reactivate',      [\App\Http\Controllers\Admin\DealerController::class, 'reactivate'])->name('dealers.reactivate');
+
+        // Activity log (audit trail of superadmin actions).
+        Route::get('/audit',                [\App\Http\Controllers\Admin\AuditController::class, 'index'])->name('audit.index');
+
         // Translation dictionary — search any user-facing string in the
         // app and customise it. Falls back to lang/{locale}.json defaults.
         Route::get('/dictionary',           [\App\Http\Controllers\Admin\DictionaryController::class, 'index'])->name('dictionary.index');
