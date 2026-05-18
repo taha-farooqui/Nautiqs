@@ -270,6 +270,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::patch('/options/{id}',      [$c, 'optionsUpdate'])->name('options.update');
         Route::post('/options/{id}/archive', [$c, 'optionsArchive'])->name('options.archive');
 
+        // Platform settings — branding + default email templates that new
+        // dealers inherit on signup.
+        Route::get('/settings',                          [\App\Http\Controllers\Admin\SettingsController::class, 'edit'])->name('settings.edit');
+        Route::patch('/settings',                        [\App\Http\Controllers\Admin\SettingsController::class, 'update'])->name('settings.update');
+        Route::patch('/settings/template/{type}',        [\App\Http\Controllers\Admin\SettingsController::class, 'updateTemplate'])->name('settings.template.update');
+
         // Translation dictionary — search any user-facing string in the
         // app and customise it. Falls back to lang/{locale}.json defaults.
         Route::get('/dictionary',           [\App\Http\Controllers\Admin\DictionaryController::class, 'index'])->name('dictionary.index');

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Company;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 /**
@@ -13,12 +14,20 @@ class CompanySettingsController extends Controller
 {
     public function edit()
     {
+        // Superadmins don't belong to a tenant — bounce them to the
+        // platform-level settings page where the platform-wide defaults live.
+        if (auth()->user()?->role === User::ROLE_SUPERADMIN) {
+            return redirect()->route('admin.settings.edit');
+        }
         $company = Company::findOrFail(auth()->user()->company_id);
         return view('company.settings', compact('company'));
     }
 
     public function update(Request $request)
     {
+        if (auth()->user()?->role === User::ROLE_SUPERADMIN) {
+            return redirect()->route('admin.settings.edit');
+        }
         $company = Company::findOrFail(auth()->user()->company_id);
 
         $validated = $request->validate([

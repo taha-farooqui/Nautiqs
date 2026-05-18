@@ -78,6 +78,7 @@
         [
             'section' => 'Customisation',
             'items' => [
+                ['label' => 'Settings',        'icon' => 'ri-settings-3-line',      'route' => 'admin.settings.edit',    'active' => 'admin.settings.*'],
                 ['label' => 'Dictionary',      'icon' => 'ri-translate-2',          'route' => 'admin.dictionary.index', 'active' => 'admin.dictionary.*'],
             ],
         ],

@@ -61,7 +61,32 @@
                             <h1 class="text-lg font-semibold truncate">{{ $header ?? ($title ?? __('Overview')) }}</h1>
                         </div>
 
+                        @php $currentLocale = app()->getLocale(); @endphp
                         <div class="ml-auto flex items-center gap-2">
+                            {{-- Locale switcher (FR/EN) — drops a `locale` cookie and reloads. --}}
+                            <div x-data="{ open: false }" class="relative">
+                                <button @click="open = !open"
+                                    class="h-9 px-2.5 inline-flex items-center gap-1 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition text-xs font-medium"
+                                    :title="'{{ __('Language') }}'">
+                                    <i class="ri-translate-2 text-base"></i>
+                                    <span>{{ strtoupper($currentLocale) }}</span>
+                                    <i class="ri-arrow-down-s-line text-sm"></i>
+                                </button>
+                                <div x-show="open" @click.outside="open = false" x-cloak x-transition
+                                    class="absolute right-0 mt-2 w-44 bg-white text-gray-900 border border-gray-200 rounded-xl shadow-lg overflow-hidden">
+                                    <a href="{{ route('locale.switch', 'fr') }}"
+                                        class="w-full text-left px-4 py-2 text-sm flex items-center justify-between hover:bg-gray-50 {{ $currentLocale === 'fr' ? 'text-primary-800 font-semibold bg-primary-50/50' : 'text-gray-700' }}">
+                                        <span>Français</span>
+                                        @if ($currentLocale === 'fr') <i class="ri-check-line"></i> @endif
+                                    </a>
+                                    <a href="{{ route('locale.switch', 'en') }}"
+                                        class="w-full text-left px-4 py-2 text-sm flex items-center justify-between hover:bg-gray-50 {{ $currentLocale === 'en' ? 'text-primary-800 font-semibold bg-primary-50/50' : 'text-gray-700' }}">
+                                        <span>English</span>
+                                        @if ($currentLocale === 'en') <i class="ri-check-line"></i> @endif
+                                    </a>
+                                </div>
+                            </div>
+
                             <a href="{{ route('dashboard') }}"
                                 class="hidden sm:inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition">
                                 <i class="ri-arrow-left-line"></i> {{ __('Back to app') }}
