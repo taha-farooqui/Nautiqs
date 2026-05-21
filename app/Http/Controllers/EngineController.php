@@ -45,6 +45,18 @@ class EngineController extends Controller
         $private = $privateQuery->get()->map(fn ($e) => $this->normalise($e, 'private'));
         $globals = $globalQuery->get()->map(fn ($e) => $this->normalise($e, 'global'));
 
+        // De-dupe: when the dealer has a private engine that matches a
+        // global one by (brand, code) case-insensitively, the private
+        // copy wins and the global twin is hidden. Without this the list
+        // showed both rows side-by-side — the dealer's editable copy and
+        // the read-only global version — every time they customised one.
+        $privateKeys = $private->map(fn ($e) => mb_strtolower(trim($e->brand) . '|' . trim($e->code)))->all();
+        $globals = $globals->reject(fn ($g) => in_array(
+            mb_strtolower(trim($g->brand) . '|' . trim($g->code)),
+            $privateKeys,
+            true,
+        ));
+
         $merged = $private
             ->concat($globals)
             ->sortBy([['brand','asc'], ['code','asc']])
