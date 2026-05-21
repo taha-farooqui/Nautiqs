@@ -695,10 +695,13 @@
                                                 <li><span class="font-mono text-primary-200">FAMILLE</span> — {{ __('required, category') }}</li>
                                                 <li><span class="font-mono text-primary-200">DESIGNATION</span> — {{ __('required, option name') }}</li>
                                                 <li><span class="font-mono text-primary-200">PA HT</span> — {{ __('optional, purchase cost') }}</li>
+                                                <li><span class="font-mono text-primary-200">PA CURRENCY</span> — {{ __('optional, EUR or USD (defaults EUR)') }}</li>
                                                 <li><span class="font-mono text-primary-200">PV HT</span> — {{ __('required, selling price HT') }}</li>
+                                                <li><span class="font-mono text-primary-200">PV CURRENCY</span> — {{ __('optional, EUR or USD (defaults EUR)') }}</li>
+                                                <li><span class="font-mono text-primary-200">TVA</span> — {{ __('optional, defaults to 20') }}</li>
                                             </ul>
                                             <p class="text-white/70 mt-2 pt-2 border-t border-white/10">
-                                                {{ __('Re-uploading the same file with new prices updates the existing options. Renaming an option creates a new one.') }}
+                                                {{ __('USD amounts are converted to EUR at the current ECB rate. Re-uploading the same file with new prices updates existing options; renaming an option creates a new one.') }}
                                             </p>
                                         </div>
                                     </div>

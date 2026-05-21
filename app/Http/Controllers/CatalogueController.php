@@ -1115,16 +1115,17 @@ class CatalogueController extends Controller
      */
     private function buildOptionsTemplateXlsx(?string $boatName = null): string
     {
-        // Four columns. Dealer only needs to type what actually matters:
-        // the category, the option name, optionally the cost (for margin),
-        // and the selling price. Code is auto-generated server-side from
-        // (category, label) so re-imports update prices in place.
-        $headers = ['FAMILLE', 'DESIGNATION', 'PA HT', 'PV HT'];
+        // Seven columns. PA / PV Currency default to EUR; if the dealer
+        // writes USD, the import converts to EUR using a live FX rate.
+        // TVA accepts 20 or 0.2. Code is auto-generated from (category,
+        // label) on the server so re-imports update in place.
+        $headers = ['FAMILLE', 'DESIGNATION', 'PA HT', 'PA CURRENCY', 'PV HT', 'PV CURRENCY', 'TVA'];
         $samples = [
-            ['Transport',    'Bandol → Marseille',        3400, 4858.60],
-            ['Électronique', 'Garmin GPSMAP 1243xsv',     2100, 3200],
-            ['Confort',      'Plancher teck cockpit',     2800, 4500],
-            ['Confort',      'Bimini + rideaux',           950, 1800],
+            ['Transport',    'Bandol → Marseille',        3400, 'EUR', 4858.60, 'EUR', 20],
+            ['Électronique', 'Garmin GPSMAP 1243xsv',     2100, 'EUR', 3200,    'EUR', 20],
+            ['Confort',      'Plancher teck cockpit',     2800, 'EUR', 4500,    'EUR', 20],
+            ['Confort',      'Bimini + rideaux',           950, 'EUR', 1800,    'EUR', 20],
+            ['Électronique', 'Raymarine Axiom 12 (US)',   3200, 'USD', 4500,    'USD', 20],
         ];
 
         $strings = []; $sMap = [];
@@ -1173,8 +1174,8 @@ class CatalogueController extends Controller
         }
         $sstXml .= '</sst>';
 
-        // Width per column (FAMILLE, DESIGNATION, PA HT, PV HT).
-        $widths = [18, 40, 12, 12];
+        // Width per column (FAMILLE, DESIGNATION, PA HT, PA CURRENCY, PV HT, PV CURRENCY, TVA).
+        $widths = [18, 40, 12, 14, 12, 14, 8];
         $colsXml = '<cols>';
         foreach ($widths as $i => $w) {
             $colsXml .= '<col min="' . ($i + 1) . '" max="' . ($i + 1) . '" width="' . $w . '" customWidth="1"/>';

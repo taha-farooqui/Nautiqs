@@ -7,24 +7,39 @@ use App\Models\CompanyOption;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
 
+use App\Services\FxRateService;
+
 /**
- * Bulk-import for boat options. Four columns visible to the dealer:
+ * Bulk-import for boat options. Seven columns visible to the dealer:
  *
- *   FAMILLE       (category)  — required
- *   DESIGNATION   (label)     — required
- *   PA HT         (cost)      — optional, used for real-margin display only
- *   PV HT         (price)     — required, selling price excl. VAT
+ *   FAMILLE        (category)         — required
+ *   DESIGNATION    (label)            — required
+ *   PA HT          (cost)             — optional
+ *   PA CURRENCY    (cost currency)    — optional, defaults EUR. EUR or USD.
+ *   PV HT          (price)            — required, selling price excl. VAT
+ *   PV CURRENCY    (price currency)   — optional, defaults EUR. EUR or USD.
+ *   TVA            (vat rate)         — optional, defaults 20. Accepts 20 or 0.2.
+ *
+ * Currencies are converted to EUR at import time via FxRateService
+ * (frankfurter.app, ECB rates). The original amount + currency + rate
+ * are stored alongside so the dealer can audit what was imported. If
+ * the FX lookup fails for a row, that row is rejected with a clear
+ * error and the rest of the import completes.
  *
  * Upsert key is auto-derived from (category, label) so re-importing the
  * same file with updated prices updates in place — the dealer never has
- * to manage a SKU. Renaming a label creates a new option, which is what
- * you'd want (it's a different thing).
+ * to manage a SKU.
  *
  * Dependency-free reader (ZipArchive + DOMDocument for XLSX, fgetcsv for
  * CSV) — same approach as EngineImporter.
  */
 class OptionImporter
 {
+    public function __construct(private ?FxRateService $fx = null)
+    {
+        $this->fx = $fx ?? new FxRateService();
+    }
+
     /** Header text (lowercased + trimmed) → internal field. EN + FR aliases. */
     private const HEADER_ALIASES = [
         // Category
@@ -55,6 +70,13 @@ class OptionImporter
         'coût'           => 'cost',
         'cout'           => 'cost',
 
+        // Cost currency
+        'pa currency'    => 'cost_currency',
+        'pa devise'      => 'cost_currency',
+        'devise pa'      => 'cost_currency',
+        'devise achat'   => 'cost_currency',
+        'cost currency'  => 'cost_currency',
+
         // Price
         'pv ht'          => 'price',
         'price'          => 'price',
@@ -64,6 +86,21 @@ class OptionImporter
         'prix vente ht'  => 'price',
         'prix ht'        => 'price',
         'prix'           => 'price',
+
+        // Price currency
+        'pv currency'    => 'price_currency',
+        'pv devise'      => 'price_currency',
+        'devise pv'      => 'price_currency',
+        'devise vente'   => 'price_currency',
+        'devise'         => 'price_currency',
+        'currency'       => 'price_currency',
+        'price currency' => 'price_currency',
+
+        // VAT
+        'tva'            => 'vat_rate',
+        'vat'            => 'vat_rate',
+        'vat rate'       => 'vat_rate',
+        'taux tva'       => 'vat_rate',
     ];
 
     private const REQUIRED = ['category', 'label', 'price'];
@@ -139,6 +176,31 @@ class OptionImporter
                 continue;
             }
 
+            // FX: convert cost + price into EUR if the row used another
+            // currency. If the rate lookup fails, reject the row with a
+            // clear message and let the rest of the import continue.
+            $costEur  = $data['cost'];
+            $priceEur = $data['price'];
+            $rateUsed = 1.0;
+            if ($data['cost_currency'] !== 'EUR' && $data['cost'] > 0) {
+                $rate = $this->fx->rate($data['cost_currency'], 'EUR');
+                if ($rate === null) {
+                    $errors[] = ['row' => $rowNumber, 'message' => 'FX rate unavailable for ' . $data['cost_currency'] . '→EUR. Please retry.'];
+                    continue;
+                }
+                $costEur  = round($data['cost'] * $rate, 2);
+                $rateUsed = $rate;
+            }
+            if ($data['price_currency'] !== 'EUR' && $data['price'] > 0) {
+                $rate = $this->fx->rate($data['price_currency'], 'EUR');
+                if ($rate === null) {
+                    $errors[] = ['row' => $rowNumber, 'message' => 'FX rate unavailable for ' . $data['price_currency'] . '→EUR. Please retry.'];
+                    continue;
+                }
+                $priceEur = round($data['price'] * $rate, 2);
+                $rateUsed = $rate; // last-wins; both rates are typically the same anyway
+            }
+
             // Auto-generated stable key from (category, label). Used for
             // upsert matching only — the dealer never sees or types it.
             // Examples:
@@ -152,13 +214,20 @@ class OptionImporter
                 ->first();
 
             $payload = [
-                'category'    => $data['category'],
-                'label'       => $data['label'],
-                'code'        => $autoCode,
-                'price'       => $data['price'],
-                'cost'        => $data['cost'],
-                'currency'    => 'EUR',
-                'is_archived' => false,
+                'category'                => $data['category'],
+                'label'                   => $data['label'],
+                'code'                    => $autoCode,
+                'price'                   => $priceEur,
+                'cost'                    => $costEur,
+                'vat_rate'                => $data['vat_rate'],
+                'currency'                => 'EUR',
+                'original_cost'           => $data['cost'],
+                'original_cost_currency'  => $data['cost_currency'],
+                'original_price'          => $data['price'],
+                'original_price_currency' => $data['price_currency'],
+                'fx_rate_used'            => $rateUsed,
+                'fx_rate_date'            => now(),
+                'is_archived'             => false,
             ];
 
             if ($existing) {
@@ -300,10 +369,13 @@ class OptionImporter
     private function extract(array $rawRow, array $headerMap): array
     {
         $out = [
-            'category' => '',
-            'label'    => '',
-            'cost'     => 0.0,
-            'price'    => 0.0,
+            'category'       => '',
+            'label'          => '',
+            'cost'           => 0.0,
+            'cost_currency'  => 'EUR',
+            'price'          => 0.0,
+            'price_currency' => 'EUR',
+            'vat_rate'       => 20.0,
         ];
 
         foreach ($headerMap as $col => $field) {
@@ -321,6 +393,21 @@ class OptionImporter
                         $out[$field] = (float) str_replace(',', '.', $clean);
                     }
                     break;
+                case 'cost_currency':
+                case 'price_currency':
+                    $upper = strtoupper($raw);
+                    if (in_array($upper, ['EUR', 'USD'], true)) {
+                        $out[$field] = $upper;
+                    }
+                    break;
+                case 'vat_rate':
+                    if ($raw !== '') {
+                        $v = (float) str_replace([' ', ','], ['', '.'], $raw);
+                        // Auto-scale 0.2 → 20 like the rest of the app.
+                        if ($v > 0 && $v <= 1) $v = $v * 100;
+                        $out['vat_rate'] = $v;
+                    }
+                    break;
             }
         }
         return $out;
@@ -335,6 +422,9 @@ class OptionImporter
         if ($data['price'] < 0)         return 'PV HT must be zero or positive.';
         if ($data['price'] > 1_000_000) return 'PV HT is implausibly high (> €1M).';
         if ($data['cost']  < 0)         return 'PA HT must be zero or positive.';
+        if ($data['vat_rate'] < 0 || $data['vat_rate'] > 100) {
+            return 'TVA must be between 0 and 100 (or 0 and 1 if decimal).';
+        }
         return null;
     }
 
