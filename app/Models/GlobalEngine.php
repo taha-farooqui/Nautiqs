@@ -19,21 +19,25 @@ class GlobalEngine extends Model
 
     protected $fillable = [
         'brand',          // Suzuki / Yamaha / Mercury / Honda / Volvo Penta …
-        'code',           // SKU — e.g. "DF200A TL/TX"
+        'code',           // SKU — e.g. "DF200A TL/TX" — also referenced as "model"
         'horsepower',
         'fuel',           // petrol | diesel | electric | unknown
         'description',
+        'cost',           // purchase price HT (for margin display)
         'price',          // suggested public HT (dealer can override per quote)
         'vat_rate',
         'currency',
         'is_active',
+        'is_archived',
     ];
 
     protected $casts = [
         'horsepower' => 'float',
+        'cost'       => 'float',
         'price'      => 'float',
         'vat_rate'   => 'float',
         'is_active'  => 'boolean',
+        'is_archived'=> 'boolean',
     ];
 
     public function priceTtc(): float

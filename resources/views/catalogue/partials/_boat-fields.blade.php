@@ -71,18 +71,11 @@
     </div>
 </div>
 
-<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Boat code <span class="text-red-500">*</span></label>
-        <input type="text" name="code" required value="{{ old('code', $model->code ?? '') }}"
-            class="w-full rounded-lg border-gray-300 font-mono text-sm focus:border-primary-800 focus:ring-primary-800" />
-    </div>
-    <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Default margin (%)</label>
-        <input type="number" step="0.1" min="0" max="100" name="default_margin_pct"
-            value="{{ old('default_margin_pct', $model->default_margin_pct ?? '') }}"
-            class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />
-    </div>
+<div class="max-w-xs">
+    <label class="block text-sm font-medium text-gray-700 mb-1">Default margin (%)</label>
+    <input type="number" step="0.1" min="0" max="100" name="default_margin_pct"
+        value="{{ old('default_margin_pct', $model->default_margin_pct ?? '') }}"
+        class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />
 </div>
 
 {{--

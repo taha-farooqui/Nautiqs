@@ -536,7 +536,7 @@ class CatalogueController extends Controller
     {
         $data = $request->validate([
             'company_brand_id'    => 'required',
-            'code'                => 'required|string|max:60',
+            'code'                => 'nullable|string|max:60',
             'internal_code'       => 'nullable|string|max:60',
             'name'                => 'required|string|max:200',
             'complement'          => 'nullable|string|max:120',
@@ -590,6 +590,13 @@ class CatalogueController extends Controller
         $libraryOptIds  = $data['library_option_ids'] ?? [];
         unset($data['versions'], $data['new_options'], $data['library_option_ids']);
         $data['is_active'] = (bool) ($data['is_active'] ?? true);
+
+        // Boat code is no longer asked from the dealer — auto-generate from
+        // the name + a short random suffix so internal lookups that read
+        // CompanyBoatModel.code still resolve.
+        if (empty($data['code'])) {
+            $data['code'] = \Illuminate\Support\Str::upper(\Illuminate\Support\Str::slug($data['name'])) . '-' . \Illuminate\Support\Str::upper(\Illuminate\Support\Str::random(4));
+        }
 
         $model = CompanyBoatModel::create(array_merge($data, [
             'company_id'      => auth()->user()->company_id,
@@ -671,7 +678,7 @@ class CatalogueController extends Controller
         $model = CompanyBoatModel::findOrFail($modelId);
         $data = $request->validate([
             'company_brand_id'    => 'nullable',
-            'code'                => 'required|string|max:60',
+            'code'                => 'nullable|string|max:60',
             'internal_code'       => 'nullable|string|max:60',
             'name'                => 'required|string|max:200',
             'complement'          => 'nullable|string|max:120',
@@ -703,6 +710,12 @@ class CatalogueController extends Controller
             $data['company_brand_id'] = $this->resolveBrandId($data['company_brand_id']);
         } else {
             unset($data['company_brand_id']);
+        }
+
+        // Don't blank out the existing code if the form didn't submit one
+        // (the field has been removed from the dealer form).
+        if (empty($data['code'])) {
+            unset($data['code']);
         }
 
         $model->update($data);

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\GlobalBoatModel;
 use App\Models\GlobalBoatVariant;
 use App\Models\GlobalBrand;
+use App\Models\GlobalEngine;
 use App\Models\GlobalEquipment;
 use App\Models\GlobalOption;
 use App\Services\AuditLogger;
@@ -88,9 +89,8 @@ class CatalogueController extends Controller
     private function validateBrand(Request $request): array
     {
         return $request->validate([
-            'name'          => 'required|string|max:120',
-            'description'   => 'nullable|string|max:2000',
-            'display_order' => 'nullable|integer|min:0|max:9999',
+            'name'        => 'required|string|max:120',
+            'description' => 'nullable|string|max:2000',
         ]);
     }
 
@@ -472,6 +472,91 @@ class CatalogueController extends Controller
             'cost'     => 'nullable|numeric|min:0|max:1000000',
             'currency' => 'required|in:EUR,USD',
             'position' => 'nullable|integer|min:0|max:9999',
+        ]);
+    }
+
+    /* =========================================================== ENGINES */
+
+    public function enginesIndex(Request $request)
+    {
+        $q      = trim((string) $request->query('q', ''));
+        $status = $request->query('status', 'active');
+
+        $query = GlobalEngine::orderBy('brand')->orderBy('code');
+        if ($status === 'archived') {
+            $query->where('is_archived', true);
+        } else {
+            $query->where('is_archived', '!=', true);
+        }
+        if ($q !== '') {
+            $regex = ['$regex' => preg_quote($q, '/'), '$options' => 'i'];
+            $query->where(function ($w) use ($regex) {
+                $w->whereRaw(['brand' => $regex])
+                  ->orWhereRaw(['code' => $regex])
+                  ->orWhereRaw(['description' => $regex]);
+            });
+        }
+        $engines = $query->paginate(40)->withQueryString();
+
+        $tabCounts = [
+            'active'   => GlobalEngine::where('is_archived', '!=', true)->count(),
+            'archived' => GlobalEngine::where('is_archived', true)->count(),
+        ];
+
+        return view('admin.catalogue.engines.index', compact('engines', 'q', 'status', 'tabCounts'));
+    }
+
+    public function enginesCreate()
+    {
+        return view('admin.catalogue.engines.form', ['engine' => new GlobalEngine(['currency' => 'EUR', 'vat_rate' => 20])]);
+    }
+
+    public function enginesStore(Request $request)
+    {
+        $data   = $this->validateEngine($request);
+        $engine = GlobalEngine::create($data + ['is_active' => true, 'is_archived' => false]);
+        AuditLogger::record('engine.create', target: $engine, after: $data);
+        return redirect()->route('admin.engines.index')->with('status', __('Engine created.'));
+    }
+
+    public function enginesEdit(string $id)
+    {
+        $engine = GlobalEngine::where('_id', $id)->firstOrFail();
+        return view('admin.catalogue.engines.form', compact('engine'));
+    }
+
+    public function enginesUpdate(Request $request, string $id)
+    {
+        $engine = GlobalEngine::where('_id', $id)->firstOrFail();
+        $data   = $this->validateEngine($request);
+        $before = $engine->only(array_keys($data));
+        $engine->update($data);
+        AuditLogger::record('engine.update', target: $engine, before: $before, after: $data);
+        return redirect()->route('admin.engines.index')->with('status', __('Engine updated.'));
+    }
+
+    public function enginesArchive(string $id)
+    {
+        $engine = GlobalEngine::where('_id', $id)->firstOrFail();
+        $before = ['is_archived' => $engine->is_archived];
+        $engine->update(['is_archived' => ! $engine->is_archived]);
+        AuditLogger::record($engine->is_archived ? 'engine.archive' : 'engine.unarchive',
+            target: $engine, before: $before, after: ['is_archived' => $engine->is_archived]);
+        return back()->with('status', $engine->is_archived ? __('Engine archived.') : __('Engine restored.'));
+    }
+
+    private function validateEngine(Request $request): array
+    {
+        return $request->validate([
+            'brand'      => 'required|string|max:80',
+            'code'       => 'required|string|max:120',
+            'horsepower' => 'nullable|numeric|min:0|max:5000',
+            'fuel'       => 'nullable|in:petrol,diesel,electric,unknown',
+            'description'=> 'nullable|string|max:1000',
+            'cost'       => 'nullable|numeric|min:0|max:1000000',
+            'price'      => 'required|numeric|min:0|max:1000000',
+            'vat_rate'   => 'nullable|numeric|min:0|max:100',
+            'currency'   => 'required|in:EUR,USD',
         ]);
     }
 }

@@ -270,6 +270,13 @@ Route::middleware(['auth', 'verified', 'maintenance'])->group(function () {
         Route::patch('/options/{id}',      [$c, 'optionsUpdate'])->name('options.update');
         Route::post('/options/{id}/archive', [$c, 'optionsArchive'])->name('options.archive');
 
+        Route::get('/engines',             [$c, 'enginesIndex'])->name('engines.index');
+        Route::get('/engines/create',      [$c, 'enginesCreate'])->name('engines.create');
+        Route::post('/engines',            [$c, 'enginesStore'])->name('engines.store');
+        Route::get('/engines/{id}/edit',   [$c, 'enginesEdit'])->name('engines.edit');
+        Route::patch('/engines/{id}',      [$c, 'enginesUpdate'])->name('engines.update');
+        Route::post('/engines/{id}/archive', [$c, 'enginesArchive'])->name('engines.archive');
+
         // Platform settings — platform name + logo.
         Route::get('/settings',   [\App\Http\Controllers\Admin\SettingsController::class, 'edit'])->name('settings.edit');
         Route::patch('/settings', [\App\Http\Controllers\Admin\SettingsController::class, 'update'])->name('settings.update');

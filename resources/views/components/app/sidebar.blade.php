@@ -71,6 +71,7 @@
                 ['label' => 'Brands',          'icon' => 'ri-building-4-line',      'route' => 'admin.brands.index',    'active' => 'admin.brands.*'],
                 ['label' => 'Models',          'icon' => 'ri-sailboat-line',        'route' => 'admin.models.index',    'active' => 'admin.models.*'],
                 ['label' => 'Variants',        'icon' => 'ri-layout-grid-line',     'route' => 'admin.variants.index',  'active' => 'admin.variants.*'],
+                ['label' => 'Engines',         'icon' => 'ri-settings-3-line',      'route' => 'admin.engines.index',   'active' => 'admin.engines.*'],
                 ['label' => 'Equipment',       'icon' => 'ri-tools-line',           'route' => 'admin.equipment.index', 'active' => 'admin.equipment.*'],
                 ['label' => 'Options',         'icon' => 'ri-list-check-2',         'route' => 'admin.options.index',   'active' => 'admin.options.*'],
             ],

@@ -34,13 +34,6 @@
                 class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800">{{ old('description', $brand->description ?? '') }}</textarea>
         </div>
 
-        <div class="max-w-[180px]">
-            <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Display order') }}</label>
-            <input type="number" name="display_order" min="0" max="9999" value="{{ old('display_order', $brand->display_order ?? '') }}"
-                class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />
-            <p class="text-[11px] text-gray-500 mt-1">{{ __('Lower numbers appear first.') }}</p>
-        </div>
-
         <div class="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
             <a href="{{ route('admin.brands.index') }}"
                 class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">{{ __('Cancel') }}</a>
