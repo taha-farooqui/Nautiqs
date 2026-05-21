@@ -95,13 +95,12 @@
                             <p class="font-semibold mb-1">{{ __('Expected columns') }}</p>
                             <ul class="space-y-0.5">
                                 <li><span class="font-mono">Brand</span> — {{ __('required') }}</li>
-                                <li><span class="font-mono">Code</span> — {{ __('required') }} ({{ __('SKU') }})</li>
-                                <li><span class="font-mono">HP</span> — {{ __('optional') }}</li>
-                                <li><span class="font-mono">Price</span> — {{ __('required, public HT') }}</li>
-                                <li><span class="font-mono">VAT</span> — {{ __('optional, defaults to 20') }}</li>
-                                <li><span class="font-mono">Currency</span> — {{ __('optional, EUR or USD') }}</li>
+                                <li><span class="font-mono">Model</span> — {{ __('required, engine code/SKU') }}</li>
+                                <li><span class="font-mono">PA HT</span> — {{ __('optional, purchase cost') }}</li>
+                                <li><span class="font-mono">PV HT</span> — {{ __('required, selling price HT') }}</li>
+                                <li><span class="font-mono">TVA</span> — {{ __('optional, defaults to 20') }}</li>
                             </ul>
-                            <p class="text-gray-500 mt-2">{{ __('Rows matching an existing Brand + Code will be updated; the rest will be created.') }}</p>
+                            <p class="text-gray-500 mt-2">{{ __('Rows matching an existing Brand + Model will be updated; the rest will be created.') }}</p>
                         </div>
 
                         <div class="flex items-center justify-end gap-2 pt-2">

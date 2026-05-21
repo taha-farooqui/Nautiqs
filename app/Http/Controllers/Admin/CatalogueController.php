@@ -10,6 +10,7 @@ use App\Models\GlobalEngine;
 use App\Models\GlobalEquipment;
 use App\Models\GlobalOption;
 use App\Services\AuditLogger;
+use App\Services\GlobalEngineImporter;
 use Illuminate\Http\Request;
 
 /**
@@ -558,5 +559,40 @@ class CatalogueController extends Controller
             'vat_rate'   => 'nullable|numeric|min:0|max:100',
             'currency'   => 'required|in:EUR,USD',
         ]);
+    }
+
+    public function enginesTemplate()
+    {
+        $filename = 'nautiqs-global-engines-template.csv';
+        return response()->streamDownload(function () {
+            $out = fopen('php://output', 'w');
+            fwrite($out, "\xef\xbb\xbf");
+            fputcsv($out, ['Brand', 'Model', 'PA HT', 'PV HT', 'TVA']);
+            fputcsv($out, ['Suzuki',  'DF200A TL/TX', 14800, 18500, 20]);
+            fputcsv($out, ['Yamaha',  'F300 NCA',     23100, 28900, 20]);
+            fputcsv($out, ['Mercury', 'Verado 350 XL', 27800, 34750, 20]);
+            fclose($out);
+        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    public function enginesImport(Request $request, GlobalEngineImporter $importer)
+    {
+        $request->validate([
+            'file' => 'required|file|max:10240|mimes:csv,txt,xlsx,xlsm',
+        ], [], ['file' => __('File')]);
+
+        $result = $importer->import($request->file('file'));
+
+        AuditLogger::record('engine.bulk-import', targetLabel: 'Global engines bulk import',
+            after: ['created' => $result['created'], 'updated' => $result['updated'], 'errors' => count($result['errors'])]);
+
+        $msg = __(':created created, :updated updated, :skipped skipped.', [
+            'created' => $result['created'],
+            'updated' => $result['updated'],
+            'skipped' => $result['skipped'],
+        ]);
+        return redirect()->route('admin.engines.index')
+            ->with('status', $msg)
+            ->with('import_result', $result);
     }
 }

@@ -270,6 +270,11 @@ Route::middleware(['auth', 'verified', 'maintenance'])->group(function () {
         Route::patch('/options/{id}',      [$c, 'optionsUpdate'])->name('options.update');
         Route::post('/options/{id}/archive', [$c, 'optionsArchive'])->name('options.archive');
 
+        // Bulk import routes BEFORE the {id} ones so /engines/template etc.
+        // don't get swallowed.
+        Route::get('/engines/template',    [$c, 'enginesTemplate'])->name('engines.template');
+        Route::post('/engines/import',     [$c, 'enginesImport'])->name('engines.import');
+
         Route::get('/engines',             [$c, 'enginesIndex'])->name('engines.index');
         Route::get('/engines/create',      [$c, 'enginesCreate'])->name('engines.create');
         Route::post('/engines',            [$c, 'enginesStore'])->name('engines.store');

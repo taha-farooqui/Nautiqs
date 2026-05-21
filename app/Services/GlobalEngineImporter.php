@@ -2,46 +2,32 @@
 
 namespace App\Services;
 
-use App\Models\Engine;
+use App\Models\GlobalEngine;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Str;
 
 /**
- * Engine bulk-import for the dealer-side library. Five columns:
- *
- *   Brand     (required)
- *   Model     (required) — engine code/SKU, e.g. "DF200A TL/TX"
- *   PA HT     (optional) — purchase price excl. VAT, for margin display
- *   PV HT     (required) — selling price excl. VAT
- *   TVA       (optional) — VAT rate, defaults to 20. Accepts 20 or 0.2.
- *
- * No currency column — engines are EUR-only per the latest scope call.
- * Upsert key is (company_id, brand, code) so re-uploading the same file
- * with new prices updates in place.
- *
- * Dependency-free reader (ZipArchive + DOMDocument for XLSX, fgetcsv for
- * CSV) — same approach as OptionImporter.
+ * Bulk-import for the platform-wide engine library (visible to every
+ * dealer). Identical column shape and validation to EngineImporter, but
+ * writes to `global_engines` instead of the per-company `engines`
+ * collection. No tenant scoping — only callable from the superadmin
+ * Engines page.
  */
-class EngineImporter
+class GlobalEngineImporter
 {
     private const HEADER_ALIASES = [
-        // Brand
         'brand'       => 'brand',
         'marque'      => 'brand',
-        // Code / Model
         'code'        => 'code',
         'model'       => 'code',
         'modèle'      => 'code',
         'modele'      => 'code',
         'sku'         => 'code',
-        // Cost (PA HT)
         'pa ht'       => 'cost',
         'cost'        => 'cost',
         'cost ht'     => 'cost',
         'prix achat'  => 'cost',
         'prix achat ht' => 'cost',
         'purchase price' => 'cost',
-        // Price (PV HT)
         'pv ht'       => 'price',
         'price'       => 'price',
         'price ht'    => 'price',
@@ -50,17 +36,16 @@ class EngineImporter
         'prix vente ht' => 'price',
         'prix ht'     => 'price',
         'prix'        => 'price',
-        // VAT
         'tva'         => 'vat_rate',
         'vat'         => 'vat_rate',
         'vat rate'    => 'vat_rate',
         'taux tva'    => 'vat_rate',
     ];
 
-    private const REQUIRED  = ['brand', 'code', 'price'];
-    private const MAX_ROWS  = 5000;
+    private const REQUIRED = ['brand', 'code', 'price'];
+    private const MAX_ROWS = 5000;
 
-    public function import(UploadedFile $file, string $companyId): array
+    public function import(UploadedFile $file): array
     {
         $rows = $this->readFile($file);
         if (empty($rows)) {
@@ -114,15 +99,10 @@ class EngineImporter
                 continue;
             }
 
-            // Upsert by (company_id, brand, code) — case-insensitive on
-            // both so "Suzuki / DF200" and "SUZUKI / df200" map to the
-            // same engine.
-            $existing = Engine::where('company_id', $companyId)
-                ->whereRaw([
-                    'brand' => ['$regex' => '^' . preg_quote($data['brand'], '/') . '$', '$options' => 'i'],
-                    'code'  => ['$regex' => '^' . preg_quote($data['code'],  '/') . '$', '$options' => 'i'],
-                ])
-                ->first();
+            $existing = GlobalEngine::whereRaw([
+                'brand' => ['$regex' => '^' . preg_quote($data['brand'], '/') . '$', '$options' => 'i'],
+                'code'  => ['$regex' => '^' . preg_quote($data['code'],  '/') . '$', '$options' => 'i'],
+            ])->first();
 
             $payload = [
                 'brand'       => $data['brand'],
@@ -131,6 +111,7 @@ class EngineImporter
                 'price'       => $data['price'],
                 'vat_rate'    => $data['vat_rate'],
                 'currency'    => 'EUR',
+                'is_active'   => true,
                 'is_archived' => false,
             ];
 
@@ -138,7 +119,7 @@ class EngineImporter
                 $existing->update($payload);
                 $updated++;
             } else {
-                Engine::create(array_merge($payload, ['company_id' => $companyId]));
+                GlobalEngine::create($payload);
                 $created++;
             }
         }
@@ -251,13 +232,7 @@ class EngineImporter
 
     private function extract(array $rawRow, array $headerMap): array
     {
-        $out = [
-            'brand'    => '',
-            'code'     => '',
-            'cost'     => 0.0,
-            'price'    => 0.0,
-            'vat_rate' => 20.0,
-        ];
+        $out = ['brand' => '', 'code' => '', 'cost' => 0.0, 'price' => 0.0, 'vat_rate' => 20.0];
         foreach ($headerMap as $col => $field) {
             $raw = trim((string) ($rawRow[$col] ?? ''));
             switch ($field) {
@@ -275,7 +250,6 @@ class EngineImporter
                 case 'vat_rate':
                     if ($raw !== '') {
                         $v = (float) str_replace([' ', ','], ['', '.'], $raw);
-                        // Auto-scale 0.2 → 20 like the rest of the app.
                         if ($v > 0 && $v <= 1) $v = $v * 100;
                         $out['vat_rate'] = $v;
                     }
