@@ -29,9 +29,17 @@ class QuoteCalculator
      */
     public function compute(array $input, Company $company): array
     {
-        $vatRate            = (float) ($input['vat_rate'] ?? $company->default_vat_rate ?? 20);
-        $basePrice          = (float) ($input['base_price'] ?? 0);
-        $baseCost           = $this->toEur($input['base_cost'] ?? null, $input['variant_currency'] ?? 'EUR', $input['exchange_rate'] ?? null);
+        $vatRate         = (float) ($input['vat_rate'] ?? $company->default_vat_rate ?? 20);
+        $variantCurrency = $input['variant_currency'] ?? 'EUR';
+        $rate            = $input['exchange_rate'] ?? null;
+
+        // Convert base PRICE (not just cost) so a USD variant doesn't
+        // flow through as if it were EUR. toEur returns the original
+        // value when currency is EUR or when no rate is available, so
+        // the EUR path is a no-op.
+        $basePriceOriginal = (float) ($input['base_price'] ?? 0);
+        $basePrice         = (float) ($this->toEur($basePriceOriginal, $variantCurrency, $rate) ?? $basePriceOriginal);
+        $baseCost          = $this->toEur($input['base_cost'] ?? null, $variantCurrency, $rate);
         $categoryDiscounts  = $input['category_discounts'] ?? [];
         $boatDiscountPct    = (float) ($input['boat_discount_pct'] ?? 0);
         $optionsDiscountPct = (float) ($input['options_discount_pct'] ?? 0);
@@ -45,10 +53,13 @@ class QuoteCalculator
         // Options
         $optionsRows = [];
         foreach (($input['options'] ?? []) as $opt) {
-            $qty         = max(1, (int) ($opt['quantity'] ?? 1));
-            $unit        = (float) ($opt['unit_price'] ?? 0);
-            $unitCost    = $this->toEur($opt['unit_cost'] ?? null, $opt['currency'] ?? 'EUR', $input['exchange_rate'] ?? null);
-            $lineGross   = $unit * $qty;
+            $qty             = max(1, (int) ($opt['quantity'] ?? 1));
+            $optCurrency     = $opt['currency'] ?? 'EUR';
+            // Convert PRICE to EUR same way as base_price above.
+            $unitOriginal    = (float) ($opt['unit_price'] ?? 0);
+            $unit            = (float) ($this->toEur($unitOriginal, $optCurrency, $rate) ?? $unitOriginal);
+            $unitCost        = $this->toEur($opt['unit_cost'] ?? null, $optCurrency, $rate);
+            $lineGross       = $unit * $qty;
             $lineCost    = $unitCost !== null ? $unitCost * $qty : null;
             $itemDiscPct = (float) ($opt['discount_pct'] ?? 0);
             $afterItem   = $lineGross * (1 - $itemDiscPct / 100);
@@ -57,16 +68,18 @@ class QuoteCalculator
             $afterCat    = $afterItem * (1 - $catPct / 100);
 
             $optionsRows[] = [
-                'category'     => $opt['category'] ?? 'Options',
-                'label'        => $opt['label'] ?? '',
-                'quantity'     => $qty,
-                'unit_price'   => $unit,
-                'line_gross'   => round($lineGross, 2),
-                'item_discount_pct' => $itemDiscPct,
-                'cat_discount_pct'  => $catPct,
-                'line_after_cat'    => round($afterCat, 2),
-                'line_cost'         => $lineCost !== null ? round($lineCost, 2) : null,
-                'has_real_cost'     => $unitCost !== null,
+                'category'           => $opt['category'] ?? 'Options',
+                'label'              => $opt['label'] ?? '',
+                'quantity'           => $qty,
+                'unit_price'         => $unit,
+                'unit_price_original'=> $unitOriginal,
+                'currency_original'  => $optCurrency,
+                'line_gross'         => round($lineGross, 2),
+                'item_discount_pct'  => $itemDiscPct,
+                'cat_discount_pct'   => $catPct,
+                'line_after_cat'     => round($afterCat, 2),
+                'line_cost'          => $lineCost !== null ? round($lineCost, 2) : null,
+                'has_real_cost'      => $unitCost !== null,
             ];
         }
 
@@ -142,10 +155,13 @@ class QuoteCalculator
         }
 
         return [
-            'base_price_gross'        => round($basePrice, 2),
-            'boat_discount_pct'       => $boatDiscountPct,
-            'boat_discount_amount'    => round($boatDiscountAmount, 2),
-            'base_ht'                 => round($baseSubtotal, 2),
+            'base_price_gross'         => round($basePrice, 2),
+            'base_price_original'      => $basePriceOriginal,
+            'base_price_currency'      => $variantCurrency,
+            'fx_rate_used'             => $rate,
+            'boat_discount_pct'        => $boatDiscountPct,
+            'boat_discount_amount'     => round($boatDiscountAmount, 2),
+            'base_ht'                  => round($baseSubtotal, 2),
 
             'options_gross'           => round($optionsBeforeBlock, 2),
             'options_discount_pct'    => $optionsDiscountPct,

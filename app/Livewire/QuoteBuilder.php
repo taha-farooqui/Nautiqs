@@ -426,11 +426,24 @@ class QuoteBuilder extends Component
             ];
         }
 
+        // FX: if the variant or any option uses a non-EUR currency and the
+        // user hasn't entered an exchange rate manually, fetch the live
+        // USD→EUR rate from FxRateService. Falls back to 1.0 if FX is
+        // unreachable (calculator will then treat amounts as EUR). One
+        // rate per quote — matches the snapshot semantics in spec §15.
+        $variantCcy = $variant->currency ?? 'EUR';
+        $needsFx = $variantCcy !== 'EUR'
+            || collect($optionsPayload)->contains(fn ($p) => ($p['currency'] ?? 'EUR') !== 'EUR');
+        $rate = $this->exchange_rate;
+        if ($needsFx && ! $rate) {
+            $rate = app(\App\Services\FxRateService::class)->rate('USD', 'EUR') ?? 1.0;
+        }
+
         return app(QuoteCalculator::class)->compute([
             'base_price'           => (float) $variant->base_price,
             'base_cost'            => (float) $variant->cost,
-            'variant_currency'     => $variant->currency ?? 'EUR',
-            'exchange_rate'        => $this->exchange_rate,
+            'variant_currency'     => $variantCcy,
+            'exchange_rate'        => $rate,
             'options'              => $optionsPayload,
             'custom_items'         => $this->custom_items,
             'category_discounts'   => $this->category_discounts,
@@ -524,8 +537,11 @@ class QuoteBuilder extends Component
                 ? ['value' => (float) $this->trade_in_value]
                 : null,
             'currency'            => 'EUR',
-            'exchange_rate'       => $this->exchange_rate,
-            'exchange_rate_date'  => $this->exchange_rate ? now() : null,
+            // Snapshot whatever rate the totals were computed with (manual
+            // entry if the user typed one, otherwise the live rate auto-
+            // fetched in totals()). null when the quote was 100% EUR.
+            'exchange_rate'       => $totals['fx_rate_used'] ?? $this->exchange_rate,
+            'exchange_rate_date'  => ($totals['fx_rate_used'] ?? $this->exchange_rate) ? now() : null,
             'vat_rate'            => (float) $this->vat_rate,
             'display_mode'        => $this->display_mode,
             'totals'              => $totals,

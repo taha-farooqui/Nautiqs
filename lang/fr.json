@@ -850,6 +850,7 @@
     "required, engine code/SKU": "obligatoire, code/SKU du moteur",
     "was": "était",
     "Original amount before FX conversion": "Montant d'origine avant conversion de change",
+    "Change currency — value will be converted to EUR on save": "Changer la devise — la valeur sera convertie en EUR à l'enregistrement",
     "Rows matching an existing Brand + Model will be updated; the rest will be created.": "Les lignes correspondant à une marque + modèle existants seront mises à jour ; les autres seront créées.",
     "Import global engines": "Importer les moteurs globaux",
     "Upload a CSV or XLSX file with your engines list.": "Téléchargez un fichier CSV ou XLSX avec votre liste de moteurs.",

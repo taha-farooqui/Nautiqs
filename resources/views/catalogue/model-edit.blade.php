@@ -764,25 +764,35 @@
                                             class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
                                     </div>
                                     <div class="md:col-span-2">
-                                        <label class="block text-xs font-medium text-gray-700 mb-1 flex items-center gap-1.5">
-                                            <span>{{ __('Public HT') }}</span>
-                                            <span class="text-[10px] font-semibold text-primary-800 bg-primary-50 px-1.5 py-0.5 rounded">{{ $o->currency ?? 'EUR' }}</span>
-                                        </label>
-                                        <input type="number" step="0.01" min="0" name="price" value="{{ $o->price }}" required
-                                            class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
+                                        <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Public HT') }}</label>
+                                        <div class="flex gap-1">
+                                            <input type="number" step="0.01" min="0" name="price" value="{{ $o->price }}" required
+                                                class="flex-1 min-w-0 rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
+                                            <select name="price_currency"
+                                                class="rounded-lg border-gray-300 text-xs font-medium pl-2 pr-7 focus:border-primary-800 focus:ring-primary-800"
+                                                title="{{ __('Change currency — value will be converted to EUR on save') }}">
+                                                <option value="EUR" @selected(($o->currency ?? 'EUR') === 'EUR')>EUR</option>
+                                                <option value="USD" @selected(($o->currency ?? 'EUR') === 'USD')>USD</option>
+                                            </select>
+                                        </div>
                                         @if (! empty($o->original_price_currency) && $o->original_price_currency !== 'EUR' && $o->original_price)
                                             <p class="text-[10px] text-gray-500 mt-1" title="{{ __('Original amount before FX conversion') }}">
                                                 {{ __('was') }} {{ $o->original_price_currency === 'USD' ? '$' : $o->original_price_currency }}{{ number_format($o->original_price, 2, ',', ' ') }}
                                             </p>
                                         @endif
                                     </div>
-                                    <div class="md:col-span-1">
-                                        <label class="block text-xs font-medium text-gray-700 mb-1 flex items-center gap-1.5">
-                                            <span>{{ __('Cost') }}</span>
-                                            <span class="text-[10px] font-semibold text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded">{{ $o->currency ?? 'EUR' }}</span>
-                                        </label>
-                                        <input type="number" step="0.01" min="0" name="cost" value="{{ $o->cost }}"
-                                            class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
+                                    <div class="md:col-span-2">
+                                        <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Cost') }}</label>
+                                        <div class="flex gap-1">
+                                            <input type="number" step="0.01" min="0" name="cost" value="{{ $o->cost }}"
+                                                class="flex-1 min-w-0 rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
+                                            <select name="cost_currency"
+                                                class="rounded-lg border-gray-300 text-xs font-medium pl-2 pr-7 focus:border-primary-800 focus:ring-primary-800"
+                                                title="{{ __('Change currency — value will be converted to EUR on save') }}">
+                                                <option value="EUR" @selected(($o->currency ?? 'EUR') === 'EUR')>EUR</option>
+                                                <option value="USD" @selected(($o->currency ?? 'EUR') === 'USD')>USD</option>
+                                            </select>
+                                        </div>
                                         @if (! empty($o->original_cost_currency) && $o->original_cost_currency !== 'EUR' && $o->original_cost)
                                             <p class="text-[10px] text-gray-500 mt-1" title="{{ __('Original amount before FX conversion') }}">
                                                 {{ __('was') }} {{ $o->original_cost_currency === 'USD' ? '$' : $o->original_cost_currency }}{{ number_format($o->original_cost, 2, ',', ' ') }}

@@ -177,12 +177,23 @@
                             {{ $variant_id === (string) $v->_id ? 'border-primary-800 bg-primary-50' : 'border-gray-200 hover:border-gray-300' }}">
                             <input type="radio" wire:model.live="variant_id" value="{{ $v->_id }}"
                                 class="text-primary-800 focus:ring-primary-800" />
+                            @php
+                                $vCcy   = $v->currency ?? 'EUR';
+                                $vSym   = $vCcy === 'USD' ? '$' : '€';
+                                $vIsFx  = $vCcy !== 'EUR';
+                                $vEur   = $vIsFx
+                                    ? (app(\App\Services\FxRateService::class)->convert((float) $v->base_price, $vCcy, 'EUR') ?? $v->base_price)
+                                    : $v->base_price;
+                            @endphp
                             <div class="flex-1">
                                 <div class="font-medium text-gray-900">{{ $v->name }}</div>
-                                <div class="text-xs text-gray-500">{{ $v->currency }} · {{ __('base price') }}</div>
+                                <div class="text-xs text-gray-500">{{ $vCcy }} · {{ __('base price') }}</div>
                             </div>
-                            <div class="text-right font-semibold text-gray-900">
-                                €{{ number_format($v->base_price, 0, ',', ' ') }}
+                            <div class="text-right">
+                                <div class="font-semibold text-gray-900">€{{ number_format($vEur, 0, ',', ' ') }}</div>
+                                @if ($vIsFx)
+                                    <div class="text-[11px] text-gray-500">{{ __('was') }} {{ $vSym }}{{ number_format($v->base_price, 0, ',', ' ') }}</div>
+                                @endif
                             </div>
                         </label>
                     @endforeach
@@ -253,8 +264,23 @@
                                             <span class="text-xs text-gray-400">%</span>
                                         </div>
                                     @endif
-                                    <div class="w-24 text-right text-sm font-medium text-gray-900">
-                                        €{{ number_format($opt->price, 0, ',', ' ') }}
+                                    @php
+                                        // Options in the catalogue are already stored in EUR
+                                        // (the import + manual edit both convert), so the
+                                        // EUR figure is just $opt->price. Show original
+                                        // beneath when the row was originally a foreign-
+                                        // currency import so the dealer can audit it.
+                                        $optWasFx = ! empty($opt->original_price_currency)
+                                            && $opt->original_price_currency !== 'EUR'
+                                            && ! empty($opt->original_price);
+                                    @endphp
+                                    <div class="w-28 text-right">
+                                        <div class="text-sm font-medium text-gray-900">€{{ number_format($opt->price, 0, ',', ' ') }}</div>
+                                        @if ($optWasFx)
+                                            <div class="text-[10px] text-gray-500">
+                                                {{ __('was') }} {{ $opt->original_price_currency === 'USD' ? '$' : $opt->original_price_currency }}{{ number_format($opt->original_price, 0, ',', ' ') }}
+                                            </div>
+                                        @endif
                                     </div>
                                 </div>
                             @endforeach
@@ -583,7 +609,15 @@
             @else
                 <dl class="p-5 space-y-2 text-sm">
                     {{-- Boat --}}
-                    <div class="flex justify-between"><dt class="text-gray-600">{{ __('Base price (excl. VAT)') }}</dt><dd class="font-medium">€{{ number_format($t['base_price_gross'], 2, ',', ' ') }}</dd></div>
+                    <div class="flex justify-between">
+                        <dt class="text-gray-600">{{ __('Base price (excl. VAT)') }}</dt>
+                        <dd class="text-right">
+                            <div class="font-medium">€{{ number_format($t['base_price_gross'], 2, ',', ' ') }}</div>
+                            @if (! empty($t['base_price_currency']) && $t['base_price_currency'] !== 'EUR' && ! empty($t['base_price_original']))
+                                <div class="text-[11px] text-gray-500">{{ __('was') }} {{ $t['base_price_currency'] === 'USD' ? '$' : $t['base_price_currency'] }}{{ number_format($t['base_price_original'], 2, ',', ' ') }}</div>
+                            @endif
+                        </dd>
+                    </div>
                     @if ($t['boat_discount_amount'] > 0)
                         <div class="flex justify-between text-red-600 text-xs"><dt>{{ __('Boat discount') }} ({{ $t['boat_discount_pct'] }}%)</dt><dd>−€{{ number_format($t['boat_discount_amount'], 2, ',', ' ') }}</dd></div>
                     @endif

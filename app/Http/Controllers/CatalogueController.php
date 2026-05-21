@@ -1004,22 +1004,69 @@ class CatalogueController extends Controller
     {
         $option = CompanyOption::findOrFail($optionId);
         $data = $request->validate([
-            'category'  => 'required|string|max:100',
-            'label'     => 'required|string|max:200',
-            'price'     => 'required|numeric|min:0',
-            'cost'      => 'nullable|numeric|min:0',
-            'currency'  => 'nullable|in:EUR,USD',
-            'position'  => 'nullable|integer',
+            'category'       => 'required|string|max:100',
+            'label'          => 'required|string|max:200',
+            'price'          => 'required|numeric|min:0',
+            'price_currency' => 'nullable|in:EUR,USD',
+            'cost'           => 'nullable|numeric|min:0',
+            'cost_currency'  => 'nullable|in:EUR,USD',
+            // legacy single-currency field — kept for backwards-compatibility
+            // with older form posts that don't send the per-field dropdowns.
+            'currency'       => 'nullable|in:EUR,USD',
+            'position'       => 'nullable|integer',
         ]);
+
+        $priceIn = (float) $data['price'];
+        $costIn  = $data['cost'] !== null && $data['cost'] !== '' ? (float) $data['cost'] : (float) $option->cost;
+        $priceCcy = $data['price_currency'] ?? $data['currency'] ?? 'EUR';
+        $costCcy  = $data['cost_currency']  ?? $data['currency'] ?? 'EUR';
+
+        // FX: convert non-EUR amounts to EUR using a live rate. Stash the
+        // original so the dealer can see what was entered before the
+        // conversion. If the rate lookup fails, persist the typed value
+        // verbatim and flag a warning — at least the data isn't lost.
+        $fx = app(\App\Services\FxRateService::class);
+        $priceEur = $priceIn;
+        $costEur  = $costIn;
+        $fxRate   = 1.0;
+        $fxError  = null;
+
+        if ($priceCcy !== 'EUR' && $priceIn > 0) {
+            $rate = $fx->rate($priceCcy, 'EUR');
+            if ($rate === null) {
+                $fxError = 'Could not fetch FX rate for ' . $priceCcy . '→EUR. Value saved as entered.';
+            } else {
+                $priceEur = round($priceIn * $rate, 2);
+                $fxRate   = $rate;
+            }
+        }
+        if ($costCcy !== 'EUR' && $costIn > 0) {
+            $rate = $fx->rate($costCcy, 'EUR');
+            if ($rate === null) {
+                $fxError = 'Could not fetch FX rate for ' . $costCcy . '→EUR. Value saved as entered.';
+            } else {
+                $costEur = round($costIn * $rate, 2);
+                $fxRate  = $rate;
+            }
+        }
+
         $option->update([
-            'category' => $data['category'],
-            'label'    => $data['label'],
-            'price'    => (float) $data['price'],
-            'cost'     => (float) ($data['cost'] ?? $option->cost),
-            'currency' => $data['currency'] ?? $option->currency,
-            'position' => (int) ($data['position'] ?? $option->position),
+            'category'                => $data['category'],
+            'label'                   => $data['label'],
+            'price'                   => $priceEur,
+            'cost'                    => $costEur,
+            'currency'                => 'EUR',
+            'original_price'          => $priceIn,
+            'original_price_currency' => $priceCcy,
+            'original_cost'           => $costIn,
+            'original_cost_currency'  => $costCcy,
+            'fx_rate_used'            => ($priceCcy !== 'EUR' || $costCcy !== 'EUR') ? $fxRate : null,
+            'fx_rate_date'            => ($priceCcy !== 'EUR' || $costCcy !== 'EUR') ? now() : null,
+            'position'                => (int) ($data['position'] ?? $option->position),
         ]);
-        return back()->with('status', __('Option updated.'));
+
+        $msg = $fxError ?: __('Option updated.');
+        return back()->with('status', $msg);
     }
 
     public function destroyOption(string $optionId)
