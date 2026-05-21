@@ -764,14 +764,30 @@
                                             class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
                                     </div>
                                     <div class="md:col-span-2">
-                                        <label class="block text-xs font-medium text-gray-700 mb-1">Public HT</label>
+                                        <label class="block text-xs font-medium text-gray-700 mb-1 flex items-center gap-1.5">
+                                            <span>{{ __('Public HT') }}</span>
+                                            <span class="text-[10px] font-semibold text-primary-800 bg-primary-50 px-1.5 py-0.5 rounded">{{ $o->currency ?? 'EUR' }}</span>
+                                        </label>
                                         <input type="number" step="0.01" min="0" name="price" value="{{ $o->price }}" required
                                             class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
+                                        @if (! empty($o->original_price_currency) && $o->original_price_currency !== 'EUR' && $o->original_price)
+                                            <p class="text-[10px] text-gray-500 mt-1" title="{{ __('Original amount before FX conversion') }}">
+                                                {{ __('was') }} {{ $o->original_price_currency === 'USD' ? '$' : $o->original_price_currency }}{{ number_format($o->original_price, 2, ',', ' ') }}
+                                            </p>
+                                        @endif
                                     </div>
                                     <div class="md:col-span-1">
-                                        <label class="block text-xs font-medium text-gray-700 mb-1">Cost</label>
+                                        <label class="block text-xs font-medium text-gray-700 mb-1 flex items-center gap-1.5">
+                                            <span>{{ __('Cost') }}</span>
+                                            <span class="text-[10px] font-semibold text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded">{{ $o->currency ?? 'EUR' }}</span>
+                                        </label>
                                         <input type="number" step="0.01" min="0" name="cost" value="{{ $o->cost }}"
                                             class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
+                                        @if (! empty($o->original_cost_currency) && $o->original_cost_currency !== 'EUR' && $o->original_cost)
+                                            <p class="text-[10px] text-gray-500 mt-1" title="{{ __('Original amount before FX conversion') }}">
+                                                {{ __('was') }} {{ $o->original_cost_currency === 'USD' ? '$' : $o->original_cost_currency }}{{ number_format($o->original_cost, 2, ',', ' ') }}
+                                            </p>
+                                        @endif
                                     </div>
                                     <div class="md:col-span-1">
                                         <button class="w-full inline-flex items-center justify-center gap-1 px-3 py-2 text-xs font-medium bg-primary-800 hover:bg-primary-900 text-white rounded-lg">
