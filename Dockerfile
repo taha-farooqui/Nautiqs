@@ -20,12 +20,13 @@ FROM php:8.2-cli-alpine AS app
 # ship the full root CA bundle by default and Atlas's TLS handshake fails
 # without it.
 #
-# The mongodb PECL extension is pinned to 1.21.0 because newer releases
-# call `res_nsearch` / `res_nclose` from the libmongoc DNS resolver and
-# fail to compile on Alpine without explicit resolver headers (the
-# functions live in glibc but musl libc inlines them, so the build needs
-# the linux-headers + bind-tools packages even with the pin as a safety
-# net). Hit by Railway deploy ~2026-05-21.
+# The mongodb PECL extension is pinned to 2.2.0 to match the
+# `ext-mongodb: ^2.2` requirement of the mongodb/mongodb composer
+# package locked in composer.lock. Newer libmongoc releases call
+# `res_nsearch` / `res_nclose` from the DNS resolver, which musl libc
+# inlines via resolv.h — `linux-headers` + `bind-tools` make those
+# headers reachable during the C build. Hit by Railway deploy
+# ~2026-05-21 after PECL pushed an unpinned-newer mongodb release.
 RUN apk add --no-cache \
         ca-certificates \
         git unzip libzip-dev openssl-dev curl-dev oniguruma-dev icu-dev libpng-dev \
@@ -33,7 +34,7 @@ RUN apk add --no-cache \
         $PHPIZE_DEPS \
     && update-ca-certificates \
     && docker-php-ext-install zip intl mbstring bcmath \
-    && pecl install mongodb-1.21.0 \
+    && pecl install mongodb-2.2.0 \
     && docker-php-ext-enable mongodb \
     && apk del $PHPIZE_DEPS \
     && rm -rf /tmp/* /var/cache/apk/*
