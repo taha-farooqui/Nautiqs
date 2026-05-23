@@ -53,6 +53,17 @@
                         class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />
                 </div>
             </div>
+
+            <label class="mt-4 flex items-start gap-3 cursor-pointer">
+                <input type="hidden" name="send_credentials" value="0" />
+                <input type="checkbox" name="send_credentials" value="1"
+                    {{ old('send_credentials', '0') === '1' ? 'checked' : '' }}
+                    class="mt-0.5 rounded border-gray-300 text-primary-800 focus:ring-primary-800" />
+                <span>
+                    <span class="block text-sm font-medium text-gray-900">{{ __('Send credentials by email') }}</span>
+                    <span class="block text-[11px] text-gray-500 mt-0.5">{{ __('Emails the dealer their login URL, email and password using the Nautiqs welcome template. Off by default — you can also share the password manually.') }}</span>
+                </span>
+            </label>
         </div>
 
         <div class="flex items-center justify-end gap-2 pt-4 border-t border-gray-100">

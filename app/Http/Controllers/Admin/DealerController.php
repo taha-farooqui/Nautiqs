@@ -98,10 +98,11 @@ class DealerController extends Controller
     public function store(Request $request, CompanyProvisioner $provisioner)
     {
         $data = $request->validate([
-            'company_name' => 'required|string|max:150',
-            'admin_name'   => 'required|string|max:255',
-            'admin_email'  => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class.',email'],
-            'password'     => ['required', 'confirmed', Password::min(8)],
+            'company_name'     => 'required|string|max:150',
+            'admin_name'       => 'required|string|max:255',
+            'admin_email'      => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class.',email'],
+            'password'         => ['required', 'confirmed', Password::min(8)],
+            'send_credentials' => 'nullable|boolean',
         ]);
 
         $user = User::create([
@@ -121,8 +122,34 @@ class DealerController extends Controller
             after: ['company_name' => $data['company_name'], 'admin_email' => $data['admin_email']],
             targetLabel: $company->name);
 
+        // Optional welcome email with the credentials. Wrapped in a
+        // try/catch so a Brevo outage doesn't 500 the whole dealer-
+        // create flow — the dealer can always be reached out of band.
+        $emailSent = false;
+        $emailError = null;
+        if ((bool) ($data['send_credentials'] ?? false)) {
+            try {
+                \Illuminate\Support\Facades\Mail::to($data['admin_email'])
+                    ->send(new \App\Mail\DealerWelcomeMail($company, $user, $data['password']));
+                $emailSent = true;
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Dealer welcome email failed', [
+                    'company_id' => (string) $company->_id,
+                    'to'         => $data['admin_email'],
+                    'error'      => $e->getMessage(),
+                ]);
+                $emailError = $e->getMessage();
+            }
+        }
+
+        $statusKey = $emailSent
+            ? ':name created — credentials emailed to :email.'
+            : ($emailError
+                ? ':name created — but the welcome email failed to send. Share the password manually.'
+                : ':name created — they can log in with :email.');
+
         return redirect()->route('admin.dealers.show', $company->_id)
-            ->with('status', __(':name created — they can log in with :email.', [
+            ->with('status', __($statusKey, [
                 'name'  => $company->name,
                 'email' => $data['admin_email'],
             ]));
