@@ -56,19 +56,11 @@
     </div>
 </div>
 
-<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Model name <span class="text-red-500">*</span></label>
-        <input type="text" name="name" required value="{{ old('name', $model->name ?? '') }}"
-            placeholder="e.g. 60 OPEN LINE"
-            class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />
-    </div>
-    <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Year</label>
-        <input type="number" min="1900" max="2100" name="year"
-            value="{{ old('year', $model->year ?? '') }}"
-            class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />
-    </div>
+<div>
+    <label class="block text-sm font-medium text-gray-700 mb-1">Model name <span class="text-red-500">*</span></label>
+    <input type="text" name="name" required value="{{ old('name', $model->name ?? '') }}"
+        placeholder="e.g. 60 OPEN LINE"
+        class="w-full max-w-xl rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />
 </div>
 
 <div class="max-w-xs">

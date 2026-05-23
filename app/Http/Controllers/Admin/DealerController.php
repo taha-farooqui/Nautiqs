@@ -8,7 +8,10 @@ use App\Models\Company;
 use App\Models\Quote;
 use App\Models\User;
 use App\Services\AuditLogger;
+use App\Services\CompanyProvisioner;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rules\Password;
 
 /**
  * Spec §4.3 — superadmin dealer (tenant) management. List all subscribing
@@ -79,6 +82,50 @@ class DealerController extends Controller
         ];
 
         return view('admin.dealers.index', compact('dealers', 'q', 'status', 'totals'));
+    }
+
+    public function create()
+    {
+        return view('admin.dealers.create');
+    }
+
+    /**
+     * Provision a new dealership and its initial admin user. Replaces the
+     * removed public /register flow: same shape (User → CompanyProvisioner
+     * creates the Company) but launched by the superadmin from
+     * /admin/dealers/create instead of a self-service signup page.
+     */
+    public function store(Request $request, CompanyProvisioner $provisioner)
+    {
+        $data = $request->validate([
+            'company_name' => 'required|string|max:150',
+            'admin_name'   => 'required|string|max:255',
+            'admin_email'  => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class.',email'],
+            'password'     => ['required', 'confirmed', Password::min(8)],
+        ]);
+
+        $user = User::create([
+            'name'              => $data['admin_name'],
+            'email'             => $data['admin_email'],
+            'password'          => Hash::make($data['password']),
+            'role'              => User::ROLE_TENANT_ADMIN,
+            'company_id'        => null,
+            'email_verified_at' => now(),   // superadmin-created = trusted, skip verification
+        ]);
+
+        $company = $provisioner->forNewUser($user);
+        $company->update(['name' => $data['company_name']]);
+
+        AuditLogger::record('dealer.create',
+            target: $company,
+            after: ['company_name' => $data['company_name'], 'admin_email' => $data['admin_email']],
+            targetLabel: $company->name);
+
+        return redirect()->route('admin.dealers.show', $company->_id)
+            ->with('status', __(':name created — they can log in with :email.', [
+                'name'  => $company->name,
+                'email' => $data['admin_email'],
+            ]));
     }
 
     public function show(string $id)

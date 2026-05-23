@@ -7,18 +7,24 @@
     @endif
 
     {{-- Status tab strip --}}
-    <div class="flex items-center gap-1 mb-4 bg-white p-1 rounded-xl border border-gray-200 w-fit">
-        @foreach ([
-            'all'       => __('All') . ' (' . $totals['all'] . ')',
-            'active'    => __('Active') . ' (' . $totals['active'] . ')',
-            'suspended' => __('Suspended') . ' (' . $totals['suspended'] . ')',
-        ] as $tab => $label)
-            <a href="{{ route('admin.dealers.index', ['status' => $tab, 'q' => $q]) }}"
-                class="px-3 py-1.5 text-sm font-medium rounded-lg transition
-                    {{ $status === $tab ? 'bg-primary-800 text-white' : 'text-gray-600 hover:bg-gray-100' }}">
-                {{ $label }}
-            </a>
-        @endforeach
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+        <div class="flex items-center gap-1 bg-white p-1 rounded-xl border border-gray-200 w-fit">
+            @foreach ([
+                'all'       => __('All') . ' (' . $totals['all'] . ')',
+                'active'    => __('Active') . ' (' . $totals['active'] . ')',
+                'suspended' => __('Suspended') . ' (' . $totals['suspended'] . ')',
+            ] as $tab => $label)
+                <a href="{{ route('admin.dealers.index', ['status' => $tab, 'q' => $q]) }}"
+                    class="px-3 py-1.5 text-sm font-medium rounded-lg transition
+                        {{ $status === $tab ? 'bg-primary-800 text-white' : 'text-gray-600 hover:bg-gray-100' }}">
+                    {{ $label }}
+                </a>
+            @endforeach
+        </div>
+        <a href="{{ route('admin.dealers.create') }}"
+            class="inline-flex items-center gap-1 px-3 py-2 text-sm font-semibold bg-primary-800 hover:bg-primary-900 text-white rounded-lg">
+            <i class="ri-add-line"></i> {{ __('Add dealer') }}
+        </a>
     </div>
 
     {{-- Search --}}

@@ -14,10 +14,12 @@ use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
-    Route::get('register', [RegisteredUserController::class, 'create'])
-        ->name('register');
-
-    Route::post('register', [RegisteredUserController::class, 'store']);
+    // Self-service registration removed. New dealers are now provisioned
+    // by the superadmin from /admin/dealers/create. The named `register`
+    // route is kept as an alias so any code that still calls
+    // route('register') (e.g. Laravel's auth scaffolding) resolves
+    // safely instead of throwing — it 404s on visit.
+    Route::get('register', fn () => abort(404))->name('register');
 
     Route::get('login', [AuthenticatedSessionController::class, 'create'])
         ->name('login');

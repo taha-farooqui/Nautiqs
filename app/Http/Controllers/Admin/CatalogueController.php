@@ -90,8 +90,7 @@ class CatalogueController extends Controller
     private function validateBrand(Request $request): array
     {
         return $request->validate([
-            'name'        => 'required|string|max:120',
-            'description' => 'nullable|string|max:2000',
+            'name' => 'required|string|max:120',
         ]);
     }
 

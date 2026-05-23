@@ -225,6 +225,8 @@ Route::middleware(['auth', 'verified', 'maintenance'])->group(function () {
 
         // Dealers (tenants) — list, detail, suspend, reactivate.
         Route::get('/dealers',                       [\App\Http\Controllers\Admin\DealerController::class, 'index'])->name('dealers.index');
+        Route::get('/dealers/create',                [\App\Http\Controllers\Admin\DealerController::class, 'create'])->name('dealers.create');
+        Route::post('/dealers',                      [\App\Http\Controllers\Admin\DealerController::class, 'store'])->name('dealers.store');
         Route::get('/dealers/{id}',                  [\App\Http\Controllers\Admin\DealerController::class, 'show'])->name('dealers.show');
         Route::post('/dealers/{id}/suspend',         [\App\Http\Controllers\Admin\DealerController::class, 'suspend'])->name('dealers.suspend');
         Route::post('/dealers/{id}/reactivate',      [\App\Http\Controllers\Admin\DealerController::class, 'reactivate'])->name('dealers.reactivate');
