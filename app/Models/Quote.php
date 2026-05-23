@@ -73,7 +73,8 @@ class Quote extends Model
         'exchange_rate_date',
 
         // §8.3 Live financial summary (persisted snapshot)
-        'vat_rate',           // e.g. 20.0
+        'vat_rate',           // e.g. 20.0 — quote-wide default
+        'per_option_vat',     // bool — when true, options use their own vat_rate instead of the quote-wide one
         'display_mode',       // HT | TTC
         'totals',             // [base_ht, options_ht, custom_items_ht, discount_total, subtotal_ht, vat_amount, total_ht, total_ttc, trade_in_deduction, net_payable, total_cost, margin_amount, margin_pct, margin_type: real|estimated]
 
@@ -131,6 +132,7 @@ class Quote extends Model
         'options_discount_pct' => 'float',
         'global_discount_pct'  => 'float',
         'vat_rate'           => 'float',
+        'per_option_vat'     => 'boolean',
         'exchange_rate'      => 'float',
         'exchange_rate_date' => 'datetime',
         'expires_at'         => 'datetime',

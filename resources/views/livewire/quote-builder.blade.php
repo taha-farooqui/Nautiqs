@@ -518,6 +518,14 @@
                     <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('VAT rate %') }}</label>
                     <input type="number" step="0.1" wire:model.live.debounce.300ms="vat_rate" @disabled(! $hasVariant)
                         class="w-full rounded border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800 disabled:bg-gray-100" />
+                    <label class="mt-2 flex items-start gap-2 cursor-pointer text-[11px] text-gray-600 leading-tight">
+                        <input type="checkbox" wire:model.live="per_option_vat" @disabled(! $hasVariant)
+                            class="mt-0.5 rounded border-gray-300 text-primary-800 focus:ring-primary-800" />
+                        <span>
+                            {{ __('Apply per-option VAT separately') }}
+                            <span class="block text-[10px] text-gray-400 mt-0.5">{{ __("When on, each option's own VAT rate (from import) is used instead of this one.") }}</span>
+                        </span>
+                    </label>
                 </div>
                 <div>
                     <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Display mode') }}</label>
@@ -639,7 +647,21 @@
                     @endif
 
                     <div class="flex justify-between pt-2 border-t border-gray-100"><dt class="font-semibold">{{ __('Total excl. VAT') }}</dt><dd class="font-semibold">€{{ number_format($t['total_ht'], 2, ',', ' ') }}</dd></div>
-                    <div class="flex justify-between"><dt class="text-gray-600">{{ __('VAT') }} ({{ $t['vat_rate'] }}%)</dt><dd class="font-medium">€{{ number_format($t['vat_amount'], 2, ',', ' ') }}</dd></div>
+                    @php
+                        $bands = collect($t['vat_breakdown'] ?? [])->filter(fn ($amt) => $amt > 0.01);
+                        $isMixed = $bands->count() > 1;
+                    @endphp
+                    <div class="flex justify-between" @if ($isMixed) title="{{ $bands->map(fn ($amt, $rate) => $rate . '% on €' . number_format($amt, 2, ',', ' '))->implode(' · ') }}" @endif>
+                        <dt class="text-gray-600">
+                            {{ __('VAT') }}
+                            @if ($isMixed)
+                                <span class="text-[10px] font-semibold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded ml-1">{{ __('mixed') }}</span>
+                            @else
+                                ({{ $t['vat_rate'] }}%)
+                            @endif
+                        </dt>
+                        <dd class="font-medium">€{{ number_format($t['vat_amount'], 2, ',', ' ') }}</dd>
+                    </div>
                     <div class="flex justify-between pt-2 border-t border-gray-100"><dt class="font-semibold">{{ __('Total incl. VAT') }}</dt><dd class="font-semibold">€{{ number_format($t['total_ttc'], 2, ',', ' ') }}</dd></div>
                     @if ($t['trade_in_deduction'] > 0)
                         <div class="flex justify-between text-amber-700 text-xs"><dt>{{ __('Trade-in deduction') }}</dt><dd>−€{{ number_format($t['trade_in_deduction'], 2, ',', ' ') }}</dd></div>

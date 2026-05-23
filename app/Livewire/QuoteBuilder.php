@@ -77,6 +77,10 @@ class QuoteBuilder extends Component
     // VAT + display mode
     public float $vat_rate = 20.0;
     public string $display_mode = 'TTC';
+    // Off by default — when on, each option's individual VAT rate (from
+    // the TVA column at import) is applied per line instead of the
+    // quote-wide rate. Old quotes stay unchanged.
+    public bool $per_option_vat = false;
 
     // Internal notes (§11.4)
     public string $internal_notes = '';
@@ -139,6 +143,7 @@ class QuoteBuilder extends Component
         $this->global_discount_pct = (float) ($quote->global_discount_pct ?? 0);
         $this->exchange_rate       = $quote->exchange_rate;
         $this->vat_rate            = (float) ($quote->vat_rate ?? 20);
+        $this->per_option_vat      = (bool) ($quote->per_option_vat ?? false);
         $this->display_mode        = $quote->display_mode ?? 'TTC';
         $this->internal_notes      = $quote->internal_notes ?? '';
         $this->terms_payment       = $quote->terms['payment']  ?? '';
@@ -389,6 +394,10 @@ class QuoteBuilder extends Component
                 'unit_price'   => (float) $opt->price,
                 'unit_cost'    => (float) $opt->cost,
                 'currency'     => $opt->currency ?? 'EUR',
+                // Per-option VAT (from import or manual edit). null means
+                // "use the quote default" — the calculator handles that
+                // fallback so we don't have to coalesce here.
+                'vat_rate'     => $opt->vat_rate ?? null,
                 'quantity'     => (int) $qty,
                 'discount_pct' => (float) ($this->optionDiscounts[$optionId] ?? 0),
             ];
@@ -452,6 +461,7 @@ class QuoteBuilder extends Component
             'global_discount_pct'  => $this->global_discount_pct,
             'trade_in_value'       => $this->hasTradeIn ? (float) $this->trade_in_value : 0,
             'vat_rate'             => $this->vat_rate,
+            'per_option_vat'       => $this->per_option_vat,
         ], $company);
     }
 
@@ -543,6 +553,7 @@ class QuoteBuilder extends Component
             'exchange_rate'       => $totals['fx_rate_used'] ?? $this->exchange_rate,
             'exchange_rate_date'  => ($totals['fx_rate_used'] ?? $this->exchange_rate) ? now() : null,
             'vat_rate'            => (float) $this->vat_rate,
+            'per_option_vat'      => (bool) $this->per_option_vat,
             'display_mode'        => $this->display_mode,
             'totals'              => $totals,
             'internal_notes'      => $this->internal_notes ?: null,

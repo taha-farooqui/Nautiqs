@@ -67,6 +67,15 @@ class QuoteCalculator
             $catPct      = (float) ($categoryDiscounts[$opt['category'] ?? ''] ?? 0);
             $afterCat    = $afterItem * (1 - $catPct / 100);
 
+            // Per-option VAT — only honoured when the quote has the
+            // "Apply per-option VAT separately" flag turned on. Default
+            // behaviour applies the quote-wide rate to every line so
+            // imported TVA columns don't silently change historical
+            // quote math.
+            $lineVatRate = (! empty($input['per_option_vat']) && isset($opt['vat_rate']) && $opt['vat_rate'] !== null && $opt['vat_rate'] !== '')
+                ? (float) $opt['vat_rate']
+                : (float) ($input['vat_rate'] ?? $company->default_vat_rate ?? 20);
+
             $optionsRows[] = [
                 'category'           => $opt['category'] ?? 'Options',
                 'label'              => $opt['label'] ?? '',
@@ -78,6 +87,7 @@ class QuoteCalculator
                 'item_discount_pct'  => $itemDiscPct,
                 'cat_discount_pct'   => $catPct,
                 'line_after_cat'     => round($afterCat, 2),
+                'line_vat_rate'      => $lineVatRate,
                 'line_cost'          => $lineCost !== null ? round($lineCost, 2) : null,
                 'has_real_cost'      => $unitCost !== null,
             ];
@@ -115,9 +125,31 @@ class QuoteCalculator
         $subtotalBeforeGlobal = $baseSubtotal + $optionsSubtotal + $customSubtotal;
         $globalDiscountAmount = $subtotalBeforeGlobal * ($globalDiscountPct / 100);
         $totalHt              = $subtotalBeforeGlobal - $globalDiscountAmount;
-        $vatAmount            = $totalHt * ($vatRate / 100);
-        $totalTtc             = $totalHt + $vatAmount;
-        $netPayable           = $totalTtc - $tradeIn;
+
+        // VAT is computed per line so an option imported with TVA = 10%
+        // is taxed at 10% even when the quote default is 20%. Options
+        // also absorb their share of the options-block + global discount
+        // before being taxed, hence the two scale factors below. Lines
+        // without their own rate (base price, custom items) use $vatRate.
+        $optionsBlockScale = $optionsBeforeBlock > 0 ? $optionsSubtotal / $optionsBeforeBlock : 1.0;
+        $globalScale       = $subtotalBeforeGlobal > 0 ? $totalHt / $subtotalBeforeGlobal : 1.0;
+        $vatAmount         = 0.0;
+        $vatBreakdown      = [];   // [rate => taxable_amount]
+        $addVat = function (float $ht, float $rate) use (&$vatAmount, &$vatBreakdown) {
+            $vatAmount += $ht * ($rate / 100);
+            $key = (string) $rate;
+            $vatBreakdown[$key] = ($vatBreakdown[$key] ?? 0) + $ht;
+        };
+        $addVat($baseSubtotal * $globalScale, $vatRate);
+        foreach ($optionsRows as $r) {
+            $addVat($r['line_after_cat'] * $optionsBlockScale * $globalScale, $r['line_vat_rate']);
+        }
+        foreach ($customRows as $r) {
+            $addVat($r['line_after_cat'] * $globalScale, $vatRate);
+        }
+
+        $totalTtc   = $totalHt + $vatAmount;
+        $netPayable = $totalTtc - $tradeIn;
 
         // Margin (§3 cascade + §8.3)
         $realCostTotal = 0.0;
@@ -177,6 +209,10 @@ class QuoteCalculator
             'total_ht'                => round($totalHt, 2),
             'vat_rate'                => $vatRate,
             'vat_amount'              => round($vatAmount, 2),
+            // Breakdown when option lines carry their own TVA. Maps rate
+            // (string) → cumulative taxable amount at that rate. Lets the
+            // view show "VAT (mixed)" with a tooltip listing each band.
+            'vat_breakdown'           => array_map(fn ($v) => round($v, 2), $vatBreakdown),
             'total_ttc'               => round($totalTtc, 2),
             'trade_in_deduction'      => round($tradeIn, 2),
             'net_payable'             => round($netPayable, 2),
