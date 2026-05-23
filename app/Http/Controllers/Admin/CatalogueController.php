@@ -58,7 +58,22 @@ class CatalogueController extends Controller
         $data = $this->validateBrand($request);
         $brand = GlobalBrand::create($data + ['is_active' => true]);
         AuditLogger::record('brand.create', target: $brand, after: $data);
+        $this->fanOutBrandToAllDealers($brand);
         return redirect()->route('admin.brands.index')->with('status', __('Brand created.'));
+    }
+
+    /**
+     * Replicate a freshly-created global brand into every dealer's
+     * workspace so it shows up in their catalogue immediately. Idempotent
+     * via CatalogueService::activateGlobalBrand. Spec change 2026-05-23:
+     * brands are always global and always visible to every dealer.
+     */
+    private function fanOutBrandToAllDealers(GlobalBrand $brand): void
+    {
+        $svc = app(\App\Services\CatalogueService::class);
+        foreach (\App\Models\Company::all(['_id']) as $co) {
+            $svc->activateGlobalBrand((string) $co->_id, $brand);
+        }
     }
 
     public function brandsEdit(string $id)
@@ -157,7 +172,33 @@ class CatalogueController extends Controller
         $data  = $this->validateModel($request);
         $model = GlobalBoatModel::create($data + ['is_archived' => false]);
         AuditLogger::record('model.create', target: $model, after: $data);
+        $this->fanOutModelToAllDealers($model);
         return redirect()->route('admin.models.index')->with('status', __('Model created.'));
+    }
+
+    /**
+     * Replicate a new global model into every dealer who has its parent
+     * brand activated. Their workspace gets a snapshot with the same
+     * default name + margin; dealers can then override prices per-tenant
+     * on the variants/options.
+     */
+    private function fanOutModelToAllDealers(GlobalBoatModel $model): void
+    {
+        $svc   = app(\App\Services\CatalogueService::class);
+        $brand = GlobalBrand::where('_id', $model->brand_id)->first();
+        if (! $brand) return;
+        foreach (\App\Models\Company::all(['_id']) as $co) {
+            $companyBrand = \App\Models\CompanyBrand::where('company_id', (string) $co->_id)
+                ->where('global_brand_id', (string) $brand->_id)
+                ->first();
+            if (! $companyBrand) {
+                // Dealer doesn't have the brand yet — activate it (which
+                // also snapshots all models under it, including this one).
+                $svc->activateGlobalBrand((string) $co->_id, $brand);
+            } else {
+                $svc->snapshotGlobalModel((string) $co->_id, $companyBrand, $model);
+            }
+        }
     }
 
     public function modelsEdit(string $id)
@@ -256,7 +297,30 @@ class CatalogueController extends Controller
         $data    = $this->validateVariant($request);
         $variant = GlobalBoatVariant::create($data + ['is_archived' => false]);
         AuditLogger::record('variant.create', target: $variant, after: $data);
+        $this->fanOutChildOfModel($variant->model_id);
         return redirect()->route('admin.variants.index')->with('status', __('Variant created.'));
+    }
+
+    /**
+     * Re-snapshot a model into every dealer's workspace so newly created
+     * variants/options under it land in their catalogue. Idempotent —
+     * existing rows are skipped, only the new child is copied in.
+     */
+    private function fanOutChildOfModel(?string $modelId): void
+    {
+        if (! $modelId) return;
+        $model = GlobalBoatModel::where('_id', $modelId)->first();
+        if (! $model) return;
+        $brand = GlobalBrand::where('_id', $model->brand_id)->first();
+        if (! $brand) return;
+        $svc = app(\App\Services\CatalogueService::class);
+        foreach (\App\Models\Company::all(['_id']) as $co) {
+            $companyBrand = \App\Models\CompanyBrand::where('company_id', (string) $co->_id)
+                ->where('global_brand_id', (string) $brand->_id)
+                ->first();
+            if (! $companyBrand) continue; // brand not yet activated for this dealer
+            $svc->snapshotGlobalModel((string) $co->_id, $companyBrand, $model);
+        }
     }
 
     public function variantsEdit(string $id)
@@ -430,6 +494,7 @@ class CatalogueController extends Controller
         $data   = $this->validateOption($request);
         $option = GlobalOption::create($data + ['is_archived' => false]);
         AuditLogger::record('option.create', target: $option, after: $data);
+        $this->fanOutChildOfModel($option->model_id);
         return redirect()->route('admin.options.index')->with('status', __('Option created.'));
     }
 

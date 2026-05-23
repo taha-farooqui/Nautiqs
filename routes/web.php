@@ -154,11 +154,16 @@ Route::middleware(['auth', 'verified', 'maintenance'])->group(function () {
         Route::post('/models/{modelId}/options/import-file', [CatalogueController::class, 'importOptionsForBoat'])->name('options.import-for-boat');
 
         // Brand activation
-        Route::post('/brands/activate/{globalBrandId}',          [CatalogueController::class, 'activateBrand'])->name('brands.activate');
-        Route::post('/brands/{companyBrandId}/deactivate',       [CatalogueController::class, 'deactivateBrand'])->name('brands.deactivate');
-        Route::post('/brands/{companyBrandId}/reactivate',       [CatalogueController::class, 'reactivateBrand'])->name('brands.reactivate');
-        Route::post('/brands/private',                           [CatalogueController::class, 'storePrivateBrand'])->name('brands.private.store');
-        Route::delete('/brands/{companyBrandId}/private',        [CatalogueController::class, 'destroyPrivateBrand'])->name('brands.private.destroy');
+        // Brand activation / private-brand creation removed 2026-05-23.
+        // All global brands are now auto-activated for every dealer; the
+        // CompanyBrand `is_active` flag is treated as always true. Routes
+        // kept here as 404 stubs so any stale frontend POST gets a clear
+        // error rather than silently mutating data.
+        Route::post('/brands/activate/{globalBrandId}',          fn () => abort(404))->name('brands.activate');
+        Route::post('/brands/{companyBrandId}/deactivate',       fn () => abort(404))->name('brands.deactivate');
+        Route::post('/brands/{companyBrandId}/reactivate',       fn () => abort(404))->name('brands.reactivate');
+        Route::post('/brands/private',                           fn () => abort(404))->name('brands.private.store');
+        Route::delete('/brands/{companyBrandId}/private',        fn () => abort(404))->name('brands.private.destroy');
 
         // Variant cherry-pick activation
         Route::post('/variants/activate/{globalVariantId}',      [CatalogueController::class, 'activateVariant'])->name('variants.activate');
@@ -208,7 +213,10 @@ Route::middleware(['auth', 'verified', 'maintenance'])->group(function () {
     // Inline brand picker for the catalogue form — used by the autocomplete
     // dropdown when adding a new model. Returns active CompanyBrand rows.
     Route::get('/catalogue/brands/lookup', [CatalogueController::class, 'brandLookup'])->name('catalogue.brands.lookup');
-    Route::post('/catalogue/brands/inline', [CatalogueController::class, 'storeInlineBrand'])->name('catalogue.brands.inline');
+    // Inline private-brand creation removed 2026-05-23 — brands are
+    // platform-managed only. 404 stub preserves the named route so any
+    // stale frontend reference doesn't throw a routing error.
+    Route::post('/catalogue/brands/inline', fn () => abort(404))->name('catalogue.brands.inline');
 
     // Profile (Breeze default)
     Route::get('/profile',    [ProfileController::class, 'edit'])->name('profile.edit');

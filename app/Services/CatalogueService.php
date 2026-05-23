@@ -73,12 +73,18 @@ class CatalogueService
      * Hides all variants from the quote builder via is_active=false on
      * the brand.
      */
-    public function deactivateGlobalBrand(string $companyId, CompanyBrand $companyBrand): void
+    /**
+     * Deactivation is disabled. As of 2026-05-23 brands are always
+     * visible to every dealer; dealers can only customise prices,
+     * not hide brands. The method stays here so any lingering caller
+     * doesn't 500, but it's now a no-op.
+     *
+     * @param  string         $_companyId   kept for backwards compatibility
+     * @param  CompanyBrand   $_companyBrand kept for backwards compatibility
+     */
+    public function deactivateGlobalBrand(string $_companyId, CompanyBrand $_companyBrand): void
     {
-        if ($companyBrand->source !== CompanyBrand::SOURCE_GLOBAL) {
-            return;
-        }
-        $companyBrand->update(['is_active' => false]);
+        // intentionally empty
     }
 
     /**

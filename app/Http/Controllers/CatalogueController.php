@@ -33,27 +33,14 @@ class CatalogueController extends Controller
      */
     public function brands(Request $request)
     {
-        $tab = $request->query('tab', 'workspace'); // workspace | available
-
-        $globalBrands  = GlobalBrand::where('is_active', true)->orderBy('name')->get();
+        // Brands are platform-managed and auto-activated for every dealer.
+        // There's no workspace/available split anymore — just one list of
+        // everything the dealer has access to. Tabs + activation UI gone
+        // 2026-05-23.
         $companyBrands = CompanyBrand::orderBy('name')->get();
 
-        // Index of globals that are activated AND still active. Deactivated
-        // copies should appear under "Available" again so the dealer can
-        // re-add them via Activate, rather than being hidden under a stale
-        // "Already in your workspace" pill.
-        $activatedGlobalIds = $companyBrands
-            ->where('source', CompanyBrand::SOURCE_GLOBAL)
-            ->where('is_active', true)
-            ->pluck('global_brand_id')
-            ->filter()
-            ->all();
-
         return view('catalogue.brands', [
-            'tab'                 => $tab,
-            'globalBrands'        => $globalBrands,
-            'companyBrands'       => $companyBrands,
-            'activatedGlobalIds'  => $activatedGlobalIds,
+            'companyBrands' => $companyBrands,
         ]);
     }
 
