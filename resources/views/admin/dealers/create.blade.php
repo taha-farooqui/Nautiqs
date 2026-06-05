@@ -41,18 +41,8 @@
                     <input type="email" name="admin_email" required maxlength="255" value="{{ old('admin_email') }}"
                         class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Password') }}</label>
-                    <input type="password" name="password" autocomplete="new-password"
-                        class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />
-                    <p class="text-[11px] text-gray-500 mt-1">{{ __('Optional. Leave blank — the dealer sets their own password via the setup link. If you set one, share it securely (never by email).') }}</p>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Confirm password') }}</label>
-                    <input type="password" name="password_confirmation" autocomplete="new-password"
-                        class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />
-                </div>
             </div>
+            <p class="text-[11px] text-gray-500 mt-2">{{ __('The dealer sets their own password via the secure setup link below.') }}</p>
 
             <label class="mt-4 flex items-start gap-3 cursor-pointer">
                 <input type="hidden" name="send_setup_link" value="0" />

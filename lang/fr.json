@@ -864,6 +864,7 @@
     ":name created — but the setup email failed to send. Ask them to use “Forgot password” on the login page.": ":name créé — mais l'envoi de l'e-mail de configuration a échoué. Demandez-leur d'utiliser « Mot de passe oublié » sur la page de connexion.",
     ":name created — share the password you set with :email securely.": ":name créé — partagez de façon sécurisée le mot de passe que vous avez défini avec :email.",
     ":name created — ask :email to use “Forgot password” on the login page to set their password.": ":name créé — demandez à :email d'utiliser « Mot de passe oublié » sur la page de connexion pour définir son mot de passe.",
+    "The dealer sets their own password via the secure setup link below.": "La concession définit son propre mot de passe via le lien de configuration sécurisé ci-dessous.",
     "Send account setup email": "Envoyer l'e-mail de configuration du compte",
     "Emails the dealer a secure link to set their own password — no password is ever sent. The link expires in 60 minutes; they can request a new one with “Forgot password”.": "Envoie à la concession un lien sécurisé pour définir son propre mot de passe — aucun mot de passe n'est jamais envoyé. Le lien expire après 60 minutes ; un nouveau peut être demandé via « Mot de passe oublié ».",
     "Welcome to Nautiqs": "Bienvenue sur Nautiqs",

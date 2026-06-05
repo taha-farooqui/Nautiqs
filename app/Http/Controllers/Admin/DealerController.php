@@ -16,7 +16,6 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password as PasswordBroker;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rules\Password;
 
 /**
  * Spec §4.3 — superadmin dealer (tenant) management. List all subscribing
@@ -106,21 +105,13 @@ class DealerController extends Controller
             'company_name'    => 'required|string|max:150',
             'admin_name'      => 'required|string|max:255',
             'admin_email'     => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class.',email'],
-            // Optional: the superadmin can set a password to share out of band,
-            // but the recommended path is to leave it blank and let the dealer
-            // set their own via the emailed setup link. We never email a
-            // readable password.
-            'password'        => ['nullable', 'confirmed', Password::min(8)],
             'send_setup_link' => 'nullable|boolean',
         ]);
 
-        $hasManualPassword = filled($data['password'] ?? null);
-
-        // Always store a hashed password so the account is valid. When the
-        // superadmin leaves the field blank we mint a strong random one that
-        // is never shown or sent anywhere — the dealer sets a real password
-        // through the setup link (or "Forgot password").
-        $plainPassword = $hasManualPassword ? $data['password'] : Str::password(24);
+        // The superadmin never sets a password. We mint a strong random one
+        // so the account hash is valid, but it is never shown or sent — the
+        // dealer sets their own via the setup link (or "Forgot password").
+        $plainPassword = Str::password(24);
 
         $user = User::create([
             'name'              => $data['admin_name'],
@@ -167,8 +158,6 @@ class DealerController extends Controller
             $statusKey = ':name created — an account setup link was emailed to :email.';
         } elseif ($emailError) {
             $statusKey = ':name created — but the setup email failed to send. Ask them to use “Forgot password” on the login page.';
-        } elseif ($hasManualPassword) {
-            $statusKey = ':name created — share the password you set with :email securely.';
         } else {
             $statusKey = ':name created — ask :email to use “Forgot password” on the login page to set their password.';
         }
