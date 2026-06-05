@@ -97,8 +97,21 @@
 
 <table class="qoptions">
     <tr class="cat-row"><td colspan="4">{{ __('Base boat') }}</td></tr>
+    @php
+        // Avoid "Sun Odyssey 410 — Sun Odyssey 410 — Standard": if the variant
+        // name already contains the model name, show the variant alone.
+        $bModel   = $quote->model_snapshot['name'] ?? '';
+        $bVariant = $quote->variant_snapshot['name'] ?? '';
+        if ($bVariant === '') {
+            $baseLabel = $bModel;
+        } elseif ($bModel !== '' && stripos($bVariant, $bModel) !== false) {
+            $baseLabel = $bVariant;
+        } else {
+            $baseLabel = trim($bModel . ' — ' . $bVariant, ' —');
+        }
+    @endphp
     <tr class="item-row">
-        <td><span class="qopt-name">{{ $quote->model_snapshot['name'] ?? '' }} — {{ $quote->variant_snapshot['name'] ?? '' }}</span></td>
+        <td><span class="qopt-name">{{ $baseLabel }}</span></td>
         <td class="qopt-qty" style="width:12mm;">1</td>
         <td class="qopt-unit" style="width:30mm;">€{{ number_format($t['base_price_gross'] ?? 0, 2, ',', ' ') }}</td>
         <td class="qopt-total" style="width:32mm;">€{{ number_format($t['base_ht'] ?? 0, 2, ',', ' ') }}</td>

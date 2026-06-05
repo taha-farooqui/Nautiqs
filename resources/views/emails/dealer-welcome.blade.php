@@ -15,7 +15,7 @@
             <p style="margin: 0 0 16px;">{{ __('Hello :name,', ['name' => $user->name]) }}</p>
 
             <p style="margin: 0 0 16px;">
-                {{ __('Your dealership account for :company is ready on Nautiqs. You can log in straight away with the credentials below.', [
+                {{ __('Your dealership account for :company is ready on Nautiqs. To get started, set your password using the secure link below.', [
                     'company' => $companyName,
                 ]) }}
             </p>
@@ -25,16 +25,12 @@
                     <td style="padding: 12px 14px; font-size: 12px; color: #6b7280; width: 110px;">{{ __('Email') }}</td>
                     <td style="padding: 12px 14px; font-size: 14px; font-weight: 600;">{{ $user->email }}</td>
                 </tr>
-                <tr>
-                    <td style="padding: 12px 14px; font-size: 12px; color: #6b7280; border-top: 1px solid #e5e7eb;">{{ __('Password') }}</td>
-                    <td style="padding: 12px 14px; font-size: 14px; font-weight: 600; font-family: 'Courier New', monospace; border-top: 1px solid #e5e7eb;">{{ $password }}</td>
-                </tr>
             </table>
 
             <p style="margin: 0 0 24px; text-align: center;">
-                <a href="{{ $loginUrl }}"
+                <a href="{{ $setupUrl }}"
                    style="display: inline-block; padding: 12px 28px; background: #0e4f79; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 14px;">
-                    {{ __('Log in to Nautiqs') }}
+                    {{ __('Set up your password') }}
                 </a>
             </p>
 
@@ -42,12 +38,12 @@
                 {{ __('Or copy this link into your browser:') }}
             </p>
             <p style="margin: 0 0 24px; font-size: 12px; color: #6b7280; word-break: break-all;">
-                {{ $loginUrl }}
+                {{ $setupUrl }}
             </p>
 
             <p style="margin: 0 0 8px; font-size: 13px; color: #b45309; background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px; padding: 10px 12px;">
-                <strong>{{ __('Security tip:') }}</strong>
-                {{ __('Change this password from your profile after your first sign-in.') }}
+                <strong>{{ __('Heads up:') }}</strong>
+                {{ __('This setup link expires in 60 minutes. If it has expired, use “Forgot password” on the login page to get a new one.') }}
             </p>
 
             <p style="margin: 16px 0 0; font-size: 12px; color: #9ca3af;">

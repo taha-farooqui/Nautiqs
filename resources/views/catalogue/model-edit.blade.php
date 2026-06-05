@@ -51,7 +51,9 @@
          boat + versions + options (custom & library) + equipment.
          ════════════════════════════════════════════════════════════════ --}}
     <form method="POST" action="{{ route('catalogue.models.store') }}"
-          x-data="boatCreator()" class="space-y-4">
+          x-data="boatCreator()"
+          @input="if ($event.target.name === 'name') boatName = $event.target.value"
+          class="space-y-4">
         @csrf
 
         <div x-data="{ tab: 'boat' }">
@@ -91,12 +93,12 @@
                             <div class="md:col-span-5">
                                 <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Version name') }} *</label>
                                 <input type="text" :name="`versions[${i}][name]`" x-model="v.name"
-                                    placeholder="e.g. 2x 200HP" required
+                                    placeholder="e.g. 2x 200HP"
                                     class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
                             </div>
                             <div class="md:col-span-2">
                                 <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Public HT') }} *</label>
-                                <input type="number" step="0.01" min="0" :name="`versions[${i}][base_price]`" x-model="v.base_price" required
+                                <input type="number" step="0.01" min="0" :name="`versions[${i}][base_price]`" x-model="v.base_price"
                                     class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
                             </div>
                             <div class="md:col-span-2">
@@ -261,18 +263,18 @@
                         <div class="border border-gray-200 rounded-lg p-3 mb-2 grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
                             <div class="md:col-span-3">
                                 <label class="block text-xs font-medium text-gray-700 mb-1">Category *</label>
-                                <input type="text" :name="`new_options[${i}][category]`" x-model="o.category" required
+                                <input type="text" :name="`new_options[${i}][category]`" x-model="o.category"
                                     placeholder="e.g. Electronics"
                                     class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
                             </div>
                             <div class="md:col-span-4">
                                 <label class="block text-xs font-medium text-gray-700 mb-1">Label *</label>
-                                <input type="text" :name="`new_options[${i}][label]`" x-model="o.label" required
+                                <input type="text" :name="`new_options[${i}][label]`" x-model="o.label"
                                     class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
                             </div>
                             <div class="md:col-span-2">
                                 <label class="block text-xs font-medium text-gray-700 mb-1">Public HT *</label>
-                                <input type="number" step="0.01" min="0" :name="`new_options[${i}][price]`" x-model="o.price" required
+                                <input type="number" step="0.01" min="0" :name="`new_options[${i}][price]`" x-model="o.price"
                                     class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
                             </div>
                             <div class="md:col-span-2">
@@ -299,8 +301,9 @@
             {{-- Single global Save button --}}
             <div class="mt-4 flex items-center justify-end gap-2">
                 <a href="{{ route('catalogue.models') }}" class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">Cancel</a>
-                <button type="submit"
-                    class="inline-flex items-center gap-1 px-4 py-2 text-sm font-semibold bg-primary-800 hover:bg-primary-900 text-white rounded-lg">
+                <button type="submit" :disabled="! boatName.trim()"
+                    :title="! boatName.trim() ? '{{ __('Enter a boat name first') }}' : ''"
+                    class="inline-flex items-center gap-1 px-4 py-2 text-sm font-semibold bg-primary-800 hover:bg-primary-900 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed">
                     <i class="ri-save-line"></i> Create boat
                 </button>
             </div>
@@ -925,7 +928,15 @@
             const nextEqId = () => `e${eqIdCounter++}`;
 
             return {
-                versions: [{ name: '', base_price: '', cost: '', currency: 'EUR', equipment: [] }],
+                // Tracks the boat-name field so the "Create boat" button can
+                // stay disabled until a name is entered. Seeded from old()
+                // so it's correct after a validation redirect.
+                boatName: @js(old('name', '')),
+
+                // Start with no versions — a boat can be created with just a
+                // name; versions (and options) are optional and can be added
+                // later from the editor.
+                versions: [],
                 newOptions: [],
 
                 // Equipment modal state — single instance shared across rows.

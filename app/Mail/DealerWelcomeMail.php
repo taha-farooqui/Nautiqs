@@ -12,9 +12,10 @@ use Illuminate\Queue\SerializesModels;
 
 /**
  * Welcome email sent when the superadmin provisions a new dealer and
- * checks "Send credentials by email" on /admin/dealers/create. Carries
- * the plaintext password by necessity — the dealer needs it to log in
- * once. Same visual style as TeamInvitation so the recipient gets a
+ * checks "Send account setup email" on /admin/dealers/create. Carries a
+ * single-use account-setup link (a password-reset token) — NEVER a
+ * readable password — so the dealer chooses their own password on first
+ * use. Same visual style as TeamInvitation so the recipient gets a
  * consistent Nautiqs-branded mail.
  */
 class DealerWelcomeMail extends Mailable
@@ -24,7 +25,7 @@ class DealerWelcomeMail extends Mailable
     public function __construct(
         public Company $company,
         public User $user,
-        public string $password,
+        public string $setupUrl,
     ) {
     }
 
@@ -44,8 +45,7 @@ class DealerWelcomeMail extends Mailable
             with: [
                 'company'     => $this->company,
                 'user'        => $this->user,
-                'password'    => $this->password,
-                'loginUrl'    => route('login'),
+                'setupUrl'    => $this->setupUrl,
                 'companyName' => $this->company->name,
             ],
         );

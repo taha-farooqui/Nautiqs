@@ -183,24 +183,25 @@
     }
     table.qincluded td {
         width: 50%;
-        padding: 1mm 0;
+        padding: 1.4mm 0;
         font-size: 9pt;
         color: #374151;
-        vertical-align: top;
+        vertical-align: middle;
     }
     .qcheck {
         display: inline-block;
-        width: 3.5mm;
-        height: 3.5mm;
-        background: #f0fdf4;
-        border: 0.2mm solid #86efac;
+        width: 3.8mm;
+        height: 3.8mm;
+        background: #16a34a;
+        border: 0.2mm solid #16a34a;
         border-radius: 50%;
         text-align: center;
         font-size: 7pt;
         font-weight: bold;
-        color: #16a34a;
-        line-height: 3.4mm;
-        margin-right: 1.5mm;
+        color: #ffffff;
+        line-height: 3.7mm;
+        margin-right: 2mm;
+        vertical-align: middle;
     }
 
     /* ─────────────────────────────────────────────────────────────────
@@ -229,8 +230,8 @@
     }
     .qopt-name { font-size: 9.5pt; color: #1f2937; }
     .qopt-qty   { font-size: 9pt; color: #9ca3af; text-align: center; }
-    .qopt-unit  { font-size: 9pt; color: #6b7280; text-align: right; }
-    .qopt-total { font-size: 9.5pt; font-weight: bold; color: #1f2937; text-align: right; }
+    .qopt-unit  { font-size: 9pt; color: #6b7280; text-align: right; white-space: nowrap; }
+    .qopt-total { font-size: 9.5pt; font-weight: bold; color: #1f2937; text-align: right; white-space: nowrap; }
     .qopt-total.discount-applied { color: #ea580c; }
     .qopt-strike {
         text-decoration: line-through;
@@ -257,8 +258,8 @@
         border-collapse: collapse;
     }
     table.qbottom td { vertical-align: top; }
-    table.qbottom td.left  { width: 58%; padding-right: 6mm; }
-    table.qbottom td.right { width: 42%; }
+    table.qbottom td.left  { width: 54%; padding-right: 6mm; }
+    table.qbottom td.right { width: 46%; }
 
     .qcond-title {
         font-size: 7.5pt;
@@ -319,8 +320,10 @@
         border-bottom: 0.2mm solid #e5e7eb;
     }
     table.qtotals tr:last-child td { border-bottom: none; }
-    table.qtotals td.label { color: #4b5563; }
-    table.qtotals td.val   { text-align: right; font-weight: bold; color: #1f2937; }
+    /* Keep labels and amounts each on a single line — large totals like
+       "€383 316,00" must never break across two lines. */
+    table.qtotals td.label { color: #4b5563; white-space: nowrap; }
+    table.qtotals td.val   { text-align: right; font-weight: bold; color: #1f2937; white-space: nowrap; }
 
     table.qtotals .row-white td { background: #ffffff; }
     table.qtotals .row-discount td.label { color: #9ca3af; }

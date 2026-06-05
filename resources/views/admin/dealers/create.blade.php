@@ -42,26 +42,26 @@
                         class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Password') }} <span class="text-red-500">*</span></label>
-                    <input type="password" name="password" required
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Password') }}</label>
+                    <input type="password" name="password" autocomplete="new-password"
                         class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />
-                    <p class="text-[11px] text-gray-500 mt-1">{{ __('At least 8 characters. Share securely with the dealer.') }}</p>
+                    <p class="text-[11px] text-gray-500 mt-1">{{ __('Optional. Leave blank — the dealer sets their own password via the setup link. If you set one, share it securely (never by email).') }}</p>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Confirm password') }} <span class="text-red-500">*</span></label>
-                    <input type="password" name="password_confirmation" required
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Confirm password') }}</label>
+                    <input type="password" name="password_confirmation" autocomplete="new-password"
                         class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />
                 </div>
             </div>
 
             <label class="mt-4 flex items-start gap-3 cursor-pointer">
-                <input type="hidden" name="send_credentials" value="0" />
-                <input type="checkbox" name="send_credentials" value="1"
-                    {{ old('send_credentials', '0') === '1' ? 'checked' : '' }}
+                <input type="hidden" name="send_setup_link" value="0" />
+                <input type="checkbox" name="send_setup_link" value="1"
+                    {{ old('send_setup_link', '1') === '1' ? 'checked' : '' }}
                     class="mt-0.5 rounded border-gray-300 text-primary-800 focus:ring-primary-800" />
                 <span>
-                    <span class="block text-sm font-medium text-gray-900">{{ __('Send credentials by email') }}</span>
-                    <span class="block text-[11px] text-gray-500 mt-0.5">{{ __('Emails the dealer their login URL, email and password using the Nautiqs welcome template. Off by default — you can also share the password manually.') }}</span>
+                    <span class="block text-sm font-medium text-gray-900">{{ __('Send account setup email') }}</span>
+                    <span class="block text-[11px] text-gray-500 mt-0.5">{{ __('Emails the dealer a secure link to set their own password — no password is ever sent. The link expires in 60 minutes; they can request a new one with “Forgot password”.') }}</span>
                 </span>
             </label>
         </div>

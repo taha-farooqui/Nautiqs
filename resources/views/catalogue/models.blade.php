@@ -76,7 +76,7 @@
                     @foreach ($rows as $r)
                         @php
                             $v = $r['variant']; $m = $r['model']; $b = $r['brand'];
-                            $ttc = $v->base_price * (1 + ($v->vat_rate ?? 20) / 100);
+                            $ttc = $v ? $v->base_price * (1 + ($v->vat_rate ?? 20) / 100) : null;
                         @endphp
                         <tr class="hover:bg-gray-50 cursor-pointer"
                             data-href="{{ route('catalogue.models.edit', $m?->_id) }}"
@@ -84,9 +84,13 @@
                             <td class="px-5 py-3 font-medium text-gray-900">{{ $b?->name ?? '—' }}</td>
                             <td class="px-5 py-3">
                                 <p class="font-medium text-gray-900">{{ $m?->name ?? '—' }}{{ $m?->complement ? ' ' . $m->complement : '' }}</p>
-                                <p class="text-xs text-gray-500">{{ $v->name }}</p>
+                                @if ($v)
+                                    <p class="text-xs text-gray-500">{{ $v->name }}</p>
+                                @else
+                                    <p class="text-xs text-amber-600 italic">{{ __('No versions yet') }}</p>
+                                @endif
                             </td>
-                            <td class="px-5 py-3 text-right font-semibold text-gray-900">€{{ number_format($ttc, 0, ',', ' ') }}</td>
+                            <td class="px-5 py-3 text-right font-semibold text-gray-900">{{ $ttc !== null ? '€' . number_format($ttc, 0, ',', ' ') : '—' }}</td>
                             <td class="px-5 py-3 text-xs text-gray-500">{{ $m?->updated_at?->diffForHumans() ?? '—' }}</td>
                             <td class="px-5 py-3 text-right">
                                 <a href="{{ route('catalogue.models.edit', $m?->_id) }}"

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Mail\DealerWelcomeMail;
 use App\Models\Client;
 use App\Models\Company;
 use App\Models\Quote;
@@ -11,6 +12,10 @@ use App\Services\AuditLogger;
 use App\Services\CompanyProvisioner;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Password as PasswordBroker;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 
 /**
@@ -98,17 +103,29 @@ class DealerController extends Controller
     public function store(Request $request, CompanyProvisioner $provisioner)
     {
         $data = $request->validate([
-            'company_name'     => 'required|string|max:150',
-            'admin_name'       => 'required|string|max:255',
-            'admin_email'      => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class.',email'],
-            'password'         => ['required', 'confirmed', Password::min(8)],
-            'send_credentials' => 'nullable|boolean',
+            'company_name'    => 'required|string|max:150',
+            'admin_name'      => 'required|string|max:255',
+            'admin_email'     => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class.',email'],
+            // Optional: the superadmin can set a password to share out of band,
+            // but the recommended path is to leave it blank and let the dealer
+            // set their own via the emailed setup link. We never email a
+            // readable password.
+            'password'        => ['nullable', 'confirmed', Password::min(8)],
+            'send_setup_link' => 'nullable|boolean',
         ]);
+
+        $hasManualPassword = filled($data['password'] ?? null);
+
+        // Always store a hashed password so the account is valid. When the
+        // superadmin leaves the field blank we mint a strong random one that
+        // is never shown or sent anywhere — the dealer sets a real password
+        // through the setup link (or "Forgot password").
+        $plainPassword = $hasManualPassword ? $data['password'] : Str::password(24);
 
         $user = User::create([
             'name'              => $data['admin_name'],
             'email'             => $data['admin_email'],
-            'password'          => Hash::make($data['password']),
+            'password'          => Hash::make($plainPassword),
             'role'              => User::ROLE_TENANT_ADMIN,
             'company_id'        => null,
             'email_verified_at' => now(),   // superadmin-created = trusted, skip verification
@@ -122,31 +139,39 @@ class DealerController extends Controller
             after: ['company_name' => $data['company_name'], 'admin_email' => $data['admin_email']],
             targetLabel: $company->name);
 
-        // Optional welcome email with the credentials. Wrapped in a
-        // try/catch so a Brevo outage doesn't 500 the whole dealer-
-        // create flow — the dealer can always be reached out of band.
-        $emailSent = false;
+        // Optional account-setup email. Instead of a readable password we send
+        // a single-use password-setup link (a password-reset token via the
+        // standard broker), so the dealer chooses their own password. Wrapped
+        // in a try/catch so a mail outage doesn't 500 the create flow.
+        $sendSetup  = (bool) ($data['send_setup_link'] ?? false);
+        $emailSent  = false;
         $emailError = null;
-        if ((bool) ($data['send_credentials'] ?? false)) {
+        if ($sendSetup) {
             try {
-                \Illuminate\Support\Facades\Mail::to($data['admin_email'])
-                    ->send(new \App\Mail\DealerWelcomeMail($company, $user, $data['password']));
+                $token = PasswordBroker::broker()->createToken($user);
+                $setupUrl = route('password.reset', ['token' => $token, 'email' => $user->email]);
+
+                Mail::to($user->email)->send(new DealerWelcomeMail($company, $user, $setupUrl));
                 $emailSent = true;
             } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::warning('Dealer welcome email failed', [
+                Log::warning('Dealer setup email failed', [
                     'company_id' => (string) $company->_id,
-                    'to'         => $data['admin_email'],
+                    'to'         => $user->email,
                     'error'      => $e->getMessage(),
                 ]);
                 $emailError = $e->getMessage();
             }
         }
 
-        $statusKey = $emailSent
-            ? ':name created — credentials emailed to :email.'
-            : ($emailError
-                ? ':name created — but the welcome email failed to send. Share the password manually.'
-                : ':name created — they can log in with :email.');
+        if ($emailSent) {
+            $statusKey = ':name created — an account setup link was emailed to :email.';
+        } elseif ($emailError) {
+            $statusKey = ':name created — but the setup email failed to send. Ask them to use “Forgot password” on the login page.';
+        } elseif ($hasManualPassword) {
+            $statusKey = ':name created — share the password you set with :email securely.';
+        } else {
+            $statusKey = ':name created — ask :email to use “Forgot password” on the login page to set their password.';
+        }
 
         return redirect()->route('admin.dealers.show', $company->_id)
             ->with('status', __($statusKey, [

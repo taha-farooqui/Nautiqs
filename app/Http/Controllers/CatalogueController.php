@@ -247,8 +247,16 @@ class CatalogueController extends Controller
             ->when($brandFilter, fn ($c) => $c->where('_id', $brandFilter))
             ->pluck('_id')->map(fn ($i) => (string) $i)->all();
 
-        $models = CompanyBoatModel::whereIn('company_brand_id', $brandIds)
-            ->where('is_archived', false)
+        $models = CompanyBoatModel::where('is_archived', false)
+            ->where(function ($q) use ($brandIds, $brandFilter) {
+                $q->whereIn('company_brand_id', $brandIds);
+                // Boats created with just a name (no brand yet) still belong
+                // to the dealer (tenant-scoped) — surface them under "All
+                // brands" so they're not invisible after creation.
+                if (! $brandFilter) {
+                    $q->orWhereNull('company_brand_id')->orWhere('company_brand_id', '');
+                }
+            })
             ->orderBy('name')
             ->get();
 
@@ -271,6 +279,20 @@ class CatalogueController extends Controller
                 'brand'   => $brand,
             ];
         });
+
+        // Models that have no version yet still get one row, so a boat
+        // created with only a name is visible and editable from the list.
+        $modelsWithVariants = $variants
+            ->pluck('company_model_id')->map(fn ($i) => (string) $i)->unique()->all();
+        $versionlessRows = $models
+            ->reject(fn ($m) => in_array((string) $m->_id, $modelsWithVariants, true))
+            ->map(fn ($m) => [
+                'variant' => null,
+                'model'   => $m,
+                'brand'   => $brandsById[(string) $m->company_brand_id] ?? null,
+            ])
+            ->values();
+        $rows = $rows->concat($versionlessRows);
 
         return view('catalogue.models', [
             'tab'            => 'workspace',
@@ -522,7 +544,9 @@ class CatalogueController extends Controller
     public function storeModel(Request $request)
     {
         $data = $request->validate([
-            'company_brand_id'    => 'required',
+            // Brand is optional at creation: a dealer can save a boat with
+            // just its name and fill in the brand / versions / options later.
+            'company_brand_id'    => 'nullable',
             'code'                => 'nullable|string|max:60',
             'internal_code'       => 'nullable|string|max:60',
             'name'                => 'required|string|max:200',
@@ -569,7 +593,11 @@ class CatalogueController extends Controller
         // Inline picker may have handed us a `global:<id>` reference; swap
         // it for a real CompanyBrand id, activating the global brand into
         // the workspace if this is the first time the dealer's used it.
-        $data['company_brand_id'] = $this->resolveBrandId($data['company_brand_id']);
+        // When left blank the boat is saved brandless and can be assigned a
+        // brand later from the editor.
+        $data['company_brand_id'] = filled($data['company_brand_id'] ?? null)
+            ? $this->resolveBrandId($data['company_brand_id'])
+            : null;
 
         // Pull nested arrays out of the boat payload before persisting.
         $versions       = $data['versions'] ?? [];
