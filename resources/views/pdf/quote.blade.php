@@ -45,7 +45,7 @@
         <td style="width:45%; text-align:right;">
             <div class="qhead-doctype">{{ __('Quotation') }}</div>
             <div class="qhead-ref">{{ $quote->number }}</div>
-            <div class="qhead-date">{{ $quote->created_at?->translatedFormat('F j, Y') }}</div>
+            <div class="qhead-date">{{ $quote->created_at?->format('d/m/Y') }}</div>
         </td>
     </tr>
 </table>

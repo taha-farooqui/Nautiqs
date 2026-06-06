@@ -409,4 +409,6 @@
     .qfooter .legal { float: left; max-width: 70%; line-height: 1.5; }
     .qfooter .page  { float: right; }
     .qfooter:after  { content: ''; display: block; clear: both; }
+    /* DomPDF fills these counters per rendered page (current / total). */
+    .qfooter .pagenum:after { content: counter(page) " / " counter(pages); }
 </style>

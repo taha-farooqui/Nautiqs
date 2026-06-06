@@ -36,7 +36,7 @@
         <td style="width:45%; text-align:right;">
             <div class="qhead-doctype">{{ __('Order confirmation') }}</div>
             <div class="qhead-ref">{{ $quote->order_confirmation_number }}</div>
-            <div class="qhead-date">{{ $confirmDate?->translatedFormat('F j, Y') }}</div>
+            <div class="qhead-date">{{ $confirmDate?->format('d/m/Y') }}</div>
             <div class="qhead-validity">{{ __('Linked quote') }} {{ $quote->number }}</div>
         </td>
     </tr>
@@ -85,7 +85,7 @@
         </td>
         <td style="width:40%; text-align:right;">
             <div class="qboat-spec">{{ __('Confirmation date') }}</div>
-            <div class="qboat-spec-value">{{ $confirmDate?->translatedFormat('F j, Y') }}</div>
+            <div class="qboat-spec-value">{{ $confirmDate?->format('d/m/Y') }}</div>
         </td>
     </tr>
 </table>
@@ -148,7 +148,7 @@
         <td class="left">
             <div class="qcond-title">{{ __('Order details') }}</div>
             <table class="qcond">
-                <tr><td class="label">{{ __('Confirmed on') }}</td><td class="val">{{ $confirmDate?->translatedFormat('F j, Y') }}</td></tr>
+                <tr><td class="label">{{ __('Confirmed on') }}</td><td class="val">{{ $confirmDate?->format('d/m/Y') }}</td></tr>
                 <tr><td class="label">{{ __('Linked quote') }}</td><td class="val">{{ $quote->number }}</td></tr>
                 <tr><td class="label">{{ __('Payment') }}</td><td class="val">{{ __('As agreed in the quote') }}</td></tr>
                 <tr><td class="label">{{ __('Delivery') }}</td><td class="val">{{ __('8 to 12 weeks depending on availability') }}</td></tr>
