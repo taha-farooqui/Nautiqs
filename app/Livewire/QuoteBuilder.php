@@ -74,10 +74,12 @@ class QuoteBuilder extends Component
     // §15 Multi-currency
     public ?float $exchange_rate = null;
 
-    // VAT + display mode. Nullable so Livewire can hold a cleared field
-    // (it sends "" → null) instead of throwing a TypeError on a typed float.
-    // A blank rate is treated as 0% wherever it's consumed.
-    public ?float $vat_rate = 20.0;
+    // VAT + display mode. Intentionally UNtyped: a typed float can't hold the
+    // empty string Livewire sends when the field is cleared (it 500s, and a
+    // nullable float silently keeps the old value). As a plain property it
+    // holds "" on clear, and vatRateValue() coerces a blank/null rate to 0
+    // so an empty VAT field means 0%, not the 20% default.
+    public $vat_rate = 20.0;
     public string $display_mode = 'TTC';
     // Off by default — when on, each option's individual VAT rate (from
     // the TVA column at import) is applied per line instead of the
@@ -390,6 +392,19 @@ class QuoteBuilder extends Component
         $this->custom_items = array_values($this->custom_items);
     }
 
+    /**
+     * Effective quote-wide VAT rate. A blank field (empty string or null)
+     * means 0%, not the 20% default — only a real number is applied.
+     */
+    private function vatRateValue(): float
+    {
+        if ($this->vat_rate === '' || $this->vat_rate === null) {
+            return 0.0;
+        }
+
+        return (float) $this->vat_rate;
+    }
+
     #[Computed]
     public function totals()
     {
@@ -478,7 +493,7 @@ class QuoteBuilder extends Component
             'options_discount_pct' => $this->options_discount_pct,
             'global_discount_pct'  => $this->global_discount_pct,
             'trade_in_value'       => $this->hasTradeIn ? (float) $this->trade_in_value : 0,
-            'vat_rate'             => (float) ($this->vat_rate ?? 0),
+            'vat_rate'             => $this->vatRateValue(),
             'per_option_vat'       => $this->per_option_vat,
         ], $company);
     }
@@ -570,7 +585,7 @@ class QuoteBuilder extends Component
             // fetched in totals()). null when the quote was 100% EUR.
             'exchange_rate'       => $totals['fx_rate_used'] ?? $this->exchange_rate,
             'exchange_rate_date'  => ($totals['fx_rate_used'] ?? $this->exchange_rate) ? now() : null,
-            'vat_rate'            => (float) ($this->vat_rate ?? 0),
+            'vat_rate'            => $this->vatRateValue(),
             'per_option_vat'      => (bool) $this->per_option_vat,
             'display_mode'        => $this->display_mode,
             'totals'              => $totals,
