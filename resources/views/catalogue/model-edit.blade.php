@@ -34,13 +34,15 @@
 
     <div class="mb-4 flex items-center gap-3 text-sm text-gray-500">
         <a href="{{ route('catalogue.models') }}" class="hover:text-primary-800">
-            <i class="ri-arrow-left-line"></i> Back to catalogue
+            <i class="ri-arrow-left-line"></i> {{ __('Back to catalogue') }}
         </a>
         @if (! $isNew)
             <span>·</span>
             <span class="font-mono px-1.5 py-0.5 rounded bg-gray-100 text-gray-700">{{ $model->code }}</span>
-            @if ($model->source === 'private')
-                <span class="px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 text-[11px] font-semibold">Private</span>
+            @if ($variants->isEmpty())
+                <span class="px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 text-[11px] font-semibold">{{ __('Draft') }}</span>
+            @else
+                <span class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 text-[11px] font-semibold">{{ __('Active') }}</span>
             @endif
         @endif
     </div>
@@ -62,18 +64,18 @@
                 <button type="button" @click="tab = 'boat'"
                     :class="tab === 'boat' ? 'border-primary-800 text-primary-900' : 'border-transparent text-gray-500 hover:text-gray-900'"
                     class="px-4 py-2.5 text-sm font-semibold border-b-2 transition whitespace-nowrap">
-                    <i class="ri-sailboat-line"></i> Boat
+                    <i class="ri-sailboat-line"></i> {{ __('Boat') }}
                 </button>
                 <button type="button" @click="tab = 'versions'"
                     :class="tab === 'versions' ? 'border-primary-800 text-primary-900' : 'border-transparent text-gray-500 hover:text-gray-900'"
                     class="px-4 py-2.5 text-sm font-semibold border-b-2 transition whitespace-nowrap">
-                    <i class="ri-list-check-2"></i> Versions
+                    <i class="ri-list-check-2"></i> {{ __('Versions') }}
                     <span class="text-xs text-gray-400">(<span x-text="versions.length"></span>)</span>
                 </button>
                 <button type="button" @click="tab = 'options'"
                     :class="tab === 'options' ? 'border-primary-800 text-primary-900' : 'border-transparent text-gray-500 hover:text-gray-900'"
                     class="px-4 py-2.5 text-sm font-semibold border-b-2 transition whitespace-nowrap">
-                    <i class="ri-add-circle-line"></i> Options
+                    <i class="ri-add-circle-line"></i> {{ __('Options') }}
                 </button>
             </div>
 
@@ -84,8 +86,8 @@
 
             {{-- Versions tab — Alpine repeater --}}
             <section x-show="tab === 'versions'" x-cloak class="bg-white rounded-2xl border border-gray-200 p-6">
-                <h2 class="text-base font-semibold text-gray-900 mb-1">Versions</h2>
-                <p class="text-xs text-gray-500 mb-4">A version is a specific configuration (e.g. "2× 200HP"). Add at least one so you can sell this boat.</p>
+                <h2 class="text-base font-semibold text-gray-900 mb-1">{{ __('Versions') }}</h2>
+                <p class="text-xs text-gray-500 mb-4">{{ __('A version is a specific configuration (e.g. "2× 200HP"). Add at least one so you can sell this boat.') }}</p>
 
                 <template x-for="(v, i) in versions" :key="i">
                     <div class="border border-gray-200 rounded-lg p-3 mb-3">
@@ -231,54 +233,32 @@
 
             {{-- Options tab --}}
             <section x-show="tab === 'options'" x-cloak class="space-y-4">
-                {{-- Library picker (checkboxes -> library_option_ids[]) --}}
+                {{-- Custom options repeater. (Importing from a file is offered
+                     once the boat is saved, in the editor's Options tab.) --}}
                 <div class="bg-white rounded-2xl border border-gray-200 p-5">
-                    <h3 class="text-sm font-semibold text-gray-900 mb-1">Pick from library</h3>
-                    <p class="text-xs text-gray-500 mb-3">Tick options to add to this boat. You can adjust prices later.</p>
-                    <div class="max-h-72 overflow-y-auto border border-gray-200 rounded-lg divide-y divide-gray-100">
-                        @foreach ($libraryOptions->groupBy('category') as $category => $items)
-                            <div>
-                                <div class="px-3 py-2 bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-600">{{ $category }}</div>
-                                @foreach ($items as $opt)
-                                    <label class="flex items-center justify-between gap-3 px-3 py-2 hover:bg-gray-50 cursor-pointer">
-                                        <div class="flex items-center gap-2 min-w-0">
-                                            <input type="checkbox" name="library_option_ids[]" value="{{ $opt->_id }}"
-                                                class="rounded border-gray-300 text-primary-800 focus:ring-primary-800" />
-                                            <span class="text-sm text-gray-900 truncate">{{ $opt->label }}</span>
-                                        </div>
-                                        <span class="text-sm text-gray-700 font-semibold whitespace-nowrap">€{{ number_format($opt->price, 0, ',', ' ') }}</span>
-                                    </label>
-                                @endforeach
-                            </div>
-                        @endforeach
-                    </div>
-                </div>
-
-                {{-- Custom options repeater --}}
-                <div class="bg-white rounded-2xl border border-gray-200 p-5">
-                    <h3 class="text-sm font-semibold text-gray-900 mb-1">Custom options</h3>
-                    <p class="text-xs text-gray-500 mb-3">Anything not in the library — add your own.</p>
+                    <h3 class="text-sm font-semibold text-gray-900 mb-1">{{ __('Custom options') }}</h3>
+                    <p class="text-xs text-gray-500 mb-3">{{ __('Anything not in the library — add your own.') }}</p>
 
                     <template x-for="(o, i) in newOptions" :key="i">
                         <div class="border border-gray-200 rounded-lg p-3 mb-2 grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
                             <div class="md:col-span-3">
-                                <label class="block text-xs font-medium text-gray-700 mb-1">Category *</label>
+                                <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Category') }} *</label>
                                 <input type="text" :name="`new_options[${i}][category]`" x-model="o.category"
-                                    placeholder="e.g. Electronics"
+                                    placeholder="{{ __('e.g. Electronics') }}"
                                     class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
                             </div>
                             <div class="md:col-span-4">
-                                <label class="block text-xs font-medium text-gray-700 mb-1">Label *</label>
+                                <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Label') }} *</label>
                                 <input type="text" :name="`new_options[${i}][label]`" x-model="o.label"
                                     class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
                             </div>
                             <div class="md:col-span-2">
-                                <label class="block text-xs font-medium text-gray-700 mb-1">Public HT *</label>
+                                <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Public HT') }} *</label>
                                 <input type="number" step="0.01" min="0" :name="`new_options[${i}][price]`" x-model="o.price"
                                     class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
                             </div>
                             <div class="md:col-span-2">
-                                <label class="block text-xs font-medium text-gray-700 mb-1">Cost</label>
+                                <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Cost') }}</label>
                                 <input type="number" step="0.01" min="0" :name="`new_options[${i}][cost]`" x-model="o.cost"
                                     class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
                             </div>
@@ -293,18 +273,18 @@
 
                     <button type="button" @click="addOption()"
                         class="text-sm font-medium text-primary-800 hover:underline mt-2">
-                        <i class="ri-add-line"></i> Add custom option
+                        <i class="ri-add-line"></i> {{ __('Add custom option') }}
                     </button>
                 </div>
             </section>
 
             {{-- Single global Save button --}}
             <div class="mt-4 flex items-center justify-end gap-2">
-                <a href="{{ route('catalogue.models') }}" class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">Cancel</a>
+                <a href="{{ route('catalogue.models') }}" class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">{{ __('Cancel') }}</a>
                 <button type="submit" :disabled="! boatName.trim()"
                     :title="! boatName.trim() ? '{{ __('Enter a boat name first') }}' : ''"
                     class="inline-flex items-center gap-1 px-4 py-2 text-sm font-semibold bg-primary-800 hover:bg-primary-900 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed">
-                    <i class="ri-save-line"></i> Create boat
+                    <i class="ri-save-line"></i> {{ __('Create boat') }}
                 </button>
             </div>
         </div>
@@ -321,17 +301,17 @@
             <button type="button" @click="tab = 'boat'"
                 :class="tab === 'boat' ? 'border-primary-800 text-primary-900' : 'border-transparent text-gray-500 hover:text-gray-900'"
                 class="px-4 py-2.5 text-sm font-semibold border-b-2 transition whitespace-nowrap">
-                <i class="ri-sailboat-line"></i> Boat
+                <i class="ri-sailboat-line"></i> {{ __('Boat') }}
             </button>
             <button type="button" @click="tab = 'versions'"
                 :class="tab === 'versions' ? 'border-primary-800 text-primary-900' : 'border-transparent text-gray-500 hover:text-gray-900'"
                 class="px-4 py-2.5 text-sm font-semibold border-b-2 transition whitespace-nowrap">
-                <i class="ri-list-check-2"></i> Versions <span class="text-xs text-gray-400">({{ $variants->count() }})</span>
+                <i class="ri-list-check-2"></i> {{ __('Versions') }} <span class="text-xs text-gray-400">({{ $variants->count() }})</span>
             </button>
             <button type="button" @click="tab = 'options'"
                 :class="tab === 'options' ? 'border-primary-800 text-primary-900' : 'border-transparent text-gray-500 hover:text-gray-900'"
                 class="px-4 py-2.5 text-sm font-semibold border-b-2 transition whitespace-nowrap">
-                <i class="ri-add-circle-line"></i> Options <span class="text-xs text-gray-400">({{ $options->count() }})</span>
+                <i class="ri-add-circle-line"></i> {{ __('Options') }} <span class="text-xs text-gray-400">({{ $options->count() }})</span>
             </button>
         </div>
 
@@ -345,20 +325,20 @@
 
                 <div class="flex justify-end pt-2 border-t border-gray-100">
                     <button class="inline-flex items-center gap-1 px-4 py-2 text-sm font-semibold bg-primary-800 hover:bg-primary-900 text-white rounded-lg">
-                        <i class="ri-save-line"></i> Save boat
+                        <i class="ri-save-line"></i> {{ __('Save boat') }}
                     </button>
                 </div>
             </form>
 
             @if ($model->source === 'private')
                 <div class="bg-white rounded-2xl border border-red-200 p-5">
-                    <p class="text-sm text-gray-600 mb-3">Delete this boat and all its versions/options. Existing quotes are preserved (snapshots).</p>
+                    <p class="text-sm text-gray-600 mb-3">{{ __('Delete this boat and all its versions/options. Existing quotes are preserved (snapshots).') }}</p>
                     <form method="POST" action="{{ route('catalogue.models.destroy', $model->_id) }}"
                         data-confirm="{{ __('Delete') }} «{{ $model->name }}»?"
                         data-confirm-danger="1">
                         @csrf @method('DELETE')
                         <button class="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium bg-red-50 hover:bg-red-100 text-red-700 rounded-lg">
-                            <i class="ri-delete-bin-line"></i> Delete boat
+                            <i class="ri-delete-bin-line"></i> {{ __('Delete boat') }}
                         </button>
                     </form>
                 </div>
@@ -736,11 +716,11 @@
 
             {{-- Per-boat options list --}}
             <div class="bg-white rounded-2xl border border-gray-200 p-6">
-                <h2 class="text-base font-semibold text-gray-900 mb-4">Options on this boat</h2>
+                <h2 class="text-base font-semibold text-gray-900 mb-4">{{ __('Options on this boat') }}</h2>
                 @if ($options->isEmpty())
-                    <p class="text-sm text-gray-500 italic mb-4">No options yet — pick from the library above or add a custom one below.</p>
+                    <p class="text-sm text-gray-500 italic mb-4">{{ __('No options yet — import a file or add a custom one below.') }}</p>
                 @else
-                    <p class="text-xs text-gray-500 mb-3"><i class="ri-drag-move-2-line"></i> Drag the handle on the left to reorder. Order is saved automatically.</p>
+                    <p class="text-xs text-gray-500 mb-3"><i class="ri-drag-move-2-line"></i> {{ __('Drag the handle on the left to reorder. Order is saved automatically.') }}</p>
                     <div
                         x-data="optionsSortable('{{ route('catalogue.options.reorder', $model->_id) }}')"
                         x-init="init($el)"
@@ -757,12 +737,12 @@
                                         </span>
                                     </div>
                                     <div class="md:col-span-3">
-                                        <label class="block text-xs font-medium text-gray-700 mb-1">Category</label>
+                                        <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Category') }}</label>
                                         <input type="text" name="category" value="{{ $o->category }}" required
                                             class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
                                     </div>
                                     <div class="md:col-span-4">
-                                        <label class="block text-xs font-medium text-gray-700 mb-1">Label</label>
+                                        <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Label') }}</label>
                                         <input type="text" name="label" value="{{ $o->label }}" required
                                             class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
                                     </div>
@@ -822,28 +802,28 @@
 
                 <div x-data="{ open: false }" class="border-t border-gray-100 pt-4">
                     <button type="button" @click="open = !open" class="text-sm font-medium text-primary-800 hover:underline">
-                        <i class="ri-add-line"></i> Add custom option
+                        <i class="ri-add-line"></i> {{ __('Add custom option') }}
                     </button>
                     <form x-show="open" x-cloak method="POST" action="{{ route('catalogue.options.store', $model->_id) }}"
                         class="mt-3 grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
                         @csrf
                         <div class="md:col-span-3">
-                            <label class="block text-xs font-medium text-gray-700 mb-1">Category *</label>
-                            <input type="text" name="category" required placeholder="e.g. Electronics"
+                            <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Category') }} *</label>
+                            <input type="text" name="category" required placeholder="{{ __('e.g. Electronics') }}"
                                 class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
                         </div>
                         <div class="md:col-span-4">
-                            <label class="block text-xs font-medium text-gray-700 mb-1">Label *</label>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Label') }} *</label>
                             <input type="text" name="label" required
                                 class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
                         </div>
                         <div class="md:col-span-2">
-                            <label class="block text-xs font-medium text-gray-700 mb-1">Public HT *</label>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Public HT') }} *</label>
                             <input type="number" step="0.01" min="0" name="price" required
                                 class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
                         </div>
                         <div class="md:col-span-2">
-                            <label class="block text-xs font-medium text-gray-700 mb-1">Cost</label>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Cost') }}</label>
                             <input type="number" step="0.01" min="0" name="cost"
                                 class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
                         </div>
@@ -909,7 +889,7 @@
                         let item = await res.json();
                         this.select(item);
                     } catch (e) {
-                        alert('Could not add the brand. Try again or refresh the page.');
+                        alert('{{ __('Could not add the brand. Try again or refresh the page.') }}');
                     } finally {
                         this.adding = false;
                     }

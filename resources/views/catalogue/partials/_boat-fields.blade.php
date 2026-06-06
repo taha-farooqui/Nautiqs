@@ -11,16 +11,16 @@
         <input type="checkbox" name="is_active" value="1"
             @checked(old('is_active', $model->is_active ?? true))
             class="rounded border-gray-300 text-primary-800 focus:ring-primary-800" />
-        <span class="text-sm font-medium text-gray-700">Active</span>
+        <span class="text-sm font-medium text-gray-700">{{ __('Active') }}</span>
     </label>
-    <span class="text-xs text-gray-500">Visible in the quote builder when checked.</span>
+    <span class="text-xs text-gray-500">{{ __('Visible in the quote builder when checked.') }}</span>
 </div>
 
 {{-- Brand typeahead --}}
 <div>
     <div x-data="brandTypeahead({{ Js::from((string) ($model->company_brand_id ?? '')) }}, {{ Js::from($model->brand?->name ?? '') }})"
          x-init="init()" class="relative">
-        <label class="block text-sm font-medium text-gray-700 mb-1">Brand <span class="text-red-500">*</span></label>
+        <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Brand') }} <span class="text-red-500">*</span></label>
         <input type="hidden" name="company_brand_id" :value="selectedId" />
 
         <div class="relative">
@@ -29,7 +29,7 @@
                 @keydown.arrow-down.prevent="cursor = Math.min(cursor + 1, results.length - 1)"
                 @keydown.arrow-up.prevent="cursor = Math.max(cursor - 1, -1)"
                 @keydown.enter.prevent="if (cursor >= 0) select(results[cursor])"
-                placeholder="Type to search brands…"
+                placeholder="{{ __('Type to search brands…') }}"
                 class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800 pr-9" />
             <i class="ri-search-line absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
         </div>
@@ -46,25 +46,25 @@
             </template>
             <template x-if="results.length === 0 && query.length > 0">
                 <div class="px-3 py-3 text-sm">
-                    <p class="text-gray-500">No brand matches «<span class="font-semibold" x-text="query"></span>».</p>
+                    <p class="text-gray-500">{{ __('No brand matches') }} «<span class="font-semibold" x-text="query"></span>».</p>
                 </div>
             </template>
         </div>
 
-        <p class="text-xs mt-1" x-show="selectedId" x-cloak><span class="text-emerald-700">✓ Brand selected.</span></p>
+        <p class="text-xs mt-1" x-show="selectedId" x-cloak><span class="text-emerald-700">✓ {{ __('Brand selected.') }}</span></p>
         <x-input-error :messages="$errors->get('company_brand_id')" class="mt-1" />
     </div>
 </div>
 
 <div>
-    <label class="block text-sm font-medium text-gray-700 mb-1">Model name <span class="text-red-500">*</span></label>
+    <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Model name') }} <span class="text-red-500">*</span></label>
     <input type="text" name="name" required value="{{ old('name', $model->name ?? '') }}"
-        placeholder="e.g. 60 OPEN LINE"
+        placeholder="{{ __('e.g. 60 OPEN LINE') }}"
         class="w-full max-w-xl rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />
 </div>
 
 <div class="max-w-xs">
-    <label class="block text-sm font-medium text-gray-700 mb-1">Default margin (%)</label>
+    <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Default margin (%)') }}</label>
     <input type="number" step="0.1" min="0" max="100" name="default_margin_pct"
         value="{{ old('default_margin_pct', $model->default_margin_pct ?? '') }}"
         class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />

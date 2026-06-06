@@ -67,6 +67,7 @@
                     <tr>
                         <th class="px-5 py-3 font-semibold">{{ __('Brand') }}</th>
                         <th class="px-5 py-3 font-semibold">{{ __('Model') }}</th>
+                        <th class="px-5 py-3 font-semibold">{{ __('Status') }}</th>
                         <th class="px-5 py-3 font-semibold text-right">{{ __('From TTC') }}</th>
                         <th class="px-5 py-3 font-semibold">{{ __('Updated') }}</th>
                         <th class="px-5 py-3"></th>
@@ -88,6 +89,17 @@
                                     <p class="text-xs text-gray-500">{{ $v->name }}</p>
                                 @else
                                     <p class="text-xs text-amber-600 italic">{{ __('No versions yet') }}</p>
+                                @endif
+                            </td>
+                            <td class="px-5 py-3">
+                                @if ($v)
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[11px] font-semibold">
+                                        <i class="ri-checkbox-circle-fill"></i> {{ __('Active') }}
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-[11px] font-semibold">
+                                        <i class="ri-draft-line"></i> {{ __('Draft') }}
+                                    </span>
                                 @endif
                             </td>
                             <td class="px-5 py-3 text-right font-semibold text-gray-900">{{ $ttc !== null ? '€' . number_format($ttc, 0, ',', ' ') : '—' }}</td>

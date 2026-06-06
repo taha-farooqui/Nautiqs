@@ -209,79 +209,9 @@ class CatalogueController extends Controller
             return ['variant' => $v, 'model' => $model, 'brand' => $brand];
         });
 
-        return view('catalogue.models', [
-            'rows'        => $rows,
-            'brands'      => $companyBrandsActive,
-            'brandFilter' => $brandFilter,
-        ]);
-    }
-
-    /**
-     * Number of active, reachable variants in the dealer's workspace —
-     * variants that are visible in their quote builder.
-     */
-    private function countWorkspaceVariants(): int
-    {
-        $activeBrandIds = CompanyBrand::where('is_active', true)
-            ->get(['_id'])->pluck('_id')->map(fn ($i) => (string) $i)->all();
-
-        $activeModelIds = CompanyBoatModel::whereIn('company_brand_id', $activeBrandIds)
-            ->where('is_archived', false)
-            ->get(['_id'])->pluck('_id')->map(fn ($i) => (string) $i)->all();
-
-        return CompanyBoatVariant::whereIn('company_model_id', $activeModelIds)
-            ->where('is_active', true)
-            ->where('is_archived', false)
-            ->count();
-    }
-
-    private function renderWorkspaceTab($globalBrands, ?string $brandFilter, int $workspaceCount)
-    {
-        // Brands the dealer has activated (regardless of is_active so we
-        // can show deactivated rows greyed-out, but not in their builder).
-        $companyBrands = CompanyBrand::orderBy('name')->get();
-
-        $companyBrandsActive = $companyBrands->where('is_active', true);
-
-        $brandIds = $companyBrandsActive
-            ->when($brandFilter, fn ($c) => $c->where('_id', $brandFilter))
-            ->pluck('_id')->map(fn ($i) => (string) $i)->all();
-
-        $models = CompanyBoatModel::where('is_archived', false)
-            ->where(function ($q) use ($brandIds, $brandFilter) {
-                $q->whereIn('company_brand_id', $brandIds);
-                // Boats created with just a name (no brand yet) still belong
-                // to the dealer (tenant-scoped) — surface them under "All
-                // brands" so they're not invisible after creation.
-                if (! $brandFilter) {
-                    $q->orWhereNull('company_brand_id')->orWhere('company_brand_id', '');
-                }
-            })
-            ->orderBy('name')
-            ->get();
-
-        $modelIds = $models->pluck('_id')->map(fn ($i) => (string) $i)->all();
-        $variants = CompanyBoatVariant::whereIn('company_model_id', $modelIds)
-            ->where('is_archived', false)
-            ->orderBy('name')
-            ->get();
-
-        $brandsById = $companyBrandsActive->keyBy(fn ($b) => (string) $b->_id);
-        $modelsById = $models->keyBy(fn ($m) => (string) $m->_id);
-
-        // Flat rows: one row per variant (table view).
-        $rows = $variants->map(function ($v) use ($brandsById, $modelsById) {
-            $model = $modelsById[(string) $v->company_model_id] ?? null;
-            $brand = $model ? ($brandsById[(string) $model->company_brand_id] ?? null) : null;
-            return [
-                'variant' => $v,
-                'model'   => $model,
-                'brand'   => $brand,
-            ];
-        });
-
-        // Models that have no version yet still get one row, so a boat
-        // created with only a name is visible and editable from the list.
+        // Boats with no version yet still get one row so they appear in the
+        // catalogue as "Draft". A boat is Draft until its first version is
+        // added (the list derives the status from whether a variant exists).
         $modelsWithVariants = $variants
             ->pluck('company_model_id')->map(fn ($i) => (string) $i)->unique()->all();
         $versionlessRows = $models
@@ -295,73 +225,9 @@ class CatalogueController extends Controller
         $rows = $rows->concat($versionlessRows);
 
         return view('catalogue.models', [
-            'tab'            => 'workspace',
-            'rows'           => $rows,
-            'brands'         => $companyBrandsActive->values(),
-            'globalBrands'   => $globalBrands,
-            'brandFilter'    => $brandFilter,
-            'totalModels'    => $models->count(),
-            'workspaceCount' => $workspaceCount,
-        ]);
-    }
-
-    private function renderAvailableTab($globalBrands, ?string $brandFilter, int $workspaceCount)
-    {
-        $models = GlobalBoatModel::where('is_archived', false)
-            ->when($brandFilter, fn ($q) => $q->where('brand_id', $brandFilter))
-            ->orderBy('name')
-            ->get();
-
-        $modelIds = $models->pluck('_id')->map(fn ($i) => (string) $i)->all();
-        $variants = GlobalBoatVariant::whereIn('model_id', $modelIds)
-            ->where('is_archived', false)
-            ->orderBy('name')
-            ->get();
-
-        $brandsById = $globalBrands->keyBy(fn ($b) => (string) $b->_id);
-        $modelsById = $models->keyBy(fn ($m) => (string) $m->_id);
-
-        // Which global variants are already activated AND still reachable in
-        // the dealer's workspace? A variant counts as activated only when:
-        //   - its own is_active=true and is_archived=false
-        //   - its parent company brand is also is_active=true
-        // Deactivating a brand on the Brands page should re-expose its
-        // variants in Available so they can be pulled back in.
-        // NB: Laravel-Mongodb's query-builder ->pluck('_id') returns NULLs;
-        // hydrate the models first, then pluck on the collection.
-        $activeBrandIds = CompanyBrand::where('is_active', true)
-            ->get(['_id'])->pluck('_id')->map(fn ($i) => (string) $i)->all();
-
-        $activeModelIds = CompanyBoatModel::whereIn('company_brand_id', $activeBrandIds)
-            ->where('is_archived', false)
-            ->get(['_id'])->pluck('_id')->map(fn ($i) => (string) $i)->all();
-
-        $activatedVariantIds = CompanyBoatVariant::whereNotNull('global_variant_id')
-            ->whereIn('company_model_id', $activeModelIds)
-            ->where('is_active', true)
-            ->where('is_archived', false)
-            ->pluck('global_variant_id')
-            ->all();
-
-        $rows = $variants->map(function ($v) use ($brandsById, $modelsById) {
-            $model = $modelsById[(string) $v->model_id] ?? null;
-            $brand = $model ? ($brandsById[(string) $model->brand_id] ?? null) : null;
-            return [
-                'variant' => $v,
-                'model'   => $model,
-                'brand'   => $brand,
-            ];
-        });
-
-        return view('catalogue.models', [
-            'tab'                 => 'available',
-            'rows'                => $rows,
-            'brands'              => $globalBrands,
-            'globalBrands'        => $globalBrands,
-            'brandFilter'         => $brandFilter,
-            'totalModels'         => $models->count(),
-            'activatedVariantIds' => $activatedVariantIds,
-            'workspaceCount'      => $workspaceCount,
+            'rows'        => $rows,
+            'brands'      => $companyBrandsActive,
+            'brandFilter' => $brandFilter,
         ]);
     }
 

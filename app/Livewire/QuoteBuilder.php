@@ -74,8 +74,10 @@ class QuoteBuilder extends Component
     // §15 Multi-currency
     public ?float $exchange_rate = null;
 
-    // VAT + display mode
-    public float $vat_rate = 20.0;
+    // VAT + display mode. Nullable so Livewire can hold a cleared field
+    // (it sends "" → null) instead of throwing a TypeError on a typed float.
+    // A blank rate is treated as 0% wherever it's consumed.
+    public ?float $vat_rate = 20.0;
     public string $display_mode = 'TTC';
     // Off by default — when on, each option's individual VAT rate (from
     // the TVA column at import) is applied per line instead of the
@@ -175,10 +177,26 @@ class QuoteBuilder extends Component
     public function models()
     {
         if (! $this->brand_id) return collect();
-        return CompanyBoatModel::where('company_brand_id', $this->brand_id)
+
+        $models = CompanyBoatModel::where('company_brand_id', $this->brand_id)
             ->where('is_archived', false)
             ->orderBy('name')
             ->get();
+
+        // Only "Active" boats are sellable: a boat with no selectable version
+        // is a Draft and must not appear in the quote builder. (Status is
+        // derived from whether the model has any active, non-archived variant.)
+        $sellableModelIds = CompanyBoatVariant::whereIn(
+                'company_model_id',
+                $models->pluck('_id')->map(fn ($i) => (string) $i)->all()
+            )
+            ->where('is_active', true)
+            ->where('is_archived', false)
+            ->pluck('company_model_id')->map(fn ($i) => (string) $i)->unique()->all();
+
+        return $models
+            ->filter(fn ($m) => in_array((string) $m->_id, $sellableModelIds, true))
+            ->values();
     }
 
     #[Computed]
@@ -460,7 +478,7 @@ class QuoteBuilder extends Component
             'options_discount_pct' => $this->options_discount_pct,
             'global_discount_pct'  => $this->global_discount_pct,
             'trade_in_value'       => $this->hasTradeIn ? (float) $this->trade_in_value : 0,
-            'vat_rate'             => $this->vat_rate,
+            'vat_rate'             => (float) ($this->vat_rate ?? 0),
             'per_option_vat'       => $this->per_option_vat,
         ], $company);
     }
@@ -552,7 +570,7 @@ class QuoteBuilder extends Component
             // fetched in totals()). null when the quote was 100% EUR.
             'exchange_rate'       => $totals['fx_rate_used'] ?? $this->exchange_rate,
             'exchange_rate_date'  => ($totals['fx_rate_used'] ?? $this->exchange_rate) ? now() : null,
-            'vat_rate'            => (float) $this->vat_rate,
+            'vat_rate'            => (float) ($this->vat_rate ?? 0),
             'per_option_vat'      => (bool) $this->per_option_vat,
             'display_mode'        => $this->display_mode,
             'totals'              => $totals,
