@@ -208,6 +208,9 @@ Route::middleware(['auth', 'verified', 'maintenance'])->group(function () {
     // against any future {engine} route binding on the same prefix.
     Route::get('/engines/template', [EngineController::class, 'template'])->name('engines.template');
     Route::post('/engines/import',  [EngineController::class, 'import'])->name('engines.import');
+    // Declared before the resource so DELETE /engines/bulk isn't captured by
+    // the {engine} destroy binding.
+    Route::delete('/engines/bulk', [EngineController::class, 'bulkDestroy'])->name('engines.bulk-destroy');
     Route::resource('engines', EngineController::class)->except(['show']);
 
     // Inline brand picker for the catalogue form — used by the autocomplete

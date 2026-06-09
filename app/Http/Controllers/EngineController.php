@@ -3,11 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Engine;
-use App\Models\GlobalEngine;
 use App\Services\EngineImporter;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Pagination\Paginator;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class EngineController extends Controller
@@ -16,62 +13,23 @@ class EngineController extends Controller
     {
         $q = trim((string) $request->query('q', ''));
 
-        // Per-dealer engines (private) — same as before.
-        $privateQuery = Engine::query()
+        // Engines are dealer-owned only — each company manages its own list
+        // (added manually or imported). No platform/global library is mixed
+        // in anymore.
+        $query = Engine::query()
             ->where('is_archived', false)
             ->orderBy('brand')->orderBy('code');
 
-        // Platform global engines — visible to every dealer.
-        $globalQuery = GlobalEngine::query()
-            ->where('is_active', true)
-            ->orderBy('brand')->orderBy('code');
-
         if ($q !== '') {
-            $needle = $q;
-            $privateQuery->where(function ($w) use ($needle) {
-                $w->where('brand', 'like', "%{$needle}%")
-                  ->orWhere('code', 'like', "%{$needle}%")
-                  ->orWhere('description', 'like', "%{$needle}%");
-            });
-            $globalQuery->where(function ($w) use ($needle) {
-                $w->where('brand', 'like', "%{$needle}%")
-                  ->orWhere('code', 'like', "%{$needle}%")
-                  ->orWhere('description', 'like', "%{$needle}%");
+            $query->where(function ($w) use ($q) {
+                $w->where('brand', 'like', "%{$q}%")
+                  ->orWhere('code', 'like', "%{$q}%")
+                  ->orWhere('description', 'like', "%{$q}%");
             });
         }
 
-        // Normalise into a single shape so the view can iterate without
-        // caring which collection a row came from.
-        $private = $privateQuery->get()->map(fn ($e) => $this->normalise($e, 'private'));
-        $globals = $globalQuery->get()->map(fn ($e) => $this->normalise($e, 'global'));
-
-        // De-dupe: when the dealer has a private engine that matches a
-        // global one by (brand, code) case-insensitively, the private
-        // copy wins and the global twin is hidden. Without this the list
-        // showed both rows side-by-side — the dealer's editable copy and
-        // the read-only global version — every time they customised one.
-        $privateKeys = $private->map(fn ($e) => mb_strtolower(trim($e->brand) . '|' . trim($e->code)))->all();
-        $globals = $globals->reject(fn ($g) => in_array(
-            mb_strtolower(trim($g->brand) . '|' . trim($g->code)),
-            $privateKeys,
-            true,
-        ));
-
-        $merged = $private
-            ->concat($globals)
-            ->sortBy([['brand','asc'], ['code','asc']])
-            ->values();
-
-        // Manual paginator since we're merging two Eloquent collections.
-        $perPage     = 50;
-        $currentPage = (int) ($request->query('page') ?: 1);
-        $engines     = new LengthAwarePaginator(
-            $merged->forPage($currentPage, $perPage)->values(),
-            $merged->count(),
-            $perPage,
-            $currentPage,
-            ['path' => Paginator::resolveCurrentPath(), 'query' => $request->query()]
-        );
+        $engines = $query->paginate(50)->withQueryString()
+            ->through(fn ($e) => $this->normalise($e, 'private'));
 
         return view('engines.index', compact('engines', 'q'));
     }
@@ -128,6 +86,23 @@ class EngineController extends Controller
         $engine = Engine::findOrFail($id);
         $engine->delete();
         return back()->with('status', __('Engine removed.'));
+    }
+
+    /**
+     * Delete several engines at once from the list's bulk-select toolbar.
+     * The TenantScope on Engine guarantees only the current company's rows
+     * are touched, even if a foreign id is posted.
+     */
+    public function bulkDestroy(Request $request)
+    {
+        $data = $request->validate([
+            'ids'   => 'required|array',
+            'ids.*' => 'string',
+        ]);
+
+        $count = Engine::whereIn('_id', $data['ids'])->delete();
+
+        return back()->with('status', __(':count engine(s) removed.', ['count' => $count]));
     }
 
     private function validated(Request $request): array

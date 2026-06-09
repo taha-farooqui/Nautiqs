@@ -301,26 +301,11 @@ class QuoteBuilder extends Component
     #[Computed]
     public function engines()
     {
-        // Merged engine list = platform-provided global library + this
-        // dealer's private engines. Each row gets a normalised shape so the
-        // view doesn't care about the source. The 'id' is namespaced
-        // ("global:..." vs "private:...") so toggleEngine() can look the
-        // right one back up at save time.
-        $global = \App\Models\GlobalEngine::where('is_active', true)
-            ->orderBy('brand')->orderBy('code')->get()
-            ->map(fn ($e) => (object) [
-                'id'         => 'global:' . (string) $e->_id,
-                'brand'      => $e->brand,
-                'code'       => $e->code,
-                'horsepower' => $e->horsepower,
-                'fuel'       => $e->fuel,
-                'price'      => (float) $e->price,
-                'cost'       => 0.0,
-                'currency'   => $e->currency ?? 'EUR',
-                'source'     => 'library',
-            ]);
-
-        $private = Engine::where('is_archived', false)
+        // Engines are dealer-owned only — the platform global library is no
+        // longer offered. Ids stay namespaced "private:..." so toggleEngine()
+        // and save() resolve them (and so old quotes that still reference a
+        // "global:..." id keep working at save time).
+        $all = Engine::where('is_archived', false)
             ->orderBy('brand')->orderBy('code')->get()
             ->map(fn ($e) => (object) [
                 'id'         => 'private:' . (string) $e->_id,
@@ -332,9 +317,7 @@ class QuoteBuilder extends Component
                 'cost'       => (float) ($e->cost ?? 0),
                 'currency'   => $e->currency ?? 'EUR',
                 'source'     => 'yours',
-            ]);
-
-        $all = $global->concat($private)
+            ])
             ->sortBy(fn ($e) => $e->brand . ' ' . $e->code)
             ->values();
 

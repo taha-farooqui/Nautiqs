@@ -129,31 +129,60 @@
             ctaHref="{{ route('engines.create') }}"
             size="lg" />
     @else
-        <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-            <table class="w-full text-sm">
-                <thead class="bg-gray-50 text-left text-xs uppercase text-gray-500 tracking-wide">
-                    <tr>
-                        <th class="px-5 py-3 font-semibold">{{ __('Brand') }}</th>
-                        <th class="px-5 py-3 font-semibold">{{ __('Code') }}</th>
-                        <th class="px-5 py-3 font-semibold">{{ __('HP') }}</th>
-                        <th class="px-5 py-3 font-semibold text-right">{{ __('Public HT') }}</th>
-                        <th class="px-5 py-3 font-semibold text-right">{{ __('VAT') }}</th>
-                        <th class="px-5 py-3 font-semibold text-right">{{ __('TTC') }}</th>
-                        <th class="px-5 py-3 font-semibold"></th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100">
-                    @foreach ($engines as $engine)
-                        <tr class="hover:bg-gray-50">
-                            <td class="px-5 py-3 font-medium text-gray-900">{{ $engine->brand }}</td>
-                            <td class="px-5 py-3 font-mono text-xs text-gray-700">{{ $engine->code }}</td>
-                            <td class="px-5 py-3 text-gray-700">{{ $engine->horsepower ? number_format($engine->horsepower, 0) . ' ' . __('HP') : '—' }}</td>
-                            <td class="px-5 py-3 text-right font-semibold text-gray-900">€{{ number_format($engine->price, 2, ',', ' ') }}</td>
-                            <td class="px-5 py-3 text-right text-gray-700">{{ number_format($engine->vat_rate, 2) }}%</td>
-                            <td class="px-5 py-3 text-right font-semibold text-gray-900">€{{ number_format($engine->ttc, 2, ',', ' ') }}</td>
-                            <td class="px-5 py-3">
-                                <div class="flex items-center justify-end gap-1">
-                                    @if ($engine->source === 'private')
+        <div x-data="{ selected: [], allIds: {{ Js::from($engines->pluck('id')->values()) }} }">
+            {{-- Bulk actions toolbar — appears once one or more rows are ticked. --}}
+            <div x-show="selected.length > 0" x-cloak
+                class="mb-3 flex items-center justify-between gap-3 rounded-lg border border-primary-200 bg-primary-50/60 px-4 py-2.5">
+                <span class="text-sm font-medium text-primary-900">
+                    <span x-text="selected.length"></span> {{ __('selected') }}
+                </span>
+                <form method="POST" action="{{ route('engines.bulk-destroy') }}"
+                    data-confirm="{{ __('Delete the selected engines?') }}" data-confirm-danger="1">
+                    @csrf @method('DELETE')
+                    <template x-for="id in selected" :key="id">
+                        <input type="hidden" name="ids[]" :value="id" />
+                    </template>
+                    <button type="submit"
+                        class="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-semibold bg-red-600 hover:bg-red-700 text-white rounded-lg">
+                        <i class="ri-delete-bin-line"></i> {{ __('Delete selected') }}
+                    </button>
+                </form>
+            </div>
+
+            <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50 text-left text-xs uppercase text-gray-500 tracking-wide">
+                        <tr>
+                            <th class="px-5 py-3 w-10">
+                                <input type="checkbox" title="{{ __('Select all') }}"
+                                    @change="selected = $event.target.checked ? [...allIds] : []"
+                                    :checked="allIds.length > 0 && selected.length === allIds.length"
+                                    class="rounded border-gray-300 text-primary-800 focus:ring-primary-800" />
+                            </th>
+                            <th class="px-5 py-3 font-semibold">{{ __('Brand') }}</th>
+                            <th class="px-5 py-3 font-semibold">{{ __('Code') }}</th>
+                            <th class="px-5 py-3 font-semibold">{{ __('HP') }}</th>
+                            <th class="px-5 py-3 font-semibold text-right">{{ __('Public HT') }}</th>
+                            <th class="px-5 py-3 font-semibold text-right">{{ __('VAT') }}</th>
+                            <th class="px-5 py-3 font-semibold text-right">{{ __('TTC') }}</th>
+                            <th class="px-5 py-3 font-semibold"></th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        @foreach ($engines as $engine)
+                            <tr class="hover:bg-gray-50" :class="selected.includes('{{ $engine->id }}') ? 'bg-primary-50/40' : ''">
+                                <td class="px-5 py-3">
+                                    <input type="checkbox" x-model="selected" value="{{ $engine->id }}"
+                                        class="rounded border-gray-300 text-primary-800 focus:ring-primary-800" />
+                                </td>
+                                <td class="px-5 py-3 font-medium text-gray-900">{{ $engine->brand }}</td>
+                                <td class="px-5 py-3 font-mono text-xs text-gray-700">{{ $engine->code }}</td>
+                                <td class="px-5 py-3 text-gray-700">{{ $engine->horsepower ? number_format($engine->horsepower, 0) . ' ' . __('HP') : '—' }}</td>
+                                <td class="px-5 py-3 text-right font-semibold text-gray-900">€{{ number_format($engine->price, 2, ',', ' ') }}</td>
+                                <td class="px-5 py-3 text-right text-gray-700">{{ number_format($engine->vat_rate, 2) }}%</td>
+                                <td class="px-5 py-3 text-right font-semibold text-gray-900">€{{ number_format($engine->ttc, 2, ',', ' ') }}</td>
+                                <td class="px-5 py-3">
+                                    <div class="flex items-center justify-end gap-1">
                                         <a href="{{ route('engines.edit', $engine->id) }}"
                                             class="inline-flex items-center justify-center w-8 h-8 text-gray-500 hover:text-primary-800 hover:bg-gray-100 rounded-lg" title="{{ __('Edit') }}">
                                             <i class="ri-pencil-line"></i>
@@ -167,16 +196,14 @@
                                                 <i class="ri-delete-bin-line"></i>
                                             </button>
                                         </form>
-                                    @else
-                                        <span class="text-xs text-gray-400 italic pr-2">{{ __('Read-only') }}</span>
-                                    @endif
-                                </div>
-                            </td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            <div class="mt-4">{{ $engines->links() }}</div>
         </div>
-        <div class="mt-4">{{ $engines->links() }}</div>
     @endif
 </x-app-layout>
