@@ -69,7 +69,12 @@ EXPOSE 8080
 # This lets static files in /public — including /build/* CSS/JS — be served
 # directly without going through the Laravel router (which would 404 them
 # or redirect them to /login).
-CMD php artisan config:cache \
+# Purge the legacy global engine library on boot — engines are dealer-owned
+# only now. `|| true` keeps a transient DB hiccup from ever blocking
+# startup; it's idempotent (deletes 0 rows once the library is empty) and
+# safe to remove once the production DB has been cleaned.
+CMD (php artisan engines:purge-global || true) \
+    && php artisan config:cache \
     && php artisan route:cache \
     && php artisan view:cache \
     && cd public \

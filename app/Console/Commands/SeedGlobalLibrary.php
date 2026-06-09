@@ -2,79 +2,33 @@
 
 namespace App\Console\Commands;
 
-use App\Models\GlobalEngine;
 use App\Models\GlobalEquipment;
 use App\Models\GlobalOptionItem;
 use Illuminate\Console\Command;
 
 /**
- * Idempotently populate the platform-provided global library: engines,
- * equipment, and options that every dealer sees out of the box. Dealers
- * can still add their own (private to them); the boat-editor pickers
- * merge both tiers into one list.
+ * Idempotently populate the platform-provided global library: equipment
+ * and options that every dealer sees out of the box. Dealers can still add
+ * their own (private to them).
+ *
+ * NOTE: engines are intentionally NOT seeded here. Engines are dealer-owned
+ * only — each dealership adds or imports its own — so there is no global
+ * engine library. (Run `engines:purge-global` once to clear any rows left
+ * over from older deploys.)
  *
  * Run after every deploy — duplicates are skipped via natural-key match.
  */
 class SeedGlobalLibrary extends Command
 {
     protected $signature = 'library:seed';
-    protected $description = 'Seed the platform-provided global engines / equipment / options';
+    protected $description = 'Seed the platform-provided global equipment / options';
 
     public function handle(): int
     {
-        $this->seedEngines();
         $this->seedEquipment();
         $this->seedOptions();
         $this->info('Done.');
         return self::SUCCESS;
-    }
-
-    private function seedEngines(): void
-    {
-        $rows = [
-            // Suzuki outboards
-            ['Suzuki','DF140B TL/TX',140,'petrol','In-line 4, 4-stroke',14375,20],
-            ['Suzuki','DF150A TL/TX',150,'petrol','In-line 4, 4-stroke',15862.50,20],
-            ['Suzuki','DF175A TL/TX',175,'petrol','In-line 4, 4-stroke',17254.17,20],
-            ['Suzuki','DF200A TL/TX',200,'petrol','V6, 4-stroke',18212.50,20],
-            ['Suzuki','DF200AP L/X', 200,'petrol','V6, 4-stroke, dual prop',19779.17,20],
-            ['Suzuki','DF250 TX/TXX',250,'petrol','V6, 4-stroke',22391.67,20],
-            ['Suzuki','DF300AP X/XX',300,'petrol','V6, 4-stroke, dual prop',24575,20],
-            ['Suzuki','DF350A X/XX', 350,'petrol','V6, 4-stroke, dual prop',30408.33,20],
-            // Yamaha
-            ['Yamaha','F100 LB',     100,'petrol','In-line 4, 1.8L',9990,20],
-            ['Yamaha','F150 LB',     150,'petrol','In-line 4, 2.7L',15990,20],
-            ['Yamaha','F200 XB',     200,'petrol','In-line 4, 2.8L',19490,20],
-            ['Yamaha','F300 XCB',    300,'petrol','V6, 4.2L',24890,20],
-            ['Yamaha','F425 XTO',    425,'petrol','V8, 5.6L offshore',39990,20],
-            // Mercury Verado
-            ['Mercury','Verado 200 L',200,'petrol','In-line 4, 2.0L SC',18290,20],
-            ['Mercury','Verado 250 L',250,'petrol','V8, 4.6L',22390,20],
-            ['Mercury','Verado 350 XL',350,'petrol','V10, 5.7L',34750,20],
-            ['Mercury','Verado 400 R XL',400,'petrol','V8 4.6L race',41500,20],
-            // Honda
-            ['Honda','BF150 LU',     150,'petrol','In-line 4, 2.4L',14990,20],
-            ['Honda','BF250 XU',     250,'petrol','V6, 3.6L',23250,20],
-            // Volvo Penta inboards (sail / cabin)
-            ['Volvo Penta','D3-200 DPI',200,'diesel','Inline 5, common-rail',34900,20],
-            ['Volvo Penta','D4-320 DPI',320,'diesel','Inline 4, 3.7L',48500,20],
-            ['Volvo Penta','D6-440 DPI',440,'diesel','Inline 6',66500,20],
-            // Tohatsu (compact outboards)
-            ['Tohatsu','MFS40A',     40,'petrol','In-line 3, 0.85L',5490,20],
-            ['Tohatsu','MFS115A',    115,'petrol','In-line 4, 2.1L',11890,20],
-        ];
-        $created = 0;
-        foreach ($rows as [$brand, $code, $hp, $fuel, $desc, $price, $vat]) {
-            $exists = GlobalEngine::where('brand', $brand)->where('code', $code)->exists();
-            if ($exists) continue;
-            GlobalEngine::create([
-                'brand' => $brand, 'code' => $code, 'horsepower' => $hp, 'fuel' => $fuel,
-                'description' => $desc, 'price' => $price, 'vat_rate' => $vat,
-                'currency' => 'EUR', 'is_active' => true,
-            ]);
-            $created++;
-        }
-        $this->info("Engines: {$created} created (" . GlobalEngine::count() . ' total).');
     }
 
     private function seedEquipment(): void
