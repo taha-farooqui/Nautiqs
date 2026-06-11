@@ -16,33 +16,37 @@
         @if ($engine) @method('PATCH') @endif
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
+            {{-- Brand combobox: opens on focus, filters as you type, and lets
+                 you free-type a new brand. Replaces the native <datalist>,
+                 which rendered inconsistently across browsers. --}}
+            <div x-data="{
+                    open: false,
+                    query: @js(old('brand', $engine->brand ?? '')),
+                    brands: @js($brandOptions ?? []),
+                    get filtered() {
+                        const q = this.query.toLowerCase().trim();
+                        return q ? this.brands.filter(b => b.toLowerCase().includes(q)) : this.brands;
+                    },
+                }" class="relative">
                 <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Brand') }} <span class="text-red-500">*</span></label>
-                <input type="text" name="brand" required list="engine-brands"
-                    value="{{ old('brand', $engine->brand ?? '') }}"
+                <input type="text" name="brand" required x-model="query" autocomplete="off"
+                    @focus="open = true" @click="open = true" @input="open = true"
+                    @keydown.escape="open = false"
                     placeholder="Suzuki, Yamaha, Mercury, …"
                     class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />
-                <datalist id="engine-brands">
-                    <option value="Suzuki"></option>
-                    <option value="Yamaha"></option>
-                    <option value="Mercury"></option>
-                    <option value="Honda"></option>
-                    <option value="Tohatsu"></option>
-                    <option value="Volvo Penta"></option>
-                </datalist>
+                <div x-show="open" x-cloak @click.outside="open = false"
+                    class="absolute left-0 right-0 z-30 mt-1 bg-white rounded-lg border border-gray-200 shadow-lg max-h-56 overflow-y-auto">
+                    <template x-for="b in filtered" :key="b">
+                        <button type="button" @click="query = b; open = false"
+                            class="w-full text-left px-3 py-2 text-sm hover:bg-primary-50 hover:text-primary-900"
+                            x-text="b"></button>
+                    </template>
+                    <template x-if="filtered.length === 0">
+                        <div class="px-3 py-2 text-sm text-gray-400 italic">{{ __('Type a new brand') }}</div>
+                    </template>
+                </div>
                 <x-input-error :messages="$errors->get('brand')" class="mt-1" />
             </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Code / SKU') }} <span class="text-red-500">*</span></label>
-                <input type="text" name="code" required
-                    value="{{ old('code', $engine->code ?? '') }}"
-                    placeholder="e.g. DF200A TL/TX"
-                    class="w-full rounded-lg border-gray-300 font-mono text-sm focus:border-primary-800 focus:ring-primary-800" />
-                <x-input-error :messages="$errors->get('code')" class="mt-1" />
-            </div>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Horsepower') }}</label>
                 <input type="number" step="1" min="0" name="horsepower"
@@ -50,6 +54,9 @@
                     placeholder="200"
                     class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />
             </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Currency') }}</label>
                 <select name="currency" class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800">

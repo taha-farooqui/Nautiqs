@@ -14,5 +14,5 @@
 
 <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium {{ $s['classes'] }}">
     <i class="{{ $s['icon'] }}"></i>
-    {{ $s['label'] }}
+    {{ __($s['label']) }}
 </span>

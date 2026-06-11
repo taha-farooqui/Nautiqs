@@ -55,12 +55,13 @@ class EngineController extends Controller
 
     public function create()
     {
-        return view('engines.form', ['engine' => null]);
+        return view('engines.form', ['engine' => null, 'brandOptions' => $this->brandOptions()]);
     }
 
     public function store(Request $request)
     {
         $data = $this->validated($request);
+        $data['code'] = $this->resolveCode($data);
         Engine::create(array_merge($data, [
             'company_id'  => auth()->user()->company_id,
             'is_archived' => false,
@@ -71,7 +72,38 @@ class EngineController extends Controller
     public function edit(string $id)
     {
         $engine = Engine::findOrFail($id);
-        return view('engines.form', compact('engine'));
+        return view('engines.form', ['engine' => $engine, 'brandOptions' => $this->brandOptions()]);
+    }
+
+    /**
+     * Distinct engine brands this dealer already uses, merged with a few
+     * common outboard makes — powers the brand combobox suggestions.
+     */
+    private function brandOptions(): array
+    {
+        return Engine::query()->pluck('brand')
+            ->merge(['Suzuki', 'Yamaha', 'Mercury', 'Honda', 'Tohatsu', 'Volvo Penta', 'Mariner', 'Selva'])
+            ->map(fn ($b) => trim((string) $b))
+            ->filter()
+            ->unique()
+            ->sort()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * The Code / SKU field was removed from the form. Keep a stable, human
+     * code for the dedup key + quote-builder label: derive it from the
+     * horsepower ("200HP") when present, else a generic fallback. Any code
+     * the user (or an import) does provide is respected.
+     */
+    private function resolveCode(array $data): string
+    {
+        if (filled($data['code'] ?? null)) {
+            return $data['code'];
+        }
+        $hp = (int) ($data['horsepower'] ?? 0);
+        return $hp > 0 ? $hp . 'HP' : 'STD';
     }
 
     public function update(string $id, Request $request)
@@ -109,7 +141,7 @@ class EngineController extends Controller
     {
         return $request->validate([
             'brand'       => 'required|string|max:100',
-            'code'        => 'required|string|max:120',
+            'code'        => 'nullable|string|max:120',
             'horsepower'  => 'nullable|numeric|min:0',
             'fuel'        => 'nullable|in:petrol,diesel,electric,unknown',
             'description' => 'nullable|string|max:500',
