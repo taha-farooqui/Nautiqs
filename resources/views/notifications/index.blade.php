@@ -1,4 +1,4 @@
-<x-app-layout title="Notifications" header="Notifications">
+<x-app-layout :title="__('Notifications')" :header="__('Notifications')">
     @php
         $colorMap = [
             'primary' => 'bg-primary-50 text-primary-800',
@@ -14,15 +14,15 @@
         <div class="inline-flex items-center bg-gray-100 rounded-lg p-1 text-sm w-fit">
             <a href="{{ route('notifications.index', ['filter' => 'all']) }}"
                 class="px-4 py-1.5 rounded-md font-medium transition {{ $filter === 'all' ? 'bg-white text-primary-900 shadow-sm' : 'text-gray-600 hover:text-gray-900' }}">
-                All <span class="ml-1 text-xs text-gray-400">({{ $totalCount }})</span>
+                {{ __('All') }} <span class="ml-1 text-xs text-gray-400">({{ $totalCount }})</span>
             </a>
             <a href="{{ route('notifications.index', ['filter' => 'unread']) }}"
                 class="px-4 py-1.5 rounded-md font-medium transition {{ $filter === 'unread' ? 'bg-white text-primary-900 shadow-sm' : 'text-gray-600 hover:text-gray-900' }}">
-                Unread <span class="ml-1 text-xs text-gray-400">({{ $unreadCount }})</span>
+                {{ __('Unread') }} <span class="ml-1 text-xs text-gray-400">({{ $unreadCount }})</span>
             </a>
             <a href="{{ route('notifications.index', ['filter' => 'read']) }}"
                 class="px-4 py-1.5 rounded-md font-medium transition {{ $filter === 'read' ? 'bg-white text-primary-900 shadow-sm' : 'text-gray-600 hover:text-gray-900' }}">
-                Read
+                {{ __('Read') }}
             </a>
         </div>
 
@@ -30,7 +30,7 @@
             <form method="POST" action="{{ route('notifications.read-all') }}">
                 @csrf
                 <button class="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium bg-white border border-gray-300 hover:bg-gray-50 text-gray-800 rounded-lg">
-                    <i class="ri-check-double-line"></i> Mark all read
+                    <i class="ri-check-double-line"></i> {{ __('Mark all read') }}
                 </button>
             </form>
         @endif
@@ -39,8 +39,8 @@
     @if ($notifications->isEmpty())
         <x-app.empty-state
             icon="ri-notification-off-line"
-            title="No notifications"
-            message="You're all caught up. New activity in your workspace will appear here."
+            :title="__('No notifications')"
+            :message="__('You\'re all caught up. New activity in your workspace will appear here.')"
             size="lg" />
     @else
         <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">

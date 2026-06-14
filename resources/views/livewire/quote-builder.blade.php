@@ -248,9 +248,14 @@
                             @foreach ($items as $opt)
                                 @php $oid = (string) $opt->_id; $checked = isset($selectedOptions[$oid]); @endphp
                                 <div class="flex items-center gap-3 p-2 rounded hover:bg-gray-50">
-                                    <input type="checkbox" wire:click="toggleOption('{{ $oid }}')" @checked($checked)
-                                        class="text-primary-800 focus:ring-primary-800 rounded" />
-                                    <div class="flex-1 text-sm text-gray-800">{{ $opt->label }}</div>
+                                    {{-- Whole label area is clickable (not just the box): clicking the
+                                         checkbox OR the option text toggles it. Qty/discount inputs and the
+                                         price sit outside this label so editing them never toggles. --}}
+                                    <label class="flex items-center gap-3 flex-1 min-w-0 cursor-pointer">
+                                        <input type="checkbox" wire:click="toggleOption('{{ $oid }}')" @checked($checked)
+                                            class="text-primary-800 focus:ring-primary-800 rounded shrink-0" />
+                                        <span class="flex-1 text-sm text-gray-800">{{ $opt->label }}</span>
+                                    </label>
                                     @if ($checked)
                                         <input type="number" min="1" value="{{ $selectedOptions[$oid] ?? 1 }}"
                                             wire:model.live.debounce.300ms="selectedOptions.{{ $oid }}"

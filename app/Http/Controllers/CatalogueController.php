@@ -736,6 +736,156 @@ class CatalogueController extends Controller
     }
 
     /**
+     * Bulk "Save versions" from the boat editor's Versions tab. The posted
+     * `versions[]` is the COMPLETE desired list for this model: rows with an
+     * `id` are updated, rows without are created (private), and any existing
+     * variant whose id is absent from the payload is removed (global-sourced
+     * → soft-archived, private → deleted). Existing quotes keep their
+     * snapshots, so removals are safe.
+     */
+    public function syncVariants(string $modelId, Request $request)
+    {
+        $model = CompanyBoatModel::findOrFail($modelId);
+        $data = $request->validate([
+            'versions'               => 'nullable|array',
+            'versions.*.id'          => 'nullable|string',
+            'versions.*.name'        => 'required|string|max:200',
+            'versions.*.base_price'  => 'required|numeric|min:0',
+            'versions.*.cost'        => 'nullable|numeric|min:0',
+            'versions.*.currency'    => 'nullable|in:EUR,USD',
+            'versions.*.equipment'   => 'nullable|array',
+            'versions.*.equipment.*' => 'string|max:200',
+        ]);
+
+        $companyId = auth()->user()->company_id;
+        $keptIds   = [];
+
+        foreach (($data['versions'] ?? []) as $row) {
+            $payload = [
+                'name'               => $row['name'],
+                'base_price'         => (float) $row['base_price'],
+                'cost'               => (float) ($row['cost'] ?? 0),
+                'currency'           => $row['currency'] ?? 'EUR',
+                'included_equipment' => $this->normaliseEquipmentList($row['equipment'] ?? []),
+            ];
+
+            $existing = ! empty($row['id'])
+                ? CompanyBoatVariant::where('_id', $row['id'])->where('company_model_id', $modelId)->first()
+                : null;
+
+            if ($existing) {
+                $existing->update($payload);
+                $keptIds[] = (string) $existing->_id;
+            } else {
+                $created = CompanyBoatVariant::create(array_merge($payload, [
+                    'company_id'        => $companyId,
+                    'company_model_id'  => $modelId,
+                    'global_variant_id' => null,
+                    'source'            => 'private',
+                    'is_active'         => true,
+                    'is_archived'       => false,
+                ]));
+                $keptIds[] = (string) $created->_id;
+            }
+        }
+
+        foreach (CompanyBoatVariant::where('company_model_id', $modelId)->whereNotIn('_id', $keptIds)->get() as $orphan) {
+            if ($orphan->source === 'global') {
+                $orphan->update(['is_archived' => true, 'is_active' => false]);
+            } else {
+                $orphan->delete();
+            }
+        }
+
+        return back()->with('status', __('Versions saved.'));
+    }
+
+    /**
+     * Bulk "Save options" from the boat editor's Options tab. Same sync
+     * semantics as syncVariants. Each row carries a single currency; non-EUR
+     * amounts are converted to EUR via the live FX rate (original kept for
+     * audit), and row order sets `position`.
+     */
+    public function syncOptions(string $modelId, Request $request)
+    {
+        CompanyBoatModel::findOrFail($modelId);
+        $data = $request->validate([
+            'options'            => 'nullable|array',
+            'options.*.id'       => 'nullable|string',
+            'options.*.category' => 'required|string|max:100',
+            'options.*.label'    => 'required|string|max:200',
+            'options.*.price'    => 'required|numeric|min:0',
+            'options.*.cost'     => 'nullable|numeric|min:0',
+            'options.*.currency' => 'nullable|in:EUR,USD',
+        ]);
+
+        $companyId = auth()->user()->company_id;
+        $fx        = app(\App\Services\FxRateService::class);
+        $keptIds   = [];
+
+        foreach (($data['options'] ?? []) as $i => $row) {
+            $priceIn = (float) $row['price'];
+            $costIn  = (float) ($row['cost'] ?? 0);
+            $ccy     = $row['currency'] ?? 'EUR';
+
+            $priceEur = $priceIn;
+            $costEur  = $costIn;
+            $fxRate   = null;
+            if ($ccy !== 'EUR') {
+                $rate = $fx->rate($ccy, 'EUR');
+                if ($rate !== null) {
+                    $priceEur = round($priceIn * $rate, 2);
+                    $costEur  = round($costIn * $rate, 2);
+                    $fxRate   = $rate;
+                }
+            }
+
+            $payload = [
+                'category'                => $row['category'],
+                'label'                   => $row['label'],
+                'price'                   => $priceEur,
+                'cost'                    => $costEur,
+                'currency'                => 'EUR',
+                'original_price'          => $priceIn,
+                'original_price_currency' => $ccy,
+                'original_cost'           => $costIn,
+                'original_cost_currency'  => $ccy,
+                'fx_rate_used'            => $ccy !== 'EUR' ? $fxRate : null,
+                'fx_rate_date'            => $ccy !== 'EUR' ? now() : null,
+                'position'                => $i,
+            ];
+
+            $existing = ! empty($row['id'])
+                ? CompanyOption::where('_id', $row['id'])->where('company_model_id', $modelId)->first()
+                : null;
+
+            if ($existing) {
+                $existing->update($payload);
+                $keptIds[] = (string) $existing->_id;
+            } else {
+                $created = CompanyOption::create(array_merge($payload, [
+                    'company_id'       => $companyId,
+                    'company_model_id' => $modelId,
+                    'global_option_id' => null,
+                    'source'           => 'private',
+                    'is_archived'      => false,
+                ]));
+                $keptIds[] = (string) $created->_id;
+            }
+        }
+
+        foreach (CompanyOption::where('company_model_id', $modelId)->whereNotIn('_id', $keptIds)->get() as $orphan) {
+            if ($orphan->source === 'global') {
+                $orphan->update(['is_archived' => true]);
+            } else {
+                $orphan->delete();
+            }
+        }
+
+        return back()->with('status', __('Options saved.'));
+    }
+
+    /**
      * Brand IDs coming from the inline picker are either:
      *   - a real `CompanyBrand._id` (workspace brand), or
      *   - `global:<GlobalBrand._id>` — meaning the dealer picked a brand

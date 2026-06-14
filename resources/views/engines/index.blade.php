@@ -96,8 +96,8 @@
                             <ul class="space-y-0.5">
                                 <li><span class="font-mono">Brand</span> — {{ __('required') }}</li>
                                 <li><span class="font-mono">Model</span> — {{ __('required, engine code/SKU') }}</li>
-                                <li><span class="font-mono">PA HT</span> — {{ __('optional, purchase cost') }}</li>
                                 <li><span class="font-mono">PV HT</span> — {{ __('required, selling price HT') }}</li>
+                                <li><span class="font-mono">PA HT</span> — {{ __('optional, purchase cost') }}</li>
                                 <li><span class="font-mono">TVA</span> — {{ __('optional, defaults to 20') }}</li>
                             </ul>
                             <p class="text-gray-500 mt-2">{{ __('Rows matching an existing Brand + Model will be updated; the rest will be created.') }}</p>

@@ -258,7 +258,7 @@
                         <h4 class="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">{{ __('Boat') }}</h4>
                         <p class="font-semibold text-gray-900">{{ $quote->model_snapshot['name'] ?? '' }}</p>
                         <p class="text-sm text-gray-700">{{ $quote->variant_snapshot['name'] ?? '' }}</p>
-                        <p class="text-sm text-gray-500">{{ $quote->model_snapshot['brand'] ?? '' }} · {{ $quote->model_snapshot['code'] ?? '' }}</p>
+                        <p class="text-sm text-gray-500">{{ $quote->model_snapshot['brand'] ?? '' }}</p>
                     </div>
                 </div>
             </div>

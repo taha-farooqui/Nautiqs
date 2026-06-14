@@ -16,32 +16,25 @@
         @if ($engine) @method('PATCH') @endif
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {{-- Brand combobox: opens on focus, filters as you type, and lets
-                 you free-type a new brand. Replaces the native <datalist>,
-                 which rendered inconsistently across browsers. --}}
-            <div x-data="{
-                    open: false,
-                    query: @js(old('brand', $engine->brand ?? '')),
-                    brands: @js($brandOptions ?? []),
-                    get filtered() {
-                        const q = this.query.toLowerCase().trim();
-                        return q ? this.brands.filter(b => b.toLowerCase().includes(q)) : this.brands;
-                    },
-                }" class="relative">
+            {{-- Brand picker: same brand source as the boat creator
+                 (catalogue.brands.lookup → workspace + global brands), so
+                 every brand available for boats is available for engines.
+                 Free-typing a brand not in the list is still allowed. --}}
+            <div x-data="engineBrandPicker(@js(old('brand', $engine->brand ?? '')))" class="relative">
                 <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Brand') }} <span class="text-red-500">*</span></label>
                 <input type="text" name="brand" required x-model="query" autocomplete="off"
-                    @focus="open = true" @click="open = true" @input="open = true"
+                    @focus="search()" @input.debounce.200ms="search()"
                     @keydown.escape="open = false"
-                    placeholder="Suzuki, Yamaha, Mercury, …"
+                    placeholder="{{ __('Type to search brands…') }}"
                     class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />
                 <div x-show="open" x-cloak @click.outside="open = false"
                     class="absolute left-0 right-0 z-30 mt-1 bg-white rounded-lg border border-gray-200 shadow-lg max-h-56 overflow-y-auto">
-                    <template x-for="b in filtered" :key="b">
-                        <button type="button" @click="query = b; open = false"
+                    <template x-for="b in results" :key="b.id">
+                        <button type="button" @click="pick(b.name)"
                             class="w-full text-left px-3 py-2 text-sm hover:bg-primary-50 hover:text-primary-900"
-                            x-text="b"></button>
+                            x-text="b.name"></button>
                     </template>
-                    <template x-if="filtered.length === 0">
+                    <template x-if="results.length === 0 && query.length > 0">
                         <div class="px-3 py-2 text-sm text-gray-400 italic">{{ __('Type a new brand') }}</div>
                     </template>
                 </div>
@@ -96,4 +89,34 @@
             </button>
         </div>
     </form>
+
+    @push('scripts')
+    <script>
+        // Brand picker for engines — queries the SAME endpoint the boat
+        // creator uses (catalogue.brands.lookup), so workspace + global
+        // brands appear here too. Stores the chosen brand NAME into the
+        // `brand` field; free-typing a new brand is allowed.
+        function engineBrandPicker(initial) {
+            return {
+                query: initial || '',
+                results: [],
+                open: false,
+                async search() {
+                    this.open = true;
+                    try {
+                        const url = '{{ route('catalogue.brands.lookup') }}?q=' + encodeURIComponent(this.query);
+                        const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+                        this.results = res.ok ? await res.json() : [];
+                    } catch (e) {
+                        this.results = [];
+                    }
+                },
+                pick(name) {
+                    this.query = name;
+                    this.open = false;
+                },
+            };
+        }
+    </script>
+    @endpush
 </x-app-layout>

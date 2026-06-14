@@ -78,9 +78,6 @@
             </div>
             <div class="qboat-variant">
                 {{ $quote->variant_snapshot['name'] ?? '' }}
-                @if (! empty($quote->model_snapshot['code']))
-                    · {{ $quote->model_snapshot['code'] }}
-                @endif
             </div>
         </td>
         <td style="width:40%; text-align:right;">

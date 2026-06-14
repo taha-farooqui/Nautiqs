@@ -20,14 +20,21 @@ use Illuminate\Support\Facades\Log;
 class FxRateService
 {
     private const CACHE_PREFIX = 'fx:rate:';
-    private const CACHE_TTL    = 3600; // 1 hour
+    private const LAST_PREFIX  = 'fx:last:';
+    private const CACHE_TTL    = 86400;        // 1 day — ECB publishes a daily reference rate
+    private const LAST_TTL     = 60 * 60 * 24 * 30; // 30 days — last-known-good fallback
     private const ENDPOINT     = 'https://api.frankfurter.app/latest';
     private const TIMEOUT      = 4;    // seconds — keep imports snappy if the API is slow
 
     /**
      * Return the rate to multiply by to convert `$amount $base` into
-     * `$target`. Returns 1.0 when base === target. Returns null on any
-     * network / parse error.
+     * `$target`. Returns 1.0 when base === target.
+     *
+     * The rate comes from the live ECB feed, refreshed daily. On a network
+     * failure we fall back to the LAST successfully-fetched rate (persisted
+     * for 30 days) rather than a hardcoded 1:1 — so a brief API outage never
+     * silently prices a USD boat as if it were EUR. Returns null only when
+     * the API is down AND we've never fetched this pair before.
      */
     public function rate(string $base, string $target): ?float
     {
@@ -36,7 +43,7 @@ class FxRateService
         if ($base === '' || $target === '') return null;
         if ($base === $target) return 1.0;
 
-        return Cache::remember(self::CACHE_PREFIX . "{$base}:{$target}", self::CACHE_TTL, function () use ($base, $target) {
+        $fresh = Cache::remember(self::CACHE_PREFIX . "{$base}:{$target}", self::CACHE_TTL, function () use ($base, $target) {
             try {
                 $res = Http::timeout(self::TIMEOUT)
                     ->get(self::ENDPOINT, ['from' => $base, 'to' => $target]);
@@ -51,6 +58,18 @@ class FxRateService
                 return null;
             }
         });
+
+        if ($fresh !== null) {
+            // Remember the good value so we can survive a future outage.
+            Cache::put(self::LAST_PREFIX . "{$base}:{$target}", $fresh, self::LAST_TTL);
+            return $fresh;
+        }
+
+        // Fetch failed — don't cache the failure, and fall back to the last
+        // known-good rate if we have one.
+        Cache::forget(self::CACHE_PREFIX . "{$base}:{$target}");
+        $last = Cache::get(self::LAST_PREFIX . "{$base}:{$target}");
+        return is_numeric($last) ? (float) $last : null;
     }
 
     /**

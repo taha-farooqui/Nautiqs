@@ -55,7 +55,7 @@ class EngineController extends Controller
 
     public function create()
     {
-        return view('engines.form', ['engine' => null, 'brandOptions' => $this->brandOptions()]);
+        return view('engines.form', ['engine' => null]);
     }
 
     public function store(Request $request)
@@ -72,23 +72,7 @@ class EngineController extends Controller
     public function edit(string $id)
     {
         $engine = Engine::findOrFail($id);
-        return view('engines.form', ['engine' => $engine, 'brandOptions' => $this->brandOptions()]);
-    }
-
-    /**
-     * Distinct engine brands this dealer already uses, merged with a few
-     * common outboard makes — powers the brand combobox suggestions.
-     */
-    private function brandOptions(): array
-    {
-        return Engine::query()->pluck('brand')
-            ->merge(['Suzuki', 'Yamaha', 'Mercury', 'Honda', 'Tohatsu', 'Volvo Penta', 'Mariner', 'Selva'])
-            ->map(fn ($b) => trim((string) $b))
-            ->filter()
-            ->unique()
-            ->sort()
-            ->values()
-            ->all();
+        return view('engines.form', ['engine' => $engine]);
     }
 
     /**
@@ -166,10 +150,10 @@ class EngineController extends Controller
             $out = fopen('php://output', 'w');
             // BOM so Excel detects UTF-8.
             fwrite($out, "\xef\xbb\xbf");
-            fputcsv($out, ['Brand', 'Model', 'PA HT', 'PV HT', 'TVA']);
-            fputcsv($out, ['Suzuki',  'DF200A TL/TX', 14800, 18500, 20]);
-            fputcsv($out, ['Yamaha',  'F300 NCA',     23100, 28900, 20]);
-            fputcsv($out, ['Mercury', 'Verado 350 XL', 27800, 34750, 20]);
+            fputcsv($out, ['Brand', 'Model', 'PV HT', 'PA HT', 'TVA']);
+            fputcsv($out, ['Suzuki',  'DF200A TL/TX', 18500, 14800, 20]);
+            fputcsv($out, ['Yamaha',  'F300 NCA',     28900, 23100, 20]);
+            fputcsv($out, ['Mercury', 'Verado 350 XL', 34750, 27800, 20]);
             fclose($out);
         }, 200, [
             'Content-Type'        => 'text/csv; charset=UTF-8',

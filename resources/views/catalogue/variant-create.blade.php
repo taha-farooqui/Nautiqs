@@ -1,4 +1,4 @@
-<x-app-layout title="Add variant" header="Add variant">
+<x-app-layout :title="__('Add variant')" :header="__('Add variant')">
 
     @if ($errors->any())
         <div class="mb-4 rounded-lg border border-red-200 bg-red-50 text-red-700 px-4 py-3 text-sm">{{ $errors->first() }}</div>
@@ -6,19 +6,19 @@
 
     <div class="mb-4 flex items-center gap-2 text-sm text-gray-500">
         <a href="{{ route('catalogue.models', ['tab' => 'workspace']) }}" class="hover:text-primary-800">
-            <i class="ri-arrow-left-line"></i> Back to models &amp; variants
+            <i class="ri-arrow-left-line"></i> {{ __('Back to models & variants') }}
         </a>
     </div>
 
     @if ($brands->isEmpty())
         <x-app.empty-state
             icon="ri-building-4-line"
-            title="No brands in your workspace"
-            message="Activate or create a brand first — every variant must belong to a brand and a model."
+            :title="__('No brands in your workspace')"
+            :message="__('Activate or create a brand first — every variant must belong to a brand and a model.')"
             size="lg" />
         <div class="text-center mt-4">
             <a href="{{ route('catalogue.brands') }}" class="inline-flex items-center gap-1 px-4 py-2 text-sm font-semibold bg-primary-800 hover:bg-primary-900 text-white rounded-lg">
-                <i class="ri-arrow-right-line"></i> Go to Brands
+                <i class="ri-arrow-right-line"></i> {{ __('Go to Brands') }}
             </a>
         </div>
     @else
@@ -28,14 +28,14 @@
             class="bg-white rounded-2xl border border-gray-200 p-5 mb-4">
             <h3 class="font-semibold text-gray-900 mb-3 flex items-center gap-2">
                 <span class="w-6 h-6 rounded-full bg-primary-800 text-white text-xs font-bold flex items-center justify-center">1</span>
-                Pick brand
+                {{ __('Pick brand') }}
             </h3>
             <select name="brand" onchange="this.form.submit()"
                 class="w-full max-w-md rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800">
-                <option value="">— Select a brand —</option>
+                <option value="">{{ __('— Select a brand —') }}</option>
                 @foreach ($brands as $b)
                     <option value="{{ $b->_id }}" @selected($brandId === (string) $b->_id)>
-                        {{ $b->name }}{{ $b->source === 'private' ? ' (private)' : '' }}
+                        {{ $b->name }}{{ $b->source === 'private' ? ' ' . __('(private)') : '' }}
                     </option>
                 @endforeach
             </select>
@@ -56,18 +56,18 @@
                 <section class="bg-white rounded-2xl border border-gray-200 p-5">
                     <h3 class="font-semibold text-gray-900 mb-3 flex items-center gap-2">
                         <span class="w-6 h-6 rounded-full bg-primary-800 text-white text-xs font-bold flex items-center justify-center">2</span>
-                        Pick model
+                        {{ __('Pick model') }}
                     </h3>
                     @if ($models->isEmpty())
-                        <p class="text-sm text-gray-500 mb-3">This brand doesn't have any models yet.</p>
+                        <p class="text-sm text-gray-500 mb-3">{{ __("This brand doesn't have any models yet.") }}</p>
                         <a href="{{ route('catalogue.models.create', ['brand' => $brandId]) }}"
                             class="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium bg-white border border-gray-300 hover:bg-gray-50 text-gray-800 rounded-lg">
-                            <i class="ri-add-line"></i> Create a model first
+                            <i class="ri-add-line"></i> {{ __('Create a model first') }}
                         </a>
                     @else
                         <select name="company_model_id" required
                             class="w-full max-w-md rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800">
-                            <option value="">— Select a model —</option>
+                            <option value="">{{ __('— Select a model —') }}</option>
                             @foreach ($models as $m)
                                 <option value="{{ $m->_id }}" @selected(old('company_model_id') === (string) $m->_id)>
                                     {{ $m->name }} ({{ $m->code }})
@@ -82,32 +82,32 @@
                     <section class="bg-white rounded-2xl border border-gray-200 p-5">
                         <h3 class="font-semibold text-gray-900 mb-3 flex items-center gap-2">
                             <span class="w-6 h-6 rounded-full bg-primary-800 text-white text-xs font-bold flex items-center justify-center">3</span>
-                            Variant details
+                            {{ __('Variant details') }}
                         </h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div class="md:col-span-2">
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Variant name <span class="text-red-500">*</span></label>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Variant name') }} <span class="text-red-500">*</span></label>
                                 <input type="text" name="name" required
                                     value="{{ old('name') }}"
-                                    placeholder="e.g. Eagle 10 — 2x 250HP"
+                                    placeholder="{{ __('e.g. Eagle 10 — 2x 250HP') }}"
                                     class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />
                                 <x-input-error :messages="$errors->get('name')" class="mt-1" />
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Base price (excl. VAT) <span class="text-red-500">*</span></label>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Base price (excl. VAT)') }} <span class="text-red-500">*</span></label>
                                 <input type="number" step="0.01" min="0" name="base_price" required
                                     value="{{ old('base_price') }}"
                                     class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />
                                 <x-input-error :messages="$errors->get('base_price')" class="mt-1" />
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Cost</label>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Cost') }}</label>
                                 <input type="number" step="0.01" min="0" name="cost"
                                     value="{{ old('cost') }}"
                                     class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Currency</label>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Currency') }}</label>
                                 <select name="currency" class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800">
                                     <option value="EUR" @selected(old('currency', 'EUR') === 'EUR')>EUR</option>
                                     <option value="USD" @selected(old('currency') === 'USD')>USD</option>
@@ -120,24 +120,24 @@
                     <section class="bg-white rounded-2xl border border-gray-200 p-5">
                         <h3 class="font-semibold text-gray-900 mb-1 flex items-center gap-2">
                             <span class="w-6 h-6 rounded-full bg-primary-800 text-white text-xs font-bold flex items-center justify-center">4</span>
-                            Included equipment
+                            {{ __('Included equipment') }}
                         </h3>
                         <p class="text-sm text-gray-500 mb-3">
-                            Standard items that ship with this variant. Use «free text» for one-off notes (e.g. "preparation included").
+                            {{ __('Standard items that ship with this variant. Use «free text» for one-off notes (e.g. "preparation included").') }}
                         </p>
 
                         <template x-for="(row, i) in equipment" :key="i">
                             <div class="flex items-end gap-2 mb-2">
                                 <div class="flex-1">
                                     <input type="text" :name="`equipment[${i}][label]`" x-model="row.label"
-                                        placeholder="e.g. Bimini top, GPS chartplotter, …"
+                                        placeholder="{{ __('e.g. Bimini top, GPS chartplotter, …') }}"
                                         class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
                                 </div>
                                 <div class="w-40">
                                     <select :name="`equipment[${i}][type]`" x-model="row.type"
                                         class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800">
-                                        <option value="standard">Standard</option>
-                                        <option value="free_text">Free text</option>
+                                        <option value="standard">{{ __('Standard') }}</option>
+                                        <option value="free_text">{{ __('Free text') }}</option>
                                     </select>
                                 </div>
                                 <button type="button" @click="remove(i)"
@@ -149,14 +149,14 @@
 
                         <button type="button" @click="add()"
                             class="text-sm font-medium text-primary-800 hover:underline">
-                            <i class="ri-add-line"></i> Add equipment row
+                            <i class="ri-add-line"></i> {{ __('Add equipment row') }}
                         </button>
                     </section>
 
                     <div class="flex items-center justify-end gap-2">
-                        <a href="{{ route('catalogue.models', ['tab' => 'workspace']) }}" class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">Cancel</a>
+                        <a href="{{ route('catalogue.models', ['tab' => 'workspace']) }}" class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">{{ __('Cancel') }}</a>
                         <button class="inline-flex items-center gap-1 px-4 py-2 text-sm font-semibold bg-primary-800 hover:bg-primary-900 text-white rounded-lg">
-                            <i class="ri-save-line"></i> Add variant
+                            <i class="ri-save-line"></i> {{ __('Add variant') }}
                         </button>
                     </div>
                 @endif

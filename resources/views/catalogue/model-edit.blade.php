@@ -345,170 +345,112 @@
             @endif
         </section>
 
-        {{-- Versions tab --}}
+        {{-- Versions tab — one form, bulk "Save versions" --}}
+        @php
+            $initialVersions = $variants->map(fn ($v) => [
+                'id'         => (string) $v->_id,
+                'name'       => $v->name,
+                'base_price' => (float) $v->base_price,
+                'cost'       => (float) ($v->cost ?? 0),
+                'currency'   => $v->currency ?? 'EUR',
+                'equipment'  => collect($v->included_equipment ?? [])
+                    ->map(fn ($e) => is_array($e) ? ($e['label'] ?? '') : (string) $e)
+                    ->filter()->values()->all(),
+            ])->values();
+        @endphp
         <section x-show="tab === 'versions'" x-cloak class="space-y-4"
-            x-data="variantsEditor()">
+            x-data="versionsBulk(@js($initialVersions))">
             <div class="bg-white rounded-2xl border border-gray-200 p-6">
-                <h2 class="text-base font-semibold text-gray-900 mb-4">{{ __('Versions') }}</h2>
-                @if ($variants->isEmpty())
-                    <p class="text-sm text-gray-500 italic mb-4">{{ __('No versions yet — add the first one below.') }}</p>
-                @else
-                    <div class="space-y-4 mb-6">
-                        @foreach ($variants as $v)
-                            @php
-                                $initialEquipment = collect($v->included_equipment ?? [])
-                                    ->map(fn ($e) => is_array($e) ? ($e['label'] ?? '') : (string) $e)
-                                    ->filter()
-                                    ->values()
-                                    ->all();
-                            @endphp
-                            <div class="border border-gray-200 rounded-lg p-3"
-                                x-data="{ equipment: @js($initialEquipment) }"
-                                x-init="register($el, equipment)">
-                                <form method="POST" action="{{ route('catalogue.variants.update', $v->_id) }}"
-                                    class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
-                                    @csrf @method('PATCH')
-                                    <div class="md:col-span-5">
-                                        <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Version name') }}</label>
-                                        <input type="text" name="name" value="{{ $v->name }}" required
-                                            class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
-                                    </div>
-                                    <div class="md:col-span-2">
-                                        <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Public HT') }}</label>
-                                        <input type="number" step="0.01" min="0" name="base_price" value="{{ $v->base_price }}" required
-                                            class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
-                                    </div>
-                                    <div class="md:col-span-2">
-                                        <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Cost') }}</label>
-                                        <input type="number" step="0.01" min="0" name="cost" value="{{ $v->cost }}"
-                                            class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
-                                    </div>
-                                    <div class="md:col-span-2">
-                                        <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Currency') }}</label>
-                                        <select name="currency" class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800">
-                                            <option value="EUR" @selected($v->currency === 'EUR')>EUR</option>
-                                            <option value="USD" @selected($v->currency === 'USD')>USD</option>
-                                        </select>
-                                    </div>
-                                    <div class="md:col-span-1 flex items-center gap-2 justify-end">
-                                        <button type="submit" class="inline-flex items-center gap-1 px-3 py-2 text-xs font-medium bg-primary-800 hover:bg-primary-900 text-white rounded-lg">
-                                            <i class="ri-save-line"></i>
-                                        </button>
-                                    </div>
+                <h2 class="text-base font-semibold text-gray-900 mb-1">{{ __('Versions') }}</h2>
+                <p class="text-xs text-gray-500 mb-4">{{ __('Add the versions you sell, edit them inline, then click Save versions.') }}</p>
 
-                                    {{-- Equipment hidden inputs are inside the form so they post on Save --}}
-                                    <template x-for="(eq, ei) in equipment" :key="ei + '-' + eq">
-                                        <input type="hidden" name="equipment[]" :value="eq" />
-                                    </template>
-                                </form>
-
-                                {{-- Equipment chips + add button — outside the form so the buttons don't submit it --}}
-                                <div class="mt-3 pt-3 border-t border-gray-100">
-                                    <div class="flex items-center justify-between mb-2">
-                                        <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                                            {{ __('Included equipment') }}
-                                            <span class="text-gray-400 normal-case font-normal">(<span x-text="equipment.length"></span>)</span>
-                                        </p>
-                                        <button type="button" @click="openModalFor($data)"
-                                            class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium bg-primary-50 hover:bg-primary-100 text-primary-800 rounded-lg">
-                                            <i class="ri-add-line"></i> {{ __('Add equipment') }}
-                                        </button>
-                                    </div>
-                                    <div class="flex flex-wrap gap-1.5">
-                                        <template x-for="(eq, ei) in equipment" :key="ei + '-' + eq">
-                                            <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs border border-emerald-200">
-                                                <i class="ri-check-line text-emerald-600"></i>
-                                                <span x-text="eq"></span>
-                                                <button type="button" @click="equipment.splice(ei, 1)"
-                                                    class="opacity-50 hover:opacity-100 text-emerald-700 hover:text-red-600 ml-1">
-                                                    <i class="ri-close-line"></i>
-                                                </button>
-                                            </span>
-                                        </template>
-                                        <template x-if="equipment.length === 0">
-                                            <span class="text-xs text-gray-400 italic">{{ __('No equipment yet.') }}</span>
-                                        </template>
-                                    </div>
+                <form method="POST" action="{{ route('catalogue.variants.sync', $model->_id) }}">
+                    @csrf
+                    <template x-for="(v, i) in versions" :key="i">
+                        <div class="border border-gray-200 rounded-lg p-3 mb-3">
+                            <input type="hidden" :name="`versions[${i}][id]`" :value="v.id" />
+                            <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+                                <div class="md:col-span-5">
+                                    <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Version name') }} *</label>
+                                    <input type="text" :name="`versions[${i}][name]`" x-model="v.name" required
+                                        placeholder="e.g. 2x 200HP"
+                                        class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Public HT') }} *</label>
+                                    <input type="number" step="0.01" min="0" :name="`versions[${i}][base_price]`" x-model="v.base_price" required
+                                        class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Cost') }}</label>
+                                    <input type="number" step="0.01" min="0" :name="`versions[${i}][cost]`" x-model="v.cost"
+                                        class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Currency') }}</label>
+                                    <select :name="`versions[${i}][currency]`" x-model="v.currency"
+                                        class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800">
+                                        <option value="EUR">EUR</option>
+                                        <option value="USD">USD</option>
+                                    </select>
+                                </div>
+                                <div class="md:col-span-1">
+                                    <button type="button" @click="removeVersion(i)"
+                                        class="w-full inline-flex items-center justify-center px-3 py-2 text-xs font-medium bg-red-50 hover:bg-red-100 text-red-700 rounded-lg"
+                                        title="{{ __('Remove') }}">
+                                        <i class="ri-delete-bin-line"></i>
+                                    </button>
                                 </div>
                             </div>
-                            <form method="POST" action="{{ route('catalogue.variants.destroy', $v->_id) }}"
-                                data-confirm="{{ __('Remove') }} «{{ $v->name }}»?"
-                                data-confirm-danger="1"
-                                class="-mt-3 text-right">
-                                @csrf @method('DELETE')
-                                <button class="text-xs text-red-600 hover:underline"><i class="ri-delete-bin-line"></i> {{ __('Remove') }}</button>
-                            </form>
-                        @endforeach
-                    </div>
-                @endif
 
-                <div x-data="{ open: false, newEquipment: [] }" class="border-t border-gray-100 pt-4">
-                    <button type="button" @click="open = !open" class="text-sm font-medium text-primary-800 hover:underline">
+                            {{-- Equipment chips + add (hidden inputs post with the form) --}}
+                            <div class="mt-3 pt-3 border-t border-gray-100">
+                                <div class="flex items-center justify-between mb-2">
+                                    <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                        {{ __('Included equipment') }}
+                                        <span class="text-gray-400 normal-case font-normal">(<span x-text="v.equipment.length"></span>)</span>
+                                    </p>
+                                    <button type="button" @click="openModal(i)"
+                                        class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium bg-primary-50 hover:bg-primary-100 text-primary-800 rounded-lg">
+                                        <i class="ri-add-line"></i> {{ __('Add equipment') }}
+                                    </button>
+                                </div>
+                                <div class="flex flex-wrap gap-1.5">
+                                    <template x-for="(eq, ei) in v.equipment" :key="ei + '-' + eq">
+                                        <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs border border-emerald-200">
+                                            <i class="ri-check-line text-emerald-600"></i>
+                                            <span x-text="eq"></span>
+                                            <input type="hidden" :name="`versions[${i}][equipment][]`" :value="eq" />
+                                            <button type="button" @click="v.equipment.splice(ei, 1)"
+                                                class="opacity-50 hover:opacity-100 text-emerald-700 hover:text-red-600 ml-1">
+                                                <i class="ri-close-line"></i>
+                                            </button>
+                                        </span>
+                                    </template>
+                                    <template x-if="v.equipment.length === 0">
+                                        <span class="text-xs text-gray-400 italic">{{ __('No equipment yet.') }}</span>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+
+                    <template x-if="versions.length === 0">
+                        <p class="text-sm text-gray-500 italic mb-3">{{ __('No versions yet — add the first one below.') }}</p>
+                    </template>
+
+                    <button type="button" @click="addVersion()"
+                        class="text-sm font-medium text-primary-800 hover:underline mt-1">
                         <i class="ri-add-line"></i> {{ __('Add version') }}
                     </button>
-                    <form x-show="open" x-cloak method="POST" action="{{ route('catalogue.variants.store', $model->_id) }}"
-                        class="mt-3 space-y-3">
-                        @csrf
-                        <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
-                            <div class="md:col-span-5">
-                                <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Name') }} *</label>
-                                <input type="text" name="name" required placeholder="e.g. IDEA60 — 2x 200HP"
-                                    class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
-                            </div>
-                            <div class="md:col-span-2">
-                                <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Public HT') }} *</label>
-                                <input type="number" step="0.01" min="0" name="base_price" required
-                                    class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
-                            </div>
-                            <div class="md:col-span-2">
-                                <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Cost') }}</label>
-                                <input type="number" step="0.01" min="0" name="cost"
-                                    class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
-                            </div>
-                            <div class="md:col-span-2">
-                                <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Currency') }}</label>
-                                <select name="currency" class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800">
-                                    <option value="EUR">EUR</option>
-                                    <option value="USD">USD</option>
-                                </select>
-                            </div>
-                            <div class="md:col-span-1">
-                                <button class="w-full inline-flex items-center justify-center gap-1 px-3 py-2 text-xs font-medium bg-primary-800 hover:bg-primary-900 text-white rounded-lg">
-                                    <i class="ri-add-line"></i>
-                                </button>
-                            </div>
-                        </div>
 
-                        <template x-for="(eq, ei) in newEquipment" :key="ei + '-' + eq">
-                            <input type="hidden" name="equipment[]" :value="eq" />
-                        </template>
-
-                        <div class="pt-2 border-t border-gray-100">
-                            <div class="flex items-center justify-between mb-2">
-                                <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                                    {{ __('Included equipment') }}
-                                    <span class="text-gray-400 normal-case font-normal">(<span x-text="newEquipment.length"></span>)</span>
-                                </p>
-                                <button type="button" @click="openModalFor({ equipment: newEquipment })"
-                                    class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium bg-primary-50 hover:bg-primary-100 text-primary-800 rounded-lg">
-                                    <i class="ri-add-line"></i> {{ __('Add equipment') }}
-                                </button>
-                            </div>
-                            <div class="flex flex-wrap gap-1.5">
-                                <template x-for="(eq, ei) in newEquipment" :key="ei + '-' + eq">
-                                    <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs border border-emerald-200">
-                                        <i class="ri-check-line text-emerald-600"></i>
-                                        <span x-text="eq"></span>
-                                        <button type="button" @click="newEquipment.splice(ei, 1)"
-                                            class="opacity-50 hover:opacity-100 text-emerald-700 hover:text-red-600 ml-1">
-                                            <i class="ri-close-line"></i>
-                                        </button>
-                                    </span>
-                                </template>
-                            </div>
-                        </div>
-                    </form>
-                </div>
+                    <div class="mt-4 pt-4 border-t border-gray-100 flex justify-end">
+                        <button type="submit"
+                            class="inline-flex items-center gap-1 px-4 py-2 text-sm font-semibold bg-primary-800 hover:bg-primary-900 text-white rounded-lg">
+                            <i class="ri-save-line"></i> {{ __('Save versions') }}
+                        </button>
+                    </div>
+                </form>
             </div>
 
             {{-- Shared equipment modal — single instance per section. Shows
@@ -714,126 +656,80 @@
             </div>
             </template>
 
-            {{-- Per-boat options list --}}
-            <div class="bg-white rounded-2xl border border-gray-200 p-6">
-                <h2 class="text-base font-semibold text-gray-900 mb-4">{{ __('Options on this boat') }}</h2>
-                @if ($options->isEmpty())
-                    <p class="text-sm text-gray-500 italic mb-4">{{ __('No options yet — import a file or add a custom one below.') }}</p>
-                @else
-                    <p class="text-xs text-gray-500 mb-3"><i class="ri-drag-move-2-line"></i> {{ __('Drag the handle on the left to reorder. Order is saved automatically.') }}</p>
-                    <div
-                        x-data="optionsSortable('{{ route('catalogue.options.reorder', $model->_id) }}')"
-                        x-init="init($el)"
-                        class="space-y-2 mb-6"
-                        data-options-sortable>
-                        @foreach ($options as $o)
-                            <div class="opt-row" data-id="{{ $o->_id }}">
-                                <form method="POST" action="{{ route('catalogue.options.update', $o->_id) }}"
-                                    class="border border-gray-200 rounded-lg p-3 grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
-                                    @csrf @method('PATCH')
-                                    <div class="md:col-span-1 flex md:items-end md:justify-center">
-                                        <span class="opt-handle cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-700 py-2 px-1" title="Drag to reorder">
-                                            <i class="ri-draggable text-xl"></i>
-                                        </span>
-                                    </div>
-                                    <div class="md:col-span-3">
-                                        <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Category') }}</label>
-                                        <input type="text" name="category" value="{{ $o->category }}" required
-                                            class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
-                                    </div>
-                                    <div class="md:col-span-4">
-                                        <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Label') }}</label>
-                                        <input type="text" name="label" value="{{ $o->label }}" required
-                                            class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
-                                    </div>
-                                    <div class="md:col-span-2">
-                                        <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Public HT') }}</label>
-                                        <div class="flex gap-1">
-                                            <input type="number" step="0.01" min="0" name="price" value="{{ $o->price }}" required
-                                                class="flex-1 min-w-0 rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
-                                            <select name="price_currency"
-                                                class="rounded-lg border-gray-300 text-xs font-medium pl-2 pr-7 focus:border-primary-800 focus:ring-primary-800"
-                                                title="{{ __('Change currency — value will be converted to EUR on save') }}">
-                                                <option value="EUR" @selected(($o->currency ?? 'EUR') === 'EUR')>EUR</option>
-                                                <option value="USD" @selected(($o->currency ?? 'EUR') === 'USD')>USD</option>
-                                            </select>
-                                        </div>
-                                        @if (! empty($o->original_price_currency) && $o->original_price_currency !== 'EUR' && $o->original_price)
-                                            <p class="text-[10px] text-gray-500 mt-1" title="{{ __('Original amount before FX conversion') }}">
-                                                {{ __('was') }} {{ $o->original_price_currency === 'USD' ? '$' : $o->original_price_currency }}{{ number_format($o->original_price, 2, ',', ' ') }}
-                                            </p>
-                                        @endif
-                                    </div>
-                                    <div class="md:col-span-2">
-                                        <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Cost') }}</label>
-                                        <div class="flex gap-1">
-                                            <input type="number" step="0.01" min="0" name="cost" value="{{ $o->cost }}"
-                                                class="flex-1 min-w-0 rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
-                                            <select name="cost_currency"
-                                                class="rounded-lg border-gray-300 text-xs font-medium pl-2 pr-7 focus:border-primary-800 focus:ring-primary-800"
-                                                title="{{ __('Change currency — value will be converted to EUR on save') }}">
-                                                <option value="EUR" @selected(($o->currency ?? 'EUR') === 'EUR')>EUR</option>
-                                                <option value="USD" @selected(($o->currency ?? 'EUR') === 'USD')>USD</option>
-                                            </select>
-                                        </div>
-                                        @if (! empty($o->original_cost_currency) && $o->original_cost_currency !== 'EUR' && $o->original_cost)
-                                            <p class="text-[10px] text-gray-500 mt-1" title="{{ __('Original amount before FX conversion') }}">
-                                                {{ __('was') }} {{ $o->original_cost_currency === 'USD' ? '$' : $o->original_cost_currency }}{{ number_format($o->original_cost, 2, ',', ' ') }}
-                                            </p>
-                                        @endif
-                                    </div>
-                                    <div class="md:col-span-1">
-                                        <button class="w-full inline-flex items-center justify-center gap-1 px-3 py-2 text-xs font-medium bg-primary-800 hover:bg-primary-900 text-white rounded-lg">
-                                            <i class="ri-save-line"></i>
-                                        </button>
-                                    </div>
-                                </form>
-                                <form method="POST" action="{{ route('catalogue.options.destroy', $o->_id) }}"
-                                    data-confirm="{{ __('Remove') }} «{{ $o->label }}»?"
-                                data-confirm-danger="1"
-                                class="-mt-1 text-right">
-                                    @csrf @method('DELETE')
-                                    <button class="text-xs text-red-600 hover:underline"><i class="ri-delete-bin-line"></i> Remove</button>
-                                </form>
-                            </div>
-                        @endforeach
-                    </div>
-                @endif
+            {{-- Per-boat options list — one form, bulk "Save options" --}}
+            @php
+                $initialOptions = $options->map(fn ($o) => [
+                    'id'       => (string) $o->_id,
+                    'category' => $o->category,
+                    'label'    => $o->label,
+                    'price'    => (float) $o->price,
+                    'cost'     => (float) ($o->cost ?? 0),
+                    'currency' => $o->currency ?? 'EUR',
+                ])->values();
+            @endphp
+            <div class="bg-white rounded-2xl border border-gray-200 p-6" x-data="optionsBulk(@js($initialOptions))">
+                <h2 class="text-base font-semibold text-gray-900 mb-1">{{ __('Options on this boat') }}</h2>
+                <p class="text-xs text-gray-500 mb-4">{{ __('Add options, set prices, then click Save options. USD amounts convert to EUR on save.') }}</p>
 
-                <div x-data="{ open: false }" class="border-t border-gray-100 pt-4">
-                    <button type="button" @click="open = !open" class="text-sm font-medium text-primary-800 hover:underline">
+                <form method="POST" action="{{ route('catalogue.options.sync', $model->_id) }}">
+                    @csrf
+                    <template x-for="(o, i) in options" :key="i">
+                        <div class="border border-gray-200 rounded-lg p-3 mb-2 grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+                            <input type="hidden" :name="`options[${i}][id]`" :value="o.id" />
+                            <div class="md:col-span-3">
+                                <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Category') }} *</label>
+                                <input type="text" :name="`options[${i}][category]`" x-model="o.category" required placeholder="{{ __('e.g. Electronics') }}"
+                                    class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
+                            </div>
+                            <div class="md:col-span-3">
+                                <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Label') }} *</label>
+                                <input type="text" :name="`options[${i}][label]`" x-model="o.label" required
+                                    class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Public HT') }} *</label>
+                                <input type="number" step="0.01" min="0" :name="`options[${i}][price]`" x-model="o.price" required
+                                    class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Cost') }}</label>
+                                <input type="number" step="0.01" min="0" :name="`options[${i}][cost]`" x-model="o.cost"
+                                    class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
+                            </div>
+                            <div class="md:col-span-1">
+                                <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Currency') }}</label>
+                                <select :name="`options[${i}][currency]`" x-model="o.currency"
+                                    class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800">
+                                    <option value="EUR">EUR</option>
+                                    <option value="USD">USD</option>
+                                </select>
+                            </div>
+                            <div class="md:col-span-1">
+                                <button type="button" @click="removeOption(i)"
+                                    class="w-full inline-flex items-center justify-center px-3 py-2 text-xs font-medium bg-red-50 hover:bg-red-100 text-red-700 rounded-lg"
+                                    title="{{ __('Remove') }}">
+                                    <i class="ri-delete-bin-line"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+
+                    <template x-if="options.length === 0">
+                        <p class="text-sm text-gray-500 italic mb-3">{{ __('No options yet — import a file or add a custom one below.') }}</p>
+                    </template>
+
+                    <button type="button" @click="addOption()"
+                        class="text-sm font-medium text-primary-800 hover:underline mt-1">
                         <i class="ri-add-line"></i> {{ __('Add custom option') }}
                     </button>
-                    <form x-show="open" x-cloak method="POST" action="{{ route('catalogue.options.store', $model->_id) }}"
-                        class="mt-3 grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
-                        @csrf
-                        <div class="md:col-span-3">
-                            <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Category') }} *</label>
-                            <input type="text" name="category" required placeholder="{{ __('e.g. Electronics') }}"
-                                class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
-                        </div>
-                        <div class="md:col-span-4">
-                            <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Label') }} *</label>
-                            <input type="text" name="label" required
-                                class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
-                        </div>
-                        <div class="md:col-span-2">
-                            <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Public HT') }} *</label>
-                            <input type="number" step="0.01" min="0" name="price" required
-                                class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
-                        </div>
-                        <div class="md:col-span-2">
-                            <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Cost') }}</label>
-                            <input type="number" step="0.01" min="0" name="cost"
-                                class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
-                        </div>
-                        <div class="md:col-span-1">
-                            <button class="w-full inline-flex items-center justify-center gap-1 px-3 py-2 text-xs font-medium bg-primary-800 hover:bg-primary-900 text-white rounded-lg">
-                                <i class="ri-add-line"></i>
-                            </button>
-                        </div>
-                    </form>
-                </div>
+
+                    <div class="mt-4 pt-4 border-t border-gray-100 flex justify-end">
+                        <button type="submit"
+                            class="inline-flex items-center gap-1 px-4 py-2 text-sm font-semibold bg-primary-800 hover:bg-primary-900 text-white rounded-lg">
+                            <i class="ri-save-line"></i> {{ __('Save options') }}
+                        </button>
+                    </div>
+                </form>
             </div>
         </section>
     </div>
@@ -1022,156 +918,109 @@
             };
         }
 
-        // Edit-mode variants editor — owns the shared paste modal for all
-        // variant rows. Each row registers its `equipment` array reference
-        // here so the modal can mutate the right variant's list on commit.
-        function variantsEditor() {
-            let eqIdCounter = 1;
-            const nextEqId = () => `e${eqIdCounter++}`;
+        // Edit-mode Versions tab — one Alpine array + a single "Save versions"
+        // form. Reuses the shared equipment paste modal (markup in the section).
+        function versionsBulk(initial) {
+            let eqId = 1;
+            const nextEqId = () => `e${eqId++}`;
 
             return {
+                versions: (initial || []).map(v => ({
+                    id: v.id || '',
+                    name: v.name ?? '',
+                    base_price: v.base_price ?? '',
+                    cost: v.cost ?? '',
+                    currency: v.currency || 'EUR',
+                    equipment: Array.isArray(v.equipment) ? v.equipment : [],
+                })),
+
+                // Shared equipment modal state.
                 modalOpen: false,
-                target: null,        // ref to { equipment: [...] }
+                modalIndex: null,
                 pasteBuffer: '',
-                workingList: [],     // [{id, label, checked}]
+                workingList: [],   // [{id,label,checked}]
                 sortable: null,
 
-                register(el, equipment) {
-                    // Kept as a no-op so existing x-init bindings on rows
-                    // still resolve without errors.
+                addVersion() {
+                    this.versions.push({ id: '', name: '', base_price: '', cost: '', currency: 'EUR', equipment: [] });
+                },
+                removeVersion(i) {
+                    this.versions.splice(i, 1);
                 },
 
-                async openModalFor(rowData) {
-                    this.target = rowData;
+                async openModal(i) {
+                    this.modalIndex = i;
                     this.pasteBuffer = '';
-                    // Seed the working list from the target's current items.
-                    this.workingList = (rowData.equipment || []).map(label => ({
-                        id: nextEqId(),
-                        label,
-                        checked: true,
-                    }));
+                    this.workingList = (this.versions[i].equipment || []).map(label => ({ id: nextEqId(), label, checked: true }));
                     this.modalOpen = true;
                     await this.$nextTick();
                     await this.ensureSortable();
                     if (this.sortable) this.sortable.destroy();
                     this.sortable = window.Sortable.create(this.$refs.sortableList, {
-                        handle: '.eq-handle',
-                        animation: 150,
-                        ghostClass: 'opacity-50',
-                        onEnd: (evt) => this.applySortableOrder(),
+                        handle: '.eq-handle', animation: 150, ghostClass: 'opacity-50',
+                        onEnd: () => this.applyOrder(),
                     });
                 },
                 closeModal() {
                     if (this.sortable) { this.sortable.destroy(); this.sortable = null; }
-                    this.modalOpen = false;
-                    this.target = null;
-                    this.pasteBuffer = '';
-                    this.workingList = [];
+                    this.modalOpen = false; this.modalIndex = null; this.pasteBuffer = ''; this.workingList = [];
                 },
                 ensureSortable() {
                     if (window.Sortable) return Promise.resolve();
                     return new Promise((resolve, reject) => {
                         const s = document.createElement('script');
                         s.src = 'https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js';
-                        s.onload = resolve;
-                        s.onerror = reject;
+                        s.onload = resolve; s.onerror = reject;
                         document.head.appendChild(s);
                     });
                 },
-                applySortableOrder() {
+                applyOrder() {
                     const ids = Array.from(this.$refs.sortableList.querySelectorAll('[data-id]')).map(el => el.dataset.id);
                     const byId = Object.fromEntries(this.workingList.map(r => [r.id, r]));
                     this.workingList = ids.map(id => byId[id]).filter(Boolean);
                 },
-                /**
-                 * Mirror of boatCreator's version — promote each completed
-                 * line in the paste buffer into the working list as the
-                 * user types, deduped against the existing list.
-                 */
                 promoteBufferLines() {
                     const buf = this.pasteBuffer;
                     const lastNl = Math.max(buf.lastIndexOf('\n'), buf.lastIndexOf('\r'));
                     if (lastNl < 0) return;
                     const completed = buf.substring(0, lastNl);
                     const tail      = buf.substring(lastNl + 1);
-
                     const existing = new Set(this.workingList.map(r => r.label.toLowerCase()));
                     for (const raw of completed.split(/\r?\n/)) {
                         const line = raw.trim();
-                        if (! line) continue;
-                        if (existing.has(line.toLowerCase())) continue;
+                        if (! line || existing.has(line.toLowerCase())) continue;
                         this.workingList.push({ id: nextEqId(), label: line, checked: true });
                         existing.add(line.toLowerCase());
                     }
                     this.pasteBuffer = tail;
                 },
                 commit() {
-                    if (! this.target) { this.closeModal(); return; }
-                    // Flush any trailing line the user typed without Enter.
-                    if (this.pasteBuffer.trim()) {
-                        this.pasteBuffer += '\n';
-                        this.promoteBufferLines();
-                    }
-                    this.applySortableOrder();
-
-                    const kept = this.workingList
-                        .filter(item => item.checked)
-                        .map(item => item.label);
-
-                    // Mutate in place so Alpine's :key="ei + '-' + eq" bindings
-                    // on the row's chip list re-render correctly.
-                    this.target.equipment.splice(0, this.target.equipment.length, ...kept);
+                    if (this.modalIndex === null) { this.closeModal(); return; }
+                    if (this.pasteBuffer.trim()) { this.pasteBuffer += '\n'; this.promoteBufferLines(); }
+                    this.applyOrder();
+                    const kept = this.workingList.filter(i => i.checked).map(i => i.label);
+                    this.versions[this.modalIndex].equipment = kept;
                     this.closeModal();
                 },
             };
         }
 
-        // Drag-and-drop reorder for the per-boat options list. Uses SortableJS
-        // loaded on demand from CDN — keeps page weight off the global bundle.
-        function optionsSortable(reorderUrl) {
+        // Edit-mode Options tab — one Alpine array + a single "Save options" form.
+        function optionsBulk(initial) {
             return {
-                reorderUrl,
-                sortable: null,
-                csrf: document.querySelector('meta[name="csrf-token"]')?.content,
-
-                async init(root) {
-                    await this.ensureSortable();
-                    this.sortable = window.Sortable.create(root, {
-                        handle: '.opt-handle',
-                        draggable: '.opt-row',
-                        animation: 150,
-                        ghostClass: 'opacity-50',
-                        onEnd: () => this.persist(root),
-                    });
+                options: (initial || []).map(o => ({
+                    id: o.id || '',
+                    category: o.category ?? '',
+                    label: o.label ?? '',
+                    price: o.price ?? '',
+                    cost: o.cost ?? '',
+                    currency: o.currency || 'EUR',
+                })),
+                addOption() {
+                    this.options.push({ id: '', category: '', label: '', price: '', cost: '', currency: 'EUR' });
                 },
-
-                ensureSortable() {
-                    if (window.Sortable) return Promise.resolve();
-                    return new Promise((resolve, reject) => {
-                        const s = document.createElement('script');
-                        s.src = 'https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js';
-                        s.onload = resolve;
-                        s.onerror = reject;
-                        document.head.appendChild(s);
-                    });
-                },
-
-                async persist(root) {
-                    const ids = Array.from(root.querySelectorAll('.opt-row')).map(el => el.dataset.id);
-                    try {
-                        await fetch(this.reorderUrl, {
-                            method: 'POST',
-                            headers: {
-                                'Accept': 'application/json',
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': this.csrf,
-                            },
-                            body: JSON.stringify({ ids }),
-                        });
-                    } catch (e) {
-                        // Silent — the next page load will fall back to the
-                        // server-stored positions. Don't block the UI.
-                    }
+                removeOption(i) {
+                    this.options.splice(i, 1);
                 },
             };
         }

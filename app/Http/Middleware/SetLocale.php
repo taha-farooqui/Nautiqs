@@ -20,7 +20,10 @@ class SetLocale
 
     public function handle(Request $request, Closure $next)
     {
-        $locale = $request->cookie('locale', config('app.locale', 'fr'));
+        // French-first: a brand-new user (no cookie) always gets French,
+        // regardless of APP_LOCALE in the environment. They can switch to EN
+        // via the language toggle (which sets the cookie).
+        $locale = $request->cookie('locale', 'fr');
         if (! in_array($locale, self::SUPPORTED, true)) {
             $locale = 'fr';
         }

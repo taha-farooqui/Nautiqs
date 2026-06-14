@@ -181,11 +181,13 @@ Route::middleware(['auth', 'verified', 'maintenance'])->group(function () {
         Route::get('/variants/create',                           [CatalogueController::class, 'createVariant'])->name('variants.create');
         Route::post('/variants',                                 [CatalogueController::class, 'storeVariantStandalone'])->name('variants.store-standalone');
         Route::post('/models/{modelId}/variants',                [CatalogueController::class, 'storeVariant'])->name('variants.store');
+        Route::post('/models/{modelId}/variants/sync',           [CatalogueController::class, 'syncVariants'])->name('variants.sync');
         Route::patch('/variants/{variantId}',                    [CatalogueController::class, 'updateVariant'])->name('variants.update');
         Route::delete('/variants/{variantId}',                   [CatalogueController::class, 'destroyVariant'])->name('variants.destroy');
 
         // Option CRUD on a model
         Route::post('/models/{modelId}/options',                 [CatalogueController::class, 'storeOption'])->name('options.store');
+        Route::post('/models/{modelId}/options/sync',            [CatalogueController::class, 'syncOptions'])->name('options.sync');
         Route::post('/models/{modelId}/options/import',          [CatalogueController::class, 'importGlobalOptions'])->name('options.import');
         Route::post('/models/{modelId}/options/reorder',         [CatalogueController::class, 'reorderOptions'])->name('options.reorder');
         Route::patch('/options/{optionId}',                      [CatalogueController::class, 'updateOption'])->name('options.update');
