@@ -20,7 +20,12 @@ class CompanySettingsController extends Controller
             return redirect()->route('admin.settings.edit');
         }
         $company = Company::findOrFail(auth()->user()->company_id);
-        return view('company.settings', compact('company'));
+
+        // Live USD→EUR reference rate (ECB daily, via FxRateService) shown
+        // read-only so dealers can see what conversion quotes will use.
+        $usdEur = app(\App\Services\FxRateService::class)->rate('USD', 'EUR');
+
+        return view('company.settings', compact('company', 'usdEur'));
     }
 
     public function update(Request $request)

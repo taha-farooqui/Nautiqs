@@ -168,6 +168,30 @@
                 </p>
                 <x-input-error :messages="$errors->get('timezone')" class="mt-1" />
             </div>
+
+            {{-- USD→EUR conversion rate — read-only. Sourced live from the
+                 European Central Bank daily reference rate (FxRateService). --}}
+            <div class="mt-6 pt-5 border-t border-gray-100">
+                <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('USD → EUR conversion rate') }}</label>
+                <div class="flex items-center gap-3 max-w-md">
+                    <div class="flex-1 flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
+                        <span class="text-sm text-gray-700">$1 =</span>
+                        <span class="text-sm font-semibold text-gray-900">
+                            @if ($usdEur)
+                                €{{ number_format($usdEur, 4, ',', ' ') }}
+                            @else
+                                {{ __('unavailable') }}
+                            @endif
+                        </span>
+                    </div>
+                    <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 text-[11px] font-semibold shrink-0">
+                        <i class="ri-global-line"></i> {{ __('Live rate') }}
+                    </span>
+                </div>
+                <p class="text-xs text-gray-500 mt-1">
+                    {{ __('Read-only. Fetched automatically from a live API (European Central Bank daily rates) and used to convert USD prices to EUR in quotes.') }}
+                </p>
+            </div>
         </section>
 
         {{-- ============================== MARGIN PRESETS ============================== --}}
