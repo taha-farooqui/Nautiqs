@@ -41,15 +41,21 @@
                 <x-input-error :messages="$errors->get('brand')" class="mt-1" />
             </div>
             <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Model') }}</label>
+                <input type="text" name="code" value="{{ old('code', $engine->code ?? '') }}"
+                    placeholder="{{ __('e.g. Honda 2021') }}"
+                    class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Horsepower') }}</label>
                 <input type="number" step="1" min="0" name="horsepower"
                     value="{{ old('horsepower', $engine->horsepower ?? '') }}"
                     placeholder="200"
                     class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />
             </div>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Currency') }}</label>
                 <select name="currency" class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800">

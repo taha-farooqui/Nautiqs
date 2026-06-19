@@ -22,7 +22,6 @@
             <p class="text-xs text-gray-500 mb-3">{{ __('The company that will use Nautiqs to send quotes.') }}</p>
             <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Company name') }} <span class="text-red-500">*</span></label>
             <input type="text" name="company_name" required maxlength="150" value="{{ old('company_name') }}"
-                placeholder="e.g. Marseille Marine SAS"
                 class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />
         </div>
 
