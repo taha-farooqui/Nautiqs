@@ -58,18 +58,20 @@ class QuoteBuilder extends Component
     // §8.1 Step 5 — Custom line items
     public array $custom_items = [];
 
-    // §8.1 Step 6 — Discounts (§9) — three explicit levels per client mockup
+    // §8.1 Step 6 — Discounts (§9) — three explicit levels per client mockup.
+    // Untyped (not float) so a cleared field holds "" instead of crashing
+    // Livewire hydration; the calculator + save() coerce "" → 0.
     public array $category_discounts = [];
-    public float $boat_discount_pct = 0;
-    public float $options_discount_pct = 0;
-    public float $global_discount_pct = 0;
+    public $boat_discount_pct = 0;
+    public $options_discount_pct = 0;
+    public $global_discount_pct = 0;
 
     // Summary view mode (vendor sees margin, client doesn't)
     public string $view_mode = 'client'; // 'client' | 'vendor'
 
     // §8.1 Step 7 — Trade-in (§10) — simplified: value only, deducted from total
     public bool $hasTradeIn = false;
-    public float $trade_in_value = 0;
+    public $trade_in_value = 0; // untyped so a cleared field doesn't crash hydration
 
     // §15 Multi-currency
     public ?float $exchange_rate = null;
