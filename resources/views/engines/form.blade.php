@@ -50,13 +50,6 @@
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Horsepower') }}</label>
-                <input type="number" step="1" min="0" name="horsepower"
-                    value="{{ old('horsepower', $engine->horsepower ?? '') }}"
-                    placeholder="200"
-                    class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />
-            </div>
-            <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Currency') }}</label>
                 <select name="currency" class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800">
                     <option value="EUR" @selected(old('currency', $engine->currency ?? 'EUR') === 'EUR')>EUR</option>

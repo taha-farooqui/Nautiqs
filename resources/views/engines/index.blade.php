@@ -26,7 +26,7 @@
             <div class="relative">
                 <i class="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
                 <input type="text" name="q" value="{{ $q }}"
-                    placeholder="{{ __('Search by brand, code, or description…') }}"
+                    placeholder="{{ __('Search by brand or model…') }}"
                     class="w-full pl-9 pr-3 py-2 rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
             </div>
         </form>
@@ -124,7 +124,6 @@
         <x-app.empty-state
             icon="ri-settings-3-line"
             :title="__('No engines yet')"
-            :message="__('Add the engine SKUs you carry so they show up in the quote builder.')"
             :ctaLabel="__('Add the first engine')"
             ctaHref="{{ route('engines.create') }}"
             size="lg" />
@@ -160,8 +159,7 @@
                                     class="rounded border-gray-300 text-primary-800 focus:ring-primary-800" />
                             </th>
                             <th class="px-5 py-3 font-semibold">{{ __('Brand') }}</th>
-                            <th class="px-5 py-3 font-semibold">{{ __('Code') }}</th>
-                            <th class="px-5 py-3 font-semibold">{{ __('HP') }}</th>
+                            <th class="px-5 py-3 font-semibold">{{ __('Model') }}</th>
                             <th class="px-5 py-3 font-semibold text-right">{{ __('Public HT') }}</th>
                             <th class="px-5 py-3 font-semibold text-right">{{ __('VAT') }}</th>
                             <th class="px-5 py-3 font-semibold text-right">{{ __('TTC') }}</th>
@@ -176,8 +174,7 @@
                                         class="rounded border-gray-300 text-primary-800 focus:ring-primary-800" />
                                 </td>
                                 <td class="px-5 py-3 font-medium text-gray-900">{{ $engine->brand }}</td>
-                                <td class="px-5 py-3 font-mono text-xs text-gray-700">{{ $engine->code }}</td>
-                                <td class="px-5 py-3 text-gray-700">{{ $engine->horsepower ? number_format($engine->horsepower, 0) . ' ' . __('HP') : '—' }}</td>
+                                <td class="px-5 py-3 text-gray-700">{{ $engine->code }}</td>
                                 <td class="px-5 py-3 text-right font-semibold text-gray-900">€{{ number_format($engine->price, 2, ',', ' ') }}</td>
                                 <td class="px-5 py-3 text-right text-gray-700">{{ number_format($engine->vat_rate, 2) }}%</td>
                                 <td class="px-5 py-3 text-right font-semibold text-gray-900">€{{ number_format($engine->ttc, 2, ',', ' ') }}</td>
