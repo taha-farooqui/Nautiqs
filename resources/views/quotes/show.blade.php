@@ -379,17 +379,26 @@
                         <dd class="font-bold text-lg text-primary-900">€{{ number_format($t['net_payable'] ?? 0, 2, ',', ' ') }}</dd>
                     </div>
                 </dl>
-                <div class="px-5 py-3 bg-gray-50 border-t border-gray-100 text-xs">
-                    <div class="flex items-center justify-between">
-                        <span class="text-gray-600">{{ __('Margin') }}
+                {{-- Margin is internal-only and hidden by default. Click to reveal.
+                     (Never appears in the client PDF/email regardless.) --}}
+                <div class="px-5 py-3 bg-gray-50 border-t border-gray-100 text-xs" x-data="{ showMargin: false }">
+                    <div class="flex items-center justify-between gap-3">
+                        <button type="button" @click="showMargin = ! showMargin"
+                            class="inline-flex items-center gap-1 text-gray-500 hover:text-gray-800">
+                            <i :class="showMargin ? 'ri-eye-off-line' : 'ri-eye-line'"></i>
+                            <span x-show="! showMargin">{{ __('Show margin') }}</span>
+                            <span x-show="showMargin" x-cloak>{{ __('Hide margin') }}</span>
+                        </button>
+                        <div x-show="showMargin" x-cloak class="flex items-center gap-2">
                             @if (($t['margin_type'] ?? '') === 'real')
-                                <span class="ml-1 px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 font-semibold">{{ __('REAL') }}</span>
+                                <span class="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 font-semibold">{{ __('REAL') }}</span>
                             @else
-                                <span class="ml-1 px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-semibold">{{ __('ESTIMATED') }}</span>
+                                <span class="px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-semibold">{{ __('ESTIMATED') }}</span>
                             @endif
-                        </span>
-                        <span class="font-semibold text-gray-900">€{{ number_format($t['margin_amount'] ?? 0, 0, ',', ' ') }} ({{ $t['margin_pct'] ?? 0 }}%)</span>
+                            <span class="font-semibold text-gray-900">€{{ number_format($t['margin_amount'] ?? 0, 0, ',', ' ') }} ({{ $t['margin_pct'] ?? 0 }}%)</span>
+                        </div>
                     </div>
+                    <p x-show="! showMargin" x-cloak class="text-gray-400 mt-1">{{ __('Internal only — never shown to the client.') }}</p>
                 </div>
             </div>
         </div>
