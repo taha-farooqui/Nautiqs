@@ -97,7 +97,10 @@ class QuoteCalculator
         $customRows = [];
         foreach (($input['custom_items'] ?? []) as $ci) {
             $amount      = (float) ($ci['amount'] ?? 0);
-            $cost        = $ci['cost'] !== null && $ci['cost'] !== '' ? (float) $ci['cost'] : null;
+            // Older quote snapshots may not carry a `cost` key on custom
+            // items — coalesce so editing them doesn't 500 on a missing key.
+            $rawCost     = $ci['cost'] ?? null;
+            $cost        = ($rawCost !== null && $rawCost !== '') ? (float) $rawCost : null;
             $itemDiscPct = (float) ($ci['discount_pct'] ?? 0);
             $afterItem   = $amount * (1 - $itemDiscPct / 100);
             // Custom items are their own category ("custom_items" for margin preset).
