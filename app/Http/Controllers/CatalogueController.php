@@ -757,10 +757,22 @@ class CatalogueController extends Controller
             'versions.*.equipment.*' => 'string|max:200',
         ]);
 
+        $this->syncVariantRows($modelId, $data['versions'] ?? []);
+
+        return back()->with('status', __('Versions saved.'));
+    }
+
+    /**
+     * Upsert the given version rows for a model and delete/archive any of the
+     * model's variants not present in the list. Shared by syncVariants() and
+     * the unified saveAll().
+     */
+    private function syncVariantRows(string $modelId, array $rows): void
+    {
         $companyId = auth()->user()->company_id;
         $keptIds   = [];
 
-        foreach (($data['versions'] ?? []) as $row) {
+        foreach ($rows as $row) {
             $payload = [
                 'name'               => $row['name'],
                 'base_price'         => (float) $row['base_price'],
@@ -796,8 +808,6 @@ class CatalogueController extends Controller
                 $orphan->delete();
             }
         }
-
-        return back()->with('status', __('Versions saved.'));
     }
 
     /**
@@ -819,11 +829,23 @@ class CatalogueController extends Controller
             'options.*.currency' => 'nullable|in:EUR,USD',
         ]);
 
+        $this->syncOptionRows($modelId, $data['options'] ?? []);
+
+        return back()->with('status', __('Options saved.'));
+    }
+
+    /**
+     * Upsert the given option rows for a model and delete/archive any of the
+     * model's options not present in the list. FX-converts non-EUR amounts.
+     * Shared by syncOptions() and the unified saveAll().
+     */
+    private function syncOptionRows(string $modelId, array $rows): void
+    {
         $companyId = auth()->user()->company_id;
         $fx        = app(\App\Services\FxRateService::class);
         $keptIds   = [];
 
-        foreach (($data['options'] ?? []) as $i => $row) {
+        foreach ($rows as $i => $row) {
             $priceIn = (float) $row['price'];
             $costIn  = (float) ($row['cost'] ?? 0);
             $ccy     = $row['currency'] ?? 'EUR';
@@ -881,8 +903,62 @@ class CatalogueController extends Controller
                 $orphan->delete();
             }
         }
+    }
 
-        return back()->with('status', __('Options saved.'));
+    /**
+     * Unified save from the boat editor: persists the boat fields, versions,
+     * and options in ONE request so the dealer can't lose work by switching
+     * tabs. Redirects back to the tab they saved from.
+     */
+    public function saveAll(string $modelId, Request $request)
+    {
+        $model = CompanyBoatModel::findOrFail($modelId);
+        $data = $request->validate([
+            // Boat
+            'company_brand_id'       => 'nullable',
+            'name'                   => 'required|string|max:200',
+            'default_margin_pct'     => 'nullable|numeric|min:0|max:100',
+            'is_active'              => 'nullable|boolean',
+            // Versions
+            'versions'               => 'nullable|array',
+            'versions.*.id'          => 'nullable|string',
+            'versions.*.name'        => 'required|string|max:200',
+            'versions.*.base_price'  => 'required|numeric|min:0',
+            'versions.*.cost'        => 'nullable|numeric|min:0',
+            'versions.*.currency'    => 'nullable|in:EUR,USD',
+            'versions.*.equipment'   => 'nullable|array',
+            'versions.*.equipment.*' => 'string|max:200',
+            // Options
+            'options'                => 'nullable|array',
+            'options.*.id'           => 'nullable|string',
+            'options.*.category'     => 'required|string|max:100',
+            'options.*.label'        => 'required|string|max:200',
+            'options.*.price'        => 'required|numeric|min:0',
+            'options.*.cost'         => 'nullable|numeric|min:0',
+            'options.*.currency'     => 'nullable|in:EUR,USD',
+            'active_tab'             => 'nullable|in:boat,versions,options',
+        ]);
+
+        // Boat fields
+        $boat = [
+            'name'      => $data['name'],
+            'is_active' => (bool) ($data['is_active'] ?? false),
+        ];
+        if (array_key_exists('default_margin_pct', $data)) {
+            $boat['default_margin_pct'] = $data['default_margin_pct'];
+        }
+        if (! empty($data['company_brand_id'])) {
+            $boat['company_brand_id'] = $this->resolveBrandId($data['company_brand_id']);
+        }
+        $model->update($boat);
+
+        // Versions + options
+        $this->syncVariantRows($modelId, $data['versions'] ?? []);
+        $this->syncOptionRows($modelId, $data['options'] ?? []);
+
+        return redirect()
+            ->route('catalogue.models.edit', [$model->_id, 'tab' => $data['active_tab'] ?? 'boat'])
+            ->with('status', __('Boat saved.'));
     }
 
     /**

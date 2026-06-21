@@ -296,7 +296,7 @@
          option). Faster for tweaking a single price without re-saving
          the whole boat.
          ════════════════════════════════════════════════════════════════ --}}
-    <div x-data="{ tab: 'boat' }">
+    <div x-data="{ tab: (new URLSearchParams(window.location.search)).get('tab') || 'boat', importOpen: false }">
         <div class="mb-4 border-b border-gray-200 flex items-center gap-1 overflow-x-auto">
             <button type="button" @click="tab = 'boat'"
                 :class="tab === 'boat' ? 'border-primary-800 text-primary-900' : 'border-transparent text-gray-500 hover:text-gray-900'"
@@ -315,34 +315,16 @@
             </button>
         </div>
 
+        {{-- ════════ ONE form: saving persists boat + versions + options ════════ --}}
+        <form method="POST" action="{{ route('catalogue.models.save-all', $model->_id) }}">
+            @csrf @method('PATCH')
+            <input type="hidden" name="active_tab" :value="tab" />
+
         {{-- Boat tab --}}
         <section x-show="tab === 'boat'" class="space-y-4">
-            <form method="POST" action="{{ route('catalogue.models.update', $model->_id) }}"
-                class="bg-white rounded-2xl border border-gray-200 p-6 space-y-5">
-                @csrf @method('PATCH')
-
+            <div class="bg-white rounded-2xl border border-gray-200 p-6 space-y-5">
                 @include('catalogue.partials._boat-fields', ['model' => $model, 'brands' => $brands])
-
-                <div class="flex justify-end pt-2 border-t border-gray-100">
-                    <button class="inline-flex items-center gap-1 px-4 py-2 text-sm font-semibold bg-primary-800 hover:bg-primary-900 text-white rounded-lg">
-                        <i class="ri-save-line"></i> {{ __('Save boat') }}
-                    </button>
-                </div>
-            </form>
-
-            @if ($model->source === 'private')
-                <div class="bg-white rounded-2xl border border-red-200 p-5">
-                    <p class="text-sm text-gray-600 mb-3">{{ __('Delete this boat and all its versions/options. Existing quotes are preserved (snapshots).') }}</p>
-                    <form method="POST" action="{{ route('catalogue.models.destroy', $model->_id) }}"
-                        data-confirm="{{ __('Delete') }} «{{ $model->name }}»?"
-                        data-confirm-danger="1">
-                        @csrf @method('DELETE')
-                        <button class="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium bg-red-50 hover:bg-red-100 text-red-700 rounded-lg">
-                            <i class="ri-delete-bin-line"></i> {{ __('Delete boat') }}
-                        </button>
-                    </form>
-                </div>
-            @endif
+            </div>
         </section>
 
         {{-- Versions tab — one form, bulk "Save versions" --}}
@@ -362,10 +344,8 @@
             x-data="versionsBulk(@js($initialVersions))">
             <div class="bg-white rounded-2xl border border-gray-200 p-6">
                 <h2 class="text-base font-semibold text-gray-900 mb-1">{{ __('Versions') }}</h2>
-                <p class="text-xs text-gray-500 mb-4">{{ __('Add the versions you sell, edit them inline, then click Save versions.') }}</p>
+                <p class="text-xs text-gray-500 mb-4">{{ __('Add the versions you sell and edit them inline. Everything is saved together with the Save button at the bottom.') }}</p>
 
-                <form method="POST" action="{{ route('catalogue.variants.sync', $model->_id) }}">
-                    @csrf
                     <template x-for="(v, i) in versions" :key="i">
                         <div class="border border-gray-200 rounded-lg p-3 mb-3">
                             <input type="hidden" :name="`versions[${i}][id]`" :value="v.id" />
@@ -443,14 +423,6 @@
                         class="text-sm font-medium text-primary-800 hover:underline mt-1">
                         <i class="ri-add-line"></i> {{ __('Add version') }}
                     </button>
-
-                    <div class="mt-4 pt-4 border-t border-gray-100 flex justify-end">
-                        <button type="submit"
-                            class="inline-flex items-center gap-1 px-4 py-2 text-sm font-semibold bg-primary-800 hover:bg-primary-900 text-white rounded-lg">
-                            <i class="ri-save-line"></i> {{ __('Save versions') }}
-                        </button>
-                    </div>
-                </form>
             </div>
 
             {{-- Shared equipment modal — single instance per section. Shows
@@ -530,8 +502,7 @@
         </section>
 
         {{-- Options tab --}}
-        <section x-show="tab === 'options'" x-cloak class="space-y-4"
-            x-data="{ importOpen: false }">
+        <section x-show="tab === 'options'" x-cloak class="space-y-4">
 
             @php $importResult = session('import_result'); @endphp
             @if ($importResult && ! empty($importResult['errors']))
@@ -669,10 +640,8 @@
             @endphp
             <div class="bg-white rounded-2xl border border-gray-200 p-6" x-data="optionsBulk(@js($initialOptions))">
                 <h2 class="text-base font-semibold text-gray-900 mb-1">{{ __('Options on this boat') }}</h2>
-                <p class="text-xs text-gray-500 mb-4">{{ __('Add options, set prices, then click Save options. USD amounts convert to EUR on save.') }}</p>
+                <p class="text-xs text-gray-500 mb-4">{{ __('Add options and set prices. USD amounts convert to EUR on save. Everything is saved together with the Save button at the bottom.') }}</p>
 
-                <form method="POST" action="{{ route('catalogue.options.sync', $model->_id) }}">
-                    @csrf
                     <template x-for="(o, i) in options" :key="i">
                         <div class="border border-gray-200 rounded-lg p-3 mb-2 grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
                             <input type="hidden" :name="`options[${i}][id]`" :value="o.id" />
@@ -722,16 +691,34 @@
                         class="text-sm font-medium text-primary-800 hover:underline mt-1">
                         <i class="ri-add-line"></i> {{ __('Add custom option') }}
                     </button>
-
-                    <div class="mt-4 pt-4 border-t border-gray-100 flex justify-end">
-                        <button type="submit"
-                            class="inline-flex items-center gap-1 px-4 py-2 text-sm font-semibold bg-primary-800 hover:bg-primary-900 text-white rounded-lg">
-                            <i class="ri-save-line"></i> {{ __('Save options') }}
-                        </button>
-                    </div>
-                </form>
             </div>
         </section>
+
+        {{-- Single Save for the whole boat (boat fields + versions + options). --}}
+        <div class="mt-5 flex items-center justify-end gap-2">
+            <a href="{{ route('catalogue.models') }}" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 hover:bg-gray-100 rounded-lg">{{ __('Cancel') }}</a>
+            <button type="submit" class="inline-flex items-center gap-1 px-5 py-2.5 text-sm font-semibold bg-primary-800 hover:bg-primary-900 text-white rounded-lg shadow">
+                <i class="ri-save-line"></i> {{ __('Save') }}
+            </button>
+        </div>
+        </form>
+
+        {{-- Delete — kept outside the save form (private boats only). --}}
+        @if ($model->source === 'private')
+            <section x-show="tab === 'boat'" x-cloak class="mt-4">
+                <div class="bg-white rounded-2xl border border-red-200 p-5">
+                    <p class="text-sm text-gray-600 mb-3">{{ __('Delete this boat and all its versions/options. Existing quotes are preserved (snapshots).') }}</p>
+                    <form method="POST" action="{{ route('catalogue.models.destroy', $model->_id) }}"
+                        data-confirm="{{ __('Permanently delete «:name» and all its versions and options? This cannot be undone.', ['name' => $model->name]) }}"
+                        data-confirm-danger="1">
+                        @csrf @method('DELETE')
+                        <button class="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium bg-red-50 hover:bg-red-100 text-red-700 rounded-lg">
+                            <i class="ri-delete-bin-line"></i> {{ __('Delete boat') }}
+                        </button>
+                    </form>
+                </div>
+            </section>
+        @endif
     </div>
 @endif
 

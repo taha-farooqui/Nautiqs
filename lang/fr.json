@@ -1,5 +1,7 @@
 {
     "Brand deleted.": "Marque supprimée.",
+    "Add the versions you sell and edit them inline. Everything is saved together with the Save button at the bottom.": "Ajoutez les versions que vous vendez et modifiez-les directement. Tout est enregistré ensemble avec le bouton Enregistrer en bas.",
+    "Add options and set prices. USD amounts convert to EUR on save. Everything is saved together with the Save button at the bottom.": "Ajoutez des options et définissez les prix. Les montants en USD sont convertis en EUR à l'enregistrement. Tout est enregistré ensemble avec le bouton Enregistrer en bas.",
     "Permanently delete :name? This cannot be undone. Existing quotes keep their saved data.": "Supprimer définitivement :name ? Cette action est irréversible. Les devis existants conservent leurs données enregistrées.",
     "Permanently delete «:name» and all its versions and options? This cannot be undone.": "Supprimer définitivement « :name » et toutes ses versions et options ? Cette action est irréversible.",
     "Dashboard": "Tableau de bord",

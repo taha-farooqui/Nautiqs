@@ -175,6 +175,7 @@ Route::middleware(['auth', 'verified', 'maintenance'])->group(function () {
         Route::post('/models',                                   [CatalogueController::class, 'storeModel'])->name('models.store');
         Route::get('/models/{modelId}/edit',                     [CatalogueController::class, 'editModel'])->name('models.edit');
         Route::patch('/models/{modelId}',                        [CatalogueController::class, 'updateModel'])->name('models.update');
+        Route::patch('/models/{modelId}/save-all',               [CatalogueController::class, 'saveAll'])->name('models.save-all');
         Route::delete('/models/{modelId}',                       [CatalogueController::class, 'destroyModel'])->name('models.destroy');
 
         // Variant CRUD on a model
