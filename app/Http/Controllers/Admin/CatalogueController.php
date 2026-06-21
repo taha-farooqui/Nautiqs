@@ -113,28 +113,30 @@ class CatalogueController extends Controller
     {
         $brand = GlobalBrand::where('_id', $id)->firstOrFail();
 
+        // Delete via model instances and string-field lookups only. (Mongo
+        // doesn't reliably cast a whereIn('_id', [string,...]) to ObjectIds,
+        // so bulk _id deletes would silently match nothing — which is exactly
+        // what left orphaned per-dealer copies before.)
+
         // Global-tier children.
-        $globalModelIds = GlobalBoatModel::where('brand_id', $id)
-            ->pluck('_id')->map(fn ($i) => (string) $i)->all();
-        if (! empty($globalModelIds)) {
-            GlobalBoatVariant::whereIn('model_id', $globalModelIds)->delete();
-            GlobalOption::whereIn('model_id', $globalModelIds)->delete();
-            GlobalBoatModel::whereIn('_id', $globalModelIds)->delete();
+        foreach (GlobalBoatModel::where('brand_id', $id)->get() as $gm) {
+            $gmId = (string) $gm->_id;
+            GlobalBoatVariant::where('model_id', $gmId)->get()->each->delete();
+            GlobalOption::where('model_id', $gmId)->get()->each->delete();
+            $gm->delete();
         }
 
         // Per-dealer snapshots. As superadmin the TenantScope is disabled, so
         // these queries span every company.
-        $companyBrandIds = \App\Models\CompanyBrand::where('global_brand_id', $id)
-            ->pluck('_id')->map(fn ($i) => (string) $i)->all();
-        if (! empty($companyBrandIds)) {
-            $companyModelIds = \App\Models\CompanyBoatModel::whereIn('company_brand_id', $companyBrandIds)
-                ->pluck('_id')->map(fn ($i) => (string) $i)->all();
-            if (! empty($companyModelIds)) {
-                \App\Models\CompanyBoatVariant::whereIn('company_model_id', $companyModelIds)->delete();
-                \App\Models\CompanyOption::whereIn('company_model_id', $companyModelIds)->delete();
-                \App\Models\CompanyBoatModel::whereIn('_id', $companyModelIds)->delete();
+        foreach (\App\Models\CompanyBrand::where('global_brand_id', $id)->get() as $cb) {
+            $cbId = (string) $cb->_id;
+            foreach (\App\Models\CompanyBoatModel::where('company_brand_id', $cbId)->get() as $cm) {
+                $cmId = (string) $cm->_id;
+                \App\Models\CompanyBoatVariant::where('company_model_id', $cmId)->get()->each->delete();
+                \App\Models\CompanyOption::where('company_model_id', $cmId)->get()->each->delete();
+                $cm->delete();
             }
-            \App\Models\CompanyBrand::whereIn('_id', $companyBrandIds)->delete();
+            $cb->delete();
         }
 
         AuditLogger::record('brand.delete', target: $brand,
