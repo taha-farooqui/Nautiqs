@@ -104,11 +104,21 @@
                             </td>
                             <td class="px-5 py-3 text-right font-semibold text-gray-900">{{ $ttc !== null ? '€' . number_format($ttc, 0, ',', ' ') : '—' }}</td>
                             <td class="px-5 py-3 text-xs text-gray-500">{{ $m?->updated_at?->diffForHumans() ?? '—' }}</td>
-                            <td class="px-5 py-3 text-right">
+                            <td class="px-5 py-3 text-right whitespace-nowrap">
                                 <a href="{{ route('catalogue.models.edit', $m?->_id) }}"
                                     class="inline-flex items-center justify-center w-8 h-8 text-gray-500 hover:text-primary-800 hover:bg-gray-100 rounded-lg" title="{{ __('Edit') }}">
                                     <i class="ri-pencil-line"></i>
                                 </a>
+                                @if ($m && $m->source === 'private')
+                                    <form method="POST" action="{{ route('catalogue.models.destroy', $m->_id) }}" class="inline"
+                                        data-confirm="{{ __('Permanently delete «:name» and all its versions and options? This cannot be undone.', ['name' => $m->name]) }}"
+                                        data-confirm-danger="1">
+                                        @csrf @method('DELETE')
+                                        <button type="submit" class="inline-flex items-center justify-center w-8 h-8 text-red-600 hover:bg-red-50 rounded-lg" title="{{ __('Delete') }}">
+                                            <i class="ri-delete-bin-line"></i>
+                                        </button>
+                                    </form>
+                                @endif
                             </td>
                         </tr>
                     @endforeach

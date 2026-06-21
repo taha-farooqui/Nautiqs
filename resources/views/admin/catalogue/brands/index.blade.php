@@ -84,6 +84,14 @@
                                             <i class="{{ $b->is_active ? 'ri-pause-circle-line' : 'ri-play-circle-line' }}"></i>
                                         </button>
                                     </form>
+                                    <form method="POST" action="{{ route('admin.brands.destroy', $b->_id) }}" class="inline"
+                                        data-confirm="{{ __('Permanently delete :name? This cannot be undone. Existing quotes keep their saved data.', ['name' => $b->name]) }}"
+                                        data-confirm-danger="1">
+                                        @csrf @method('DELETE')
+                                        <button class="inline-flex items-center justify-center w-8 h-8 text-red-600 hover:bg-red-50 rounded-lg" title="{{ __('Delete') }}">
+                                            <i class="ri-delete-bin-line"></i>
+                                        </button>
+                                    </form>
                                 </td>
                             </tr>
                         @endforeach

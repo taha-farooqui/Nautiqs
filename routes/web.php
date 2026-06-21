@@ -256,6 +256,7 @@ Route::middleware(['auth', 'verified', 'maintenance'])->group(function () {
         Route::get('/brands/{id}/edit',    [$c, 'brandsEdit'])->name('brands.edit');
         Route::patch('/brands/{id}',       [$c, 'brandsUpdate'])->name('brands.update');
         Route::post('/brands/{id}/toggle', [$c, 'brandsToggle'])->name('brands.toggle');
+        Route::delete('/brands/{id}',      [$c, 'brandsDestroy'])->name('brands.destroy');
 
         Route::get('/models',              [$c, 'modelsIndex'])->name('models.index');
         Route::get('/models/create',       [$c, 'modelsCreate'])->name('models.create');

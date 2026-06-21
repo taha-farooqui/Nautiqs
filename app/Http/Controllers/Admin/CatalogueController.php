@@ -102,6 +102,48 @@ class CatalogueController extends Controller
         return back()->with('status', $brand->is_active ? __('Brand activated.') : __('Brand deactivated.'));
     }
 
+    /**
+     * Permanently delete a global brand. Cascades to its global models /
+     * variants / options AND to the per-dealer snapshots fanned out from it
+     * (CompanyBrand + that brand's company models / variants / options), so a
+     * deleted (e.g. duplicate) brand also disappears from dealers' quote
+     * builders. Quotes keep their own snapshots, so past quotes are unaffected.
+     */
+    public function brandsDestroy(string $id)
+    {
+        $brand = GlobalBrand::where('_id', $id)->firstOrFail();
+
+        // Global-tier children.
+        $globalModelIds = GlobalBoatModel::where('brand_id', $id)
+            ->pluck('_id')->map(fn ($i) => (string) $i)->all();
+        if (! empty($globalModelIds)) {
+            GlobalBoatVariant::whereIn('model_id', $globalModelIds)->delete();
+            GlobalOption::whereIn('model_id', $globalModelIds)->delete();
+            GlobalBoatModel::whereIn('_id', $globalModelIds)->delete();
+        }
+
+        // Per-dealer snapshots. As superadmin the TenantScope is disabled, so
+        // these queries span every company.
+        $companyBrandIds = \App\Models\CompanyBrand::where('global_brand_id', $id)
+            ->pluck('_id')->map(fn ($i) => (string) $i)->all();
+        if (! empty($companyBrandIds)) {
+            $companyModelIds = \App\Models\CompanyBoatModel::whereIn('company_brand_id', $companyBrandIds)
+                ->pluck('_id')->map(fn ($i) => (string) $i)->all();
+            if (! empty($companyModelIds)) {
+                \App\Models\CompanyBoatVariant::whereIn('company_model_id', $companyModelIds)->delete();
+                \App\Models\CompanyOption::whereIn('company_model_id', $companyModelIds)->delete();
+                \App\Models\CompanyBoatModel::whereIn('_id', $companyModelIds)->delete();
+            }
+            \App\Models\CompanyBrand::whereIn('_id', $companyBrandIds)->delete();
+        }
+
+        AuditLogger::record('brand.delete', target: $brand,
+            before: ['name' => $brand->name], after: null, targetLabel: $brand->name);
+        $brand->delete();
+
+        return back()->with('status', __('Brand deleted.'));
+    }
+
     private function validateBrand(Request $request): array
     {
         return $request->validate([

@@ -1,4 +1,7 @@
 {
+    "Brand deleted.": "Marque supprimée.",
+    "Permanently delete :name? This cannot be undone. Existing quotes keep their saved data.": "Supprimer définitivement :name ? Cette action est irréversible. Les devis existants conservent leurs données enregistrées.",
+    "Permanently delete «:name» and all its versions and options? This cannot be undone.": "Supprimer définitivement « :name » et toutes ses versions et options ? Cette action est irréversible.",
     "Dashboard": "Tableau de bord",
     "Quotes": "Devis",
     "Quote": "Devis",
