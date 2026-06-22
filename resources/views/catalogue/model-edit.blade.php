@@ -233,8 +233,21 @@
 
             {{-- Options tab --}}
             <section x-show="tab === 'options'" x-cloak class="space-y-4">
-                {{-- Custom options repeater. (Importing from a file is offered
-                     once the boat is saved, in the editor's Options tab.) --}}
+                {{-- Import from file. The boat has no id yet, so the file is
+                     parsed server-side and the rows pre-fill the repeater
+                     below — they save together with the boat. --}}
+                <div class="bg-white rounded-2xl border border-gray-200 p-5 flex items-center justify-between gap-4 flex-wrap">
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-900 mb-1">{{ __('Import options from file') }}</h3>
+                        <p class="text-xs text-gray-500">{{ __('Upload a CSV or Excel file — the rows are added to the list below, then saved with the boat.') }}</p>
+                    </div>
+                    <button type="button" @click="openImport()"
+                        class="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium bg-primary-50 hover:bg-primary-100 text-primary-800 rounded-lg">
+                        <i class="ri-upload-2-line"></i> {{ __('Import options from file') }}
+                    </button>
+                </div>
+
+                {{-- Custom options repeater. Imported rows land here too. --}}
                 <div class="bg-white rounded-2xl border border-gray-200 p-5">
                     <h3 class="text-sm font-semibold text-gray-900 mb-1">{{ __('Custom options') }}</h3>
                     <p class="text-xs text-gray-500 mb-3">{{ __('Anything not in the library — add your own.') }}</p>
@@ -275,6 +288,55 @@
                         class="text-sm font-medium text-primary-800 hover:underline mt-2">
                         <i class="ri-add-line"></i> {{ __('Add custom option') }}
                     </button>
+                </div>
+
+                {{-- Import-options modal (create mode). Parses the file server-
+                     side and appends the rows to newOptions — no nested form,
+                     the file input is unnamed so it never posts with the boat. --}}
+                <div x-show="importOpen" x-cloak x-transition.opacity
+                    @keydown.escape.window="importOpen = false"
+                    class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+                    <div @click.outside="importOpen = false"
+                        class="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[85vh] overflow-y-auto">
+                        <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200">
+                            <h3 class="font-semibold text-gray-900">{{ __('Import options for this boat') }}</h3>
+                            <button type="button" @click="importOpen = false" class="text-gray-400 hover:text-gray-600">
+                                <i class="ri-close-line text-xl"></i>
+                            </button>
+                        </div>
+                        <div class="p-5 space-y-4">
+                            <p class="text-sm text-gray-600">
+                                {{ __('Expected columns:') }}
+                                <span class="font-mono text-xs">FAMILLE, DESIGNATION, PA HT, PA CURRENCY, PV HT, PV CURRENCY, TVA</span>.
+                                {{ __('Prices in USD are converted to EUR automatically.') }}
+                            </p>
+                            <a href="{{ route('catalogue.options.template') }}"
+                                class="inline-flex items-center gap-1 text-sm font-medium text-primary-800 hover:underline">
+                                <i class="ri-download-2-line"></i> {{ __('Download template') }}
+                            </a>
+
+                            <input type="file" x-ref="importFile" accept=".csv,.txt,.xlsx,.xlsm"
+                                class="block w-full text-sm text-gray-700 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-primary-50 file:text-primary-800 hover:file:bg-primary-100" />
+
+                            <template x-if="importErrors.length">
+                                <div class="rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-700 space-y-1 max-h-40 overflow-y-auto">
+                                    <template x-for="(e, i) in importErrors" :key="i">
+                                        <div x-text="e"></div>
+                                    </template>
+                                </div>
+                            </template>
+
+                            <div class="flex items-center justify-end gap-2 pt-2">
+                                <button type="button" @click="importOpen = false"
+                                    class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">{{ __('Cancel') }}</button>
+                                <button type="button" @click="runImport()" :disabled="importing"
+                                    class="inline-flex items-center gap-1 px-4 py-2 text-sm font-semibold bg-primary-800 hover:bg-primary-900 text-white rounded-lg disabled:opacity-50">
+                                    <span x-show="!importing"><i class="ri-upload-2-line"></i> {{ __('Import') }}</span>
+                                    <span x-show="importing" x-cloak><i class="ri-loader-4-line animate-spin"></i> {{ __('Importing…') }}</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </section>
 
@@ -809,11 +871,61 @@
                 equipmentWorkingList: [],   // [{id, label, checked}]
                 equipmentSortable: null,
 
+                // Options-import modal state.
+                importOpen: false,
+                importing: false,
+                importErrors: [],
+                csrfToken: @js(csrf_token()),
+
                 addVersion() {
                     this.versions.push({ name: '', base_price: '', cost: '', currency: 'EUR', equipment: [] });
                 },
                 addOption() {
                     this.newOptions.push({ category: '', label: '', price: '', cost: '' });
+                },
+
+                openImport() {
+                    this.importErrors = [];
+                    if (this.$refs.importFile) this.$refs.importFile.value = '';
+                    this.importOpen = true;
+                },
+                async runImport() {
+                    const input = this.$refs.importFile;
+                    if (!input || !input.files || !input.files.length) {
+                        this.importErrors = ['{{ __('Please choose a file first.') }}'];
+                        return;
+                    }
+                    this.importing = true;
+                    this.importErrors = [];
+                    try {
+                        const fd = new FormData();
+                        fd.append('file', input.files[0]);
+                        fd.append('_token', this.csrfToken);
+                        const res = await fetch('{{ route('catalogue.options.parse') }}', {
+                            method: 'POST',
+                            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
+                            body: fd,
+                        });
+                        const data = await res.json().catch(() => ({}));
+                        if (!res.ok || !data.ok) {
+                            this.importErrors = [data.message || '{{ __('Import failed. Check the file and try again.') }}'];
+                            this.importing = false;
+                            return;
+                        }
+                        (data.rows || []).forEach(r => this.newOptions.push({
+                            category: r.category ?? '',
+                            label:    r.label ?? '',
+                            price:    r.price ?? '',
+                            cost:     r.cost ?? '',
+                        }));
+                        // Keep the good rows; surface any per-row problems.
+                        this.importErrors = (data.errors || []).map(e => `{{ __('Row') }} ${e.row}: ${e.message}`);
+                        this.importing = false;
+                        if (!this.importErrors.length) this.importOpen = false;
+                    } catch (err) {
+                        this.importErrors = ['{{ __('Import failed. Check the file and try again.') }}'];
+                        this.importing = false;
+                    }
                 },
 
                 async openEquipmentModal(i) {

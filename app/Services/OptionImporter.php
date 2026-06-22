@@ -114,39 +114,9 @@ class OptionImporter
      */
     public function import(UploadedFile $file, string $companyId, string $fixedBoatId): array
     {
-        $rows = $this->readFile($file);
-        if (empty($rows)) {
-            return $this->result(errors: [['row' => 0, 'message' => 'File is empty.']]);
-        }
-
-        $headerRow = array_shift($rows);
-        $headerMap = $this->mapHeaders($headerRow);
-        if (empty($headerMap)) {
-            return $this->result(errors: [[
-                'row'     => 1,
-                'message' => 'Could not detect any known column. Expected at least FAMILLE, DESIGNATION, PV HT.',
-            ]]);
-        }
-
-        $missing = array_diff(self::REQUIRED, array_values($headerMap));
-        if (! empty($missing)) {
-            $human = array_map(fn ($m) => match ($m) {
-                'category' => 'FAMILLE',
-                'label'    => 'DESIGNATION',
-                'price'    => 'PV HT',
-                default    => $m,
-            }, $missing);
-            return $this->result(errors: [[
-                'row'     => 1,
-                'message' => 'Missing required column(s): ' . implode(', ', $human),
-            ]]);
-        }
-
-        if (count($rows) > self::MAX_ROWS) {
-            return $this->result(errors: [[
-                'row'     => 0,
-                'message' => 'Too many rows. Split into batches of ' . self::MAX_ROWS . ' or fewer.',
-            ]]);
+        $parsed = $this->parse($file);
+        if ($parsed['fatal'] !== null) {
+            return $this->result(errors: [['row' => 1, 'message' => $parsed['fatal']]]);
         }
 
         $boat = CompanyBoatModel::where('company_id', $companyId)
@@ -159,7 +129,99 @@ class OptionImporter
             ]]);
         }
 
-        $created = 0; $updated = 0; $skipped = 0; $errors = [];
+        $created = 0; $updated = 0;
+
+        foreach ($parsed['rows'] as $row) {
+            // Auto-generated stable key from (category, label). Used for
+            // upsert matching only — the dealer never sees or types it.
+            // Examples:
+            //   "Transport" + "Bandol → Marseille"  → "transport__bandol-marseille"
+            //   "Électronique" + "Garmin 1243xsv"  → "electronique__garmin-1243xsv"
+            $autoCode = Str::slug($row['category']) . '__' . Str::slug($row['label']);
+
+            $existing = CompanyOption::where('company_id', $companyId)
+                ->where('company_model_id', (string) $boat->_id)
+                ->where('code', $autoCode)
+                ->first();
+
+            $payload = [
+                'category'                => $row['category'],
+                'label'                   => $row['label'],
+                'code'                    => $autoCode,
+                'price'                   => $row['price'],
+                'cost'                    => $row['cost'],
+                'vat_rate'                => $row['vat_rate'],
+                'currency'                => 'EUR',
+                'original_cost'           => $row['original_cost'],
+                'original_cost_currency'  => $row['original_cost_currency'],
+                'original_price'          => $row['original_price'],
+                'original_price_currency' => $row['original_price_currency'],
+                'fx_rate_used'            => $row['fx_rate_used'],
+                'fx_rate_date'            => now(),
+                'is_archived'             => false,
+            ];
+
+            if ($existing) {
+                $existing->update($payload);
+                $updated++;
+            } else {
+                $position = (int) (CompanyOption::where('company_id', $companyId)
+                    ->where('company_model_id', (string) $boat->_id)
+                    ->max('position') ?? 0) + 1;
+
+                CompanyOption::create(array_merge($payload, [
+                    'company_id'       => $companyId,
+                    'company_model_id' => (string) $boat->_id,
+                    'global_option_id' => null,
+                    'source'           => 'private',
+                    'position'         => $position,
+                ]));
+                $created++;
+            }
+        }
+
+        return $this->result($created, $updated, $parsed['skipped'], $parsed['errors']);
+    }
+
+    /**
+     * Read + validate + FX-normalise an uploaded options file WITHOUT writing
+     * anything to the database. Shared by import() (edit mode: attaches the
+     * rows to an existing boat) and the Add-boat screen (create mode: the rows
+     * pre-fill the options repeater and save together with the new boat).
+     *
+     * Prices/costs in the returned rows are already converted to EUR.
+     *
+     * @return array{fatal: ?string, rows: array<int,array<string,mixed>>, errors: array<int,array{row:int,message:string}>, skipped: int}
+     */
+    public function parse(UploadedFile $file): array
+    {
+        $rows = $this->readFile($file);
+        if (empty($rows)) {
+            return ['fatal' => 'File is empty.', 'rows' => [], 'errors' => [], 'skipped' => 0];
+        }
+
+        $headerRow = array_shift($rows);
+        $headerMap = $this->mapHeaders($headerRow);
+        if (empty($headerMap)) {
+            return ['fatal' => 'Could not detect any known column. Expected at least FAMILLE, DESIGNATION, PV HT.', 'rows' => [], 'errors' => [], 'skipped' => 0];
+        }
+
+        $missing = array_diff(self::REQUIRED, array_values($headerMap));
+        if (! empty($missing)) {
+            $human = array_map(fn ($m) => match ($m) {
+                'category' => 'FAMILLE',
+                'label'    => 'DESIGNATION',
+                'price'    => 'PV HT',
+                default    => $m,
+            }, $missing);
+            return ['fatal' => 'Missing required column(s): ' . implode(', ', $human), 'rows' => [], 'errors' => [], 'skipped' => 0];
+        }
+
+        if (count($rows) > self::MAX_ROWS) {
+            return ['fatal' => 'Too many rows. Split into batches of ' . self::MAX_ROWS . ' or fewer.', 'rows' => [], 'errors' => [], 'skipped' => 0];
+        }
+
+        $out = []; $skipped = 0; $errors = [];
 
         foreach ($rows as $i => $rawRow) {
             $rowNumber = $i + 2;
@@ -201,55 +263,22 @@ class OptionImporter
                 $rateUsed = $rate; // last-wins; both rates are typically the same anyway
             }
 
-            // Auto-generated stable key from (category, label). Used for
-            // upsert matching only — the dealer never sees or types it.
-            // Examples:
-            //   "Transport" + "Bandol → Marseille"  → "transport__bandol-marseille"
-            //   "Électronique" + "Garmin 1243xsv"  → "electronique__garmin-1243xsv"
-            $autoCode = Str::slug($data['category']) . '__' . Str::slug($data['label']);
-
-            $existing = CompanyOption::where('company_id', $companyId)
-                ->where('company_model_id', (string) $boat->_id)
-                ->where('code', $autoCode)
-                ->first();
-
-            $payload = [
+            $out[] = [
+                'rowNumber'               => $rowNumber,
                 'category'                => $data['category'],
                 'label'                   => $data['label'],
-                'code'                    => $autoCode,
                 'price'                   => $priceEur,
                 'cost'                    => $costEur,
                 'vat_rate'                => $data['vat_rate'],
-                'currency'                => 'EUR',
                 'original_cost'           => $data['cost'],
                 'original_cost_currency'  => $data['cost_currency'],
                 'original_price'          => $data['price'],
                 'original_price_currency' => $data['price_currency'],
                 'fx_rate_used'            => $rateUsed,
-                'fx_rate_date'            => now(),
-                'is_archived'             => false,
             ];
-
-            if ($existing) {
-                $existing->update($payload);
-                $updated++;
-            } else {
-                $position = (int) (CompanyOption::where('company_id', $companyId)
-                    ->where('company_model_id', (string) $boat->_id)
-                    ->max('position') ?? 0) + 1;
-
-                CompanyOption::create(array_merge($payload, [
-                    'company_id'       => $companyId,
-                    'company_model_id' => (string) $boat->_id,
-                    'global_option_id' => null,
-                    'source'           => 'private',
-                    'position'         => $position,
-                ]));
-                $created++;
-            }
         }
 
-        return $this->result($created, $updated, $skipped, $errors);
+        return ['fatal' => null, 'rows' => $out, 'errors' => $errors, 'skipped' => $skipped];
     }
 
     /* ---------------------------------------------------- File readers */

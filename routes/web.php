@@ -153,6 +153,11 @@ Route::middleware(['auth', 'verified', 'maintenance'])->group(function () {
         Route::get('/models/{modelId}/options/template',   [CatalogueController::class, 'optionsTemplateForBoat'])->name('options.template-for-boat');
         Route::post('/models/{modelId}/options/import-file', [CatalogueController::class, 'importOptionsForBoat'])->name('options.import-for-boat');
 
+        // Boat-less variants for the Add-boat screen (no boat id yet): parse a
+        // file into rows the create form pre-fills, and a generic template.
+        Route::get('/options/template',     [CatalogueController::class, 'optionsTemplate'])->name('options.template');
+        Route::post('/options/parse',       [CatalogueController::class, 'parseOptionsFile'])->name('options.parse');
+
         // Brand activation
         // Brand activation / private-brand creation removed 2026-05-23.
         // All global brands are now auto-activated for every dealer; the

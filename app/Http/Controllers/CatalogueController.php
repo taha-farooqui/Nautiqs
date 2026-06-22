@@ -1259,6 +1259,62 @@ class CatalogueController extends Controller
     }
 
     /**
+     * Parse an uploaded options file and return the rows as JSON WITHOUT
+     * persisting. Used by the Add-boat screen: the boat doesn't exist yet, so
+     * instead of importing-to-a-boat we hand the parsed rows back to the form,
+     * which pre-fills the options repeater. They then save together with the
+     * new boat via storeModel(). Reuses the exact same parser as edit mode.
+     */
+    public function parseOptionsFile(Request $request, OptionImporter $importer)
+    {
+        $request->validate([
+            'file' => 'required|file|max:10240|mimes:csv,txt,xlsx,xlsm',
+        ], [], [
+            'file' => __('File'),
+        ]);
+
+        $parsed = $importer->parse($request->file('file'));
+
+        if ($parsed['fatal'] !== null) {
+            return response()->json([
+                'ok'      => false,
+                'message' => $parsed['fatal'],
+                'rows'    => [],
+                'errors'  => [],
+                'skipped' => 0,
+            ], 422);
+        }
+
+        // Only the fields the create-mode repeater captures (category, label,
+        // price, cost — all already in EUR).
+        $rows = array_map(fn ($r) => [
+            'category' => $r['category'],
+            'label'    => $r['label'],
+            'price'    => $r['price'],
+            'cost'     => $r['cost'],
+        ], $parsed['rows']);
+
+        return response()->json([
+            'ok'      => true,
+            'rows'    => $rows,
+            'errors'  => $parsed['errors'],
+            'skipped' => $parsed['skipped'],
+        ]);
+    }
+
+    /**
+     * Boat-less options template download for the Add-boat screen (the boat
+     * has no id yet). Same 7-column layout as the per-boat template.
+     */
+    public function optionsTemplate()
+    {
+        $path = $this->buildOptionsTemplateXlsx();
+        return response()->download($path, 'nautiqs-options-template.xlsx', [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ])->deleteFileAfterSend(true);
+    }
+
+    /**
      * Build a temp XLSX with the option-import columns and a few sample
      * rows so dealers can see exactly how it should look.
      *
