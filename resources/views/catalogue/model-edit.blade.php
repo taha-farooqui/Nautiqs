@@ -249,8 +249,7 @@
 
                 {{-- Custom options repeater. Imported rows land here too. --}}
                 <div class="bg-white rounded-2xl border border-gray-200 p-5">
-                    <h3 class="text-sm font-semibold text-gray-900 mb-1">{{ __('Custom options') }}</h3>
-                    <p class="text-xs text-gray-500 mb-3">{{ __('Anything not in the library — add your own.') }}</p>
+                    <h3 class="text-sm font-semibold text-gray-900 mb-3">{{ __('Custom options') }}</h3>
 
                     <template x-for="(o, i) in newOptions" :key="i">
                         <div class="border border-gray-200 rounded-lg p-3 mb-2 grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
@@ -295,7 +294,7 @@
                      the file input is unnamed so it never posts with the boat. --}}
                 <div x-show="importOpen" x-cloak x-transition.opacity
                     @keydown.escape.window="importOpen = false"
-                    class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+                    class="fixed inset-0 z-50 bg-gray-900/70 flex items-center justify-center p-4">
                     <div @click.outside="importOpen = false"
                         class="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[85vh] overflow-y-auto">
                         <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200">
