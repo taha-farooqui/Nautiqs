@@ -21,8 +21,8 @@ class EmailTemplateObserver
 
         $this->notifications->record([
             'type'    => 'email_template.updated',
-            'title'   => 'Email template saved',
-            'message' => 'Your email template was updated',
+            'title'   => __('Email template saved'),
+            'message' => __('Your email template was updated'),
             'icon'    => 'ri-mail-settings-line',
             'color'   => 'primary',
             'link'    => route('email-templates.edit', $template->type ?? 'quote'),

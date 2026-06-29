@@ -328,7 +328,8 @@ class QuoteController extends Controller
         $company = $quote->company;
 
         $pdf = Pdf::loadView('pdf.quote', compact('quote', 'company'))
-            ->setPaper('a4');
+            ->setPaper('a4')
+            ->setOption('isPhpEnabled', true);
 
         $filename = $quote->number . '.pdf';
 
@@ -423,10 +424,10 @@ class QuoteController extends Controller
         // Order-confirmation emails attach the BC PDF; everything else
         // attaches the quote PDF.
         if ($type === EmailLog::TYPE_ORDER_CONFIRMATION && ! empty($quote->order_confirmation_number)) {
-            $pdf = Pdf::loadView('pdf.order-confirmation', compact('quote', 'company'))->setPaper('a4');
+            $pdf = Pdf::loadView('pdf.order-confirmation', compact('quote', 'company'))->setPaper('a4')->setOption('isPhpEnabled', true);
             $attachmentFilename = $quote->order_confirmation_number . '.pdf';
         } else {
-            $pdf = Pdf::loadView('pdf.quote', compact('quote', 'company'))->setPaper('a4');
+            $pdf = Pdf::loadView('pdf.quote', compact('quote', 'company'))->setPaper('a4')->setOption('isPhpEnabled', true);
             $attachmentFilename = $quote->number . '.pdf';
         }
         $pdfBytes = $pdf->output();
@@ -514,7 +515,8 @@ class QuoteController extends Controller
         $company = $quote->company;
 
         $pdf = Pdf::loadView('pdf.order-confirmation', compact('quote', 'company'))
-            ->setPaper('a4');
+            ->setPaper('a4')
+            ->setOption('isPhpEnabled', true);
 
         return $pdf->download($quote->order_confirmation_number . '.pdf');
     }

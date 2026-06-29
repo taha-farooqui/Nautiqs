@@ -15,8 +15,8 @@ class QuoteObserver
     {
         $this->notifications->record([
             'type'    => 'quote.created',
-            'title'   => 'Quote created',
-            'message' => $quote->number . ' for ' . $this->clientName($quote) . ' (' . $this->amount($quote) . ')',
+            'title'   => __('Quote created'),
+            'message' => __(':number for :client (:amount)', ['number' => $quote->number, 'client' => $this->clientName($quote), 'amount' => $this->amount($quote)]),
             'icon'    => 'ri-file-add-line',
             'color'   => 'primary',
             'link'    => route('quotes.show', $quote->_id),
@@ -39,8 +39,8 @@ class QuoteObserver
             case Quote::STATUS_SENT:
                 $this->notifications->record([
                     'type'    => 'quote.sent',
-                    'title'   => 'Quote sent',
-                    'message' => $quote->number . ' was sent to ' . ($quote->client_snapshot['email'] ?? 'the client'),
+                    'title'   => __('Quote sent'),
+                    'message' => __(':number was sent to :email', ['number' => $quote->number, 'email' => $quote->client_snapshot['email'] ?? __('the client')]),
                     'icon'    => 'ri-send-plane-line',
                     'color'   => 'primary',
                     'link'    => route('quotes.show', $quote->_id),
@@ -50,8 +50,8 @@ class QuoteObserver
             case Quote::STATUS_WON:
                 $this->notifications->record([
                     'type'    => 'quote.won',
-                    'title'   => 'Quote won',
-                    'message' => $quote->number . ' (' . $this->amount($quote) . ') was marked as Won',
+                    'title'   => __('Quote won'),
+                    'message' => __(':number (:amount) was marked as Won', ['number' => $quote->number, 'amount' => $this->amount($quote)]),
                     'icon'    => 'ri-trophy-line',
                     'color'   => 'emerald',
                     'link'    => route('quotes.show', $quote->_id),
@@ -61,8 +61,8 @@ class QuoteObserver
             case Quote::STATUS_LOST:
                 $this->notifications->record([
                     'type'    => 'quote.lost',
-                    'title'   => 'Quote lost',
-                    'message' => $quote->number . ' for ' . $this->clientName($quote) . ' was marked as Lost',
+                    'title'   => __('Quote lost'),
+                    'message' => __(':number for :client was marked as Lost', ['number' => $quote->number, 'client' => $this->clientName($quote)]),
                     'icon'    => 'ri-close-circle-line',
                     'color'   => 'red',
                     'link'    => route('quotes.show', $quote->_id),
@@ -75,8 +75,8 @@ class QuoteObserver
     {
         $this->notifications->record([
             'type'    => 'quote.deleted',
-            'title'   => 'Quote deleted',
-            'message' => $quote->number . ' was deleted',
+            'title'   => __('Quote deleted'),
+            'message' => __(':number was deleted', ['number' => $quote->number]),
             'icon'    => 'ri-delete-bin-line',
             'color'   => 'gray',
             'link'    => null,
@@ -87,11 +87,11 @@ class QuoteObserver
     {
         $first = $quote->client_snapshot['first_name'] ?? '';
         $last  = $quote->client_snapshot['last_name']  ?? '';
-        return trim($first . ' ' . $last) ?: 'a client';
+        return trim($first . ' ' . $last) ?: __('a client');
     }
 
     private function amount(Quote $quote): string
     {
-        return '€' . number_format($quote->totals['total_ttc'] ?? 0, 0, ',', ' ');
+        return number_format($quote->totals['total_ttc'] ?? 0, 0, ',', ' ') . ' €';
     }
 }

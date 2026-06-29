@@ -15,7 +15,7 @@ class ClientObserver
     {
         $this->notifications->record([
             'type'    => 'client.created',
-            'title'   => 'Client added',
+            'title'   => __('Client added'),
             'message' => $client->full_name . ($client->email ? ' (' . $client->email . ')' : ''),
             'icon'    => 'ri-user-add-line',
             'color'   => 'primary',
@@ -32,8 +32,8 @@ class ClientObserver
 
         $this->notifications->record([
             'type'    => 'client.updated',
-            'title'   => 'Client updated',
-            'message' => $client->full_name . ' was updated',
+            'title'   => __('Client updated'),
+            'message' => __(':name was updated', ['name' => $client->full_name]),
             'icon'    => 'ri-edit-line',
             'color'   => 'primary',
             'link'    => route('clients.show', $client->_id),
@@ -44,8 +44,8 @@ class ClientObserver
     {
         $this->notifications->record([
             'type'    => 'client.deleted',
-            'title'   => 'Client deleted',
-            'message' => $client->full_name . ' was deleted',
+            'title'   => __('Client deleted'),
+            'message' => __(':name was deleted', ['name' => $client->full_name]),
             'icon'    => 'ri-delete-bin-line',
             'color'   => 'gray',
             'link'    => null,

@@ -150,7 +150,7 @@ class EngineController extends Controller
             $out = fopen('php://output', 'w');
             // BOM so Excel detects UTF-8.
             fwrite($out, "\xef\xbb\xbf");
-            fputcsv($out, ['Brand', 'Model', 'PV HT', 'PA HT', 'TVA']);
+            fputcsv($out, [__('Brand'), __('Model'), 'PV HT', 'PA HT', 'TVA']);
             fputcsv($out, ['Suzuki',  'DF200A TL/TX', 18500, 14800, 20]);
             fputcsv($out, ['Yamaha',  'F300 NCA',     28900, 23100, 20]);
             fputcsv($out, ['Mercury', 'Verado 350 XL', 34750, 27800, 20]);

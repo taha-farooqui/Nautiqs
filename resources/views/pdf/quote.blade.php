@@ -304,8 +304,22 @@
         <br>
         @if ($company->address) {{ str_replace("\n", ' · ', $company->address) }} @endif
     </div>
-    <div class="page">{{ __('Page') }} <span class="pagenum"></span></div>
 </div>
+
+{{-- Page numbering via DomPDF's {PAGE_NUM}/{PAGE_COUNT} placeholders — the CSS
+     counter(pages) approach renders "/ 0" in pseudo-elements, so draw it here. --}}
+<script type="text/php">
+if (isset($pdf)) {
+    $font  = $fontMetrics->getFont("DejaVu Sans", "normal");
+    $size  = 7.5;
+    $color = [0.612, 0.643, 0.686];
+    $text  = "{{ __('Page') }} {PAGE_NUM} / {PAGE_COUNT}";
+    $tw    = $fontMetrics->getTextWidth("{{ __('Page') }} 00 / 00", $font, $size);
+    $x     = $pdf->get_width() - $tw - 28;
+    $y     = $pdf->get_height() - 32;
+    $pdf->page_text($x, $y, $text, $font, $size, $color);
+}
+</script>
 
 </body>
 </html>
