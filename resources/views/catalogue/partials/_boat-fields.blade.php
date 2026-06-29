@@ -63,12 +63,9 @@
         class="w-full max-w-xl rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />
 </div>
 
-<div class="max-w-xs">
-    <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Default margin (%)') }}</label>
-    <input type="number" step="0.1" min="0" max="100" name="default_margin_pct"
-        value="{{ old('default_margin_pct', $model->default_margin_pct ?? '') }}"
-        class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />
-</div>
+{{-- Default margin field removed: margin is derived automatically from the
+     cost + selling price entered on each version/option, so a per-boat
+     default is no longer needed. The DB column stays for legacy quotes. --}}
 
 {{--
     Hull type / Propulsion / Dimensions / Capacity / Notes — hidden for

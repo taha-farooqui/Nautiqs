@@ -329,6 +329,9 @@
                 <div class="bg-white rounded-2xl border border-gray-200 p-6 flex items-center justify-between">
                     <div>
                         <h4 class="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1">{{ __('Trade-in') }}</h4>
+                        @if (! empty($quote->trade_in['description']))
+                            <p class="text-sm font-medium text-gray-900">{{ $quote->trade_in['description'] }}</p>
+                        @endif
                         <p class="text-sm text-gray-600">{{ __('Deducted from the total payable.') }}</p>
                     </div>
                     <div class="text-2xl font-bold text-amber-700">

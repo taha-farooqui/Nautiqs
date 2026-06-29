@@ -582,7 +582,11 @@
                 </div>
             @endif
 
-            <div class="flex items-center justify-end">
+            <div class="flex items-center justify-end gap-2">
+                <a href="{{ route('catalogue.options.export-for-boat', $model->_id) }}"
+                    class="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium bg-white hover:bg-gray-50 text-gray-800 border border-gray-300 rounded-lg">
+                    <i class="ri-download-2-line"></i> {{ __('Export options to file') }}
+                </a>
                 <button type="button" @click="importOpen = true"
                     class="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium bg-white hover:bg-gray-50 text-gray-800 border border-gray-300 rounded-lg">
                     <i class="ri-upload-2-line"></i> {{ __('Import options from file') }}
@@ -699,50 +703,74 @@
                     'currency' => $o->currency ?? 'EUR',
                 ])->values();
             @endphp
-            <div class="bg-white rounded-2xl border border-gray-200 p-6" x-data="optionsBulk(@js($initialOptions))">
+            <div class="bg-white rounded-2xl border border-gray-200 p-6" x-data="optionsBulk(@js($initialOptions))"
+                 x-init="$nextTick(() => initSortable())">
                 <h2 class="text-base font-semibold text-gray-900 mb-1">{{ __('Options on this boat') }}</h2>
-                <p class="text-xs text-gray-500 mb-4">{{ __('Add options and set prices. USD amounts convert to EUR on save. Everything is saved together with the Save button at the bottom.') }}</p>
+                <p class="text-xs text-gray-500 mb-4">{{ __('Add options and set prices. Drag the handle to reorder. USD amounts convert to EUR on save. Everything is saved together with the Save button at the bottom.') }}</p>
 
-                    <template x-for="(o, i) in options" :key="i">
-                        <div class="border border-gray-200 rounded-lg p-3 mb-2 grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
-                            <input type="hidden" :name="`options[${i}][id]`" :value="o.id" />
-                            <div class="md:col-span-3">
-                                <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Category') }} *</label>
-                                <input type="text" :name="`options[${i}][category]`" x-model="o.category" required placeholder="{{ __('e.g. Electronics') }}"
-                                    class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
-                            </div>
-                            <div class="md:col-span-3">
-                                <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Label') }} *</label>
-                                <input type="text" :name="`options[${i}][label]`" x-model="o.label" required
-                                    class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
-                            </div>
-                            <div class="md:col-span-2">
-                                <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Public HT') }} *</label>
-                                <input type="number" step="0.01" min="0" :name="`options[${i}][price]`" x-model="o.price" required
-                                    class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
-                            </div>
-                            <div class="md:col-span-2">
-                                <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Cost') }}</label>
-                                <input type="number" step="0.01" min="0" :name="`options[${i}][cost]`" x-model="o.cost"
-                                    class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
-                            </div>
-                            <div class="md:col-span-1">
-                                <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Currency') }}</label>
-                                <select :name="`options[${i}][currency]`" x-model="o.currency"
-                                    class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800">
-                                    <option value="EUR">EUR</option>
-                                    <option value="USD">USD</option>
-                                </select>
-                            </div>
-                            <div class="md:col-span-1">
-                                <button type="button" @click="removeOption(i)"
-                                    class="w-full inline-flex items-center justify-center px-3 py-2 text-xs font-medium bg-red-50 hover:bg-red-100 text-red-700 rounded-lg"
-                                    title="{{ __('Remove') }}">
-                                    <i class="ri-delete-bin-line"></i>
-                                </button>
+                    {{-- Select-all + mass delete --}}
+                    <div class="flex items-center justify-between mb-3" x-show="options.length > 0" x-cloak>
+                        <label class="inline-flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                            <input type="checkbox" @change="toggleAll($event)" :checked="allChecked"
+                                class="rounded border-gray-300 text-primary-800 focus:ring-primary-800" />
+                            {{ __('Select all') }}
+                        </label>
+                        <button type="button" x-show="selected.length > 0" x-cloak @click="deleteSelected()"
+                            class="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium bg-red-50 hover:bg-red-100 text-red-700 rounded-lg">
+                            <i class="ri-delete-bin-line"></i> {{ __('Delete selected') }} (<span x-text="selected.length"></span>)
+                        </button>
+                    </div>
+
+                    <div x-ref="optionsList">
+                    <template x-for="(o, i) in options" :key="o._k">
+                        <div :data-k="o._k" class="border border-gray-200 rounded-lg p-3 mb-2 flex items-start gap-2">
+                            <input type="checkbox" :value="o._k" x-model="selected" title="{{ __('Select') }}"
+                                class="mt-7 shrink-0 rounded border-gray-300 text-primary-800 focus:ring-primary-800" />
+                            <button type="button" tabindex="-1" title="{{ __('Drag to reorder') }}"
+                                class="opt-handle cursor-grab text-gray-400 hover:text-gray-600 pt-7 shrink-0">
+                                <i class="ri-draggable text-lg"></i>
+                            </button>
+                            <div class="flex-1 grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+                                <input type="hidden" :name="`options[${i}][id]`" :value="o.id" />
+                                <div class="md:col-span-3">
+                                    <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Category') }} *</label>
+                                    <input type="text" :name="`options[${i}][category]`" x-model="o.category" required placeholder="{{ __('e.g. Electronics') }}"
+                                        class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
+                                </div>
+                                <div class="md:col-span-3">
+                                    <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Label') }} *</label>
+                                    <input type="text" :name="`options[${i}][label]`" x-model="o.label" required
+                                        class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Public HT') }} *</label>
+                                    <input type="number" step="0.01" min="0" :name="`options[${i}][price]`" x-model="o.price" required
+                                        class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Cost') }}</label>
+                                    <input type="number" step="0.01" min="0" :name="`options[${i}][cost]`" x-model="o.cost"
+                                        class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
+                                </div>
+                                <div class="md:col-span-1">
+                                    <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Currency') }}</label>
+                                    <select :name="`options[${i}][currency]`" x-model="o.currency"
+                                        class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800">
+                                        <option value="EUR">EUR</option>
+                                        <option value="USD">USD</option>
+                                    </select>
+                                </div>
+                                <div class="md:col-span-1">
+                                    <button type="button" @click="removeOption(i)"
+                                        class="w-full inline-flex items-center justify-center px-3 py-2 text-xs font-medium bg-red-50 hover:bg-red-100 text-red-700 rounded-lg"
+                                        title="{{ __('Remove') }}">
+                                        <i class="ri-delete-bin-line"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </template>
+                    </div>
 
                     <template x-if="options.length === 0">
                         <p class="text-sm text-gray-500 italic mb-3">{{ __('No options yet — import a file or add a custom one below.') }}</p>
@@ -1104,9 +1132,15 @@
         }
 
         // Edit-mode Options tab — one Alpine array + a single "Save options" form.
+        // Drag-and-drop reorders the array; on Save the new order is persisted
+        // as each option's `position` (syncOptionRows stores position by index).
         function optionsBulk(initial) {
+            let k = 1;
             return {
+                // `_k` is a stable per-row key so Alpine's x-for and SortableJS
+                // agree on identity while dragging (DB id may be blank for new rows).
                 options: (initial || []).map(o => ({
+                    _k: k++,
                     id: o.id || '',
                     category: o.category ?? '',
                     label: o.label ?? '',
@@ -1114,11 +1148,87 @@
                     cost: o.cost ?? '',
                     currency: o.currency || 'EUR',
                 })),
+                sortable: null,
+
+                // Mass-select / delete. `selected` holds the `_k` of ticked rows.
+                selected: [],
+                bulkDestroyUrl: @js($model->exists ? route('catalogue.options.bulk-destroy', $model->_id) : ''),
+                get allChecked() {
+                    return this.options.length > 0 && this.selected.length === this.options.length;
+                },
+                toggleAll(e) {
+                    this.selected = e.target.checked ? this.options.map(o => o._k) : [];
+                },
+                async deleteSelected() {
+                    if (this.selected.length === 0) return;
+                    const ok = await window.nautiqsConfirm({
+                        title: @js(__('Delete the selected options?')),
+                        text: @js(__('This permanently removes them from this boat. This cannot be undone.')),
+                        confirmText: @js(__('Delete')),
+                        danger: true,
+                    });
+                    if (! ok) return;
+
+                    const sel = this.selected.map(String);
+                    // Persisted rows have a DB id; just-added rows don't and only
+                    // need removing from the list.
+                    const ids = this.options
+                        .filter(o => sel.includes(String(o._k)) && o.id)
+                        .map(o => o.id);
+
+                    if (ids.length && this.bulkDestroyUrl) {
+                        const res = await fetch(this.bulkDestroyUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
+                            },
+                            body: JSON.stringify({ ids }),
+                        });
+                        if (! res.ok) {
+                            Swal.fire({ icon: 'error', title: @js(__('Could not delete the options. Please try again.')) });
+                            return;
+                        }
+                    }
+
+                    this.options = this.options.filter(o => ! sel.includes(String(o._k)));
+                    this.selected = [];
+                },
                 addOption() {
-                    this.options.push({ id: '', category: '', label: '', price: '', cost: '', currency: 'EUR' });
+                    this.options.push({ _k: k++, id: '', category: '', label: '', price: '', cost: '', currency: 'EUR' });
                 },
                 removeOption(i) {
                     this.options.splice(i, 1);
+                },
+                initSortable() {
+                    this.ensureSortable().then(() => {
+                        if (! this.$refs.optionsList) return;
+                        if (this.sortable) this.sortable.destroy();
+                        this.sortable = window.Sortable.create(this.$refs.optionsList, {
+                            handle: '.opt-handle',
+                            animation: 150,
+                            ghostClass: 'opacity-50',
+                            onEnd: () => this.applyOrder(),
+                        });
+                    });
+                },
+                ensureSortable() {
+                    if (window.Sortable) return Promise.resolve();
+                    return new Promise((resolve, reject) => {
+                        const s = document.createElement('script');
+                        s.src = 'https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js';
+                        s.onload = resolve; s.onerror = reject;
+                        document.head.appendChild(s);
+                    });
+                },
+                // Read the DOM order SortableJS produced (by data-k) and rebuild
+                // the array to match, so Alpine re-renders rows + input names in
+                // the new order.
+                applyOrder() {
+                    const ks = Array.from(this.$refs.optionsList.querySelectorAll('[data-k]')).map(el => el.dataset.k);
+                    const byK = Object.fromEntries(this.options.map(o => [String(o._k), o]));
+                    this.options = ks.map(kk => byK[kk]).filter(Boolean);
                 },
             };
         }

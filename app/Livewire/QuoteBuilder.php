@@ -72,6 +72,7 @@ class QuoteBuilder extends Component
     // §8.1 Step 7 — Trade-in (§10) — simplified: value only, deducted from total
     public bool $hasTradeIn = false;
     public $trade_in_value = 0; // untyped so a cleared field doesn't crash hydration
+    public string $trade_in_label = ''; // optional name (e.g. the traded-in boat) — shown on the quote
 
     // §15 Multi-currency
     public ?float $exchange_rate = null;
@@ -160,6 +161,7 @@ class QuoteBuilder extends Component
         if (is_array($quote->trade_in) && (($quote->trade_in['value'] ?? 0) > 0)) {
             $this->hasTradeIn = true;
             $this->trade_in_value = (float) ($quote->trade_in['value'] ?? 0);
+            $this->trade_in_label = (string) ($quote->trade_in['description'] ?? '');
         }
     }
 
@@ -562,7 +564,7 @@ class QuoteBuilder extends Component
             'options_discount_pct' => (float) $this->options_discount_pct,
             'global_discount_pct'  => (float) $this->global_discount_pct,
             'trade_in'            => $this->hasTradeIn && $this->trade_in_value > 0
-                ? ['value' => (float) $this->trade_in_value]
+                ? ['value' => (float) $this->trade_in_value, 'description' => trim($this->trade_in_label) ?: null]
                 : null,
             'currency'            => 'EUR',
             // Snapshot whatever rate the totals were computed with (manual

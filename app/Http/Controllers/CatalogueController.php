@@ -197,32 +197,27 @@ class CatalogueController extends Controller
         $modelIds = $models->pluck('_id')->map(fn ($i) => (string) $i)->all();
         $variants = CompanyBoatVariant::whereIn('company_model_id', $modelIds)
             ->where('is_archived', false)
-            ->orderBy('name')
             ->get();
 
-        $brandsById = $companyBrandsActive->keyBy(fn ($b) => (string) $b->_id);
-        $modelsById = $models->keyBy(fn ($m) => (string) $m->_id);
+        $brandsById      = $companyBrandsActive->keyBy(fn ($b) => (string) $b->_id);
+        $variantsByModel = $variants->groupBy(fn ($v) => (string) $v->company_model_id);
 
-        $rows = $variants->map(function ($v) use ($brandsById, $modelsById) {
-            $model = $modelsById[(string) $v->company_model_id] ?? null;
-            $brand = $model ? ($brandsById[(string) $model->company_brand_id] ?? null) : null;
-            return ['variant' => $v, 'model' => $model, 'brand' => $brand];
-        });
-
-        // Boats with no version yet still get one row so they appear in the
-        // catalogue as "Draft". A boat is Draft until its first version is
-        // added (the list derives the status from whether a variant exists).
-        $modelsWithVariants = $variants
-            ->pluck('company_model_id')->map(fn ($i) => (string) $i)->unique()->all();
-        $versionlessRows = $models
-            ->reject(fn ($m) => in_array((string) $m->_id, $modelsWithVariants, true))
-            ->map(fn ($m) => [
-                'variant' => null,
-                'model'   => $m,
-                'brand'   => $brandsById[(string) $m->company_brand_id] ?? null,
-            ])
-            ->values();
-        $rows = $rows->concat($versionlessRows);
+        // One row per MODEL (not per version): some models have many versions
+        // and listing each was noisy. The row shows how many versions a model
+        // has; clicking opens the editor where the versions live. "From TTC"
+        // is the cheapest version's TTC. A model with no version is a Draft.
+        $rows = $models->map(function ($m) use ($brandsById, $variantsByModel) {
+            $mv     = $variantsByModel[(string) $m->_id] ?? collect();
+            $minTtc = $mv->isNotEmpty()
+                ? $mv->map(fn ($v) => (float) $v->base_price * (1 + ($v->vat_rate ?? 20) / 100))->min()
+                : null;
+            return [
+                'model'         => $m,
+                'brand'         => $brandsById[(string) $m->company_brand_id] ?? null,
+                'variant_count' => $mv->count(),
+                'min_ttc'       => $minTtc,
+            ];
+        })->values();
 
         return view('catalogue.models', [
             'rows'        => $rows,
@@ -1187,6 +1182,43 @@ class CatalogueController extends Controller
         return back()->with('status', __('Option removed.'));
     }
 
+    /**
+     * Mass-delete options from a boat (the editor's "select all → delete"
+     * action). Deletes per-id — MongoDB's whereIn('_id', [...]) does NOT cast
+     * string ids to ObjectIds, so a single where('_id', $id) per row is used
+     * (same as reorderOptions). Global-sourced options are archived, not
+     * destroyed, so the global twin can be re-snapshotted later.
+     */
+    public function optionsBulkDestroy(string $modelId, Request $request)
+    {
+        $companyId = (string) auth()->user()->company_id;
+        CompanyBoatModel::where('_id', $modelId)
+            ->where('company_id', $companyId)
+            ->firstOrFail();
+
+        $data = $request->validate([
+            'ids'   => 'required|array',
+            'ids.*' => 'string',
+        ]);
+
+        $deleted = 0;
+        foreach ($data['ids'] as $id) {
+            $option = CompanyOption::where('_id', $id)
+                ->where('company_model_id', $modelId)
+                ->where('company_id', $companyId)
+                ->first();
+            if (! $option) continue;
+            if ($option->source === 'global') {
+                $option->update(['is_archived' => true]);
+            } else {
+                $option->delete();
+            }
+            $deleted++;
+        }
+
+        return response()->json(['ok' => true, 'deleted' => $deleted]);
+    }
+
     public function reorderOptions(string $modelId, Request $request)
     {
         CompanyBoatModel::findOrFail($modelId);
@@ -1315,6 +1347,57 @@ class CatalogueController extends Controller
     }
 
     /**
+     * Export this boat's current options as an editable XLSX. The dealer edits
+     * the prices and re-imports: rows are matched back by the CODE column, so
+     * existing options are updated in place (even if the label changed) and
+     * only genuinely new rows create new options. The file is the same shape
+     * the importer reads, plus a leading CODE column.
+     */
+    public function optionsExportForBoat(string $modelId)
+    {
+        $companyId = (string) auth()->user()->company_id;
+        $boat = CompanyBoatModel::where('_id', $modelId)
+            ->where('company_id', $companyId)
+            ->firstOrFail();
+
+        $options = CompanyOption::where('company_id', $companyId)
+            ->where('company_model_id', $modelId)
+            ->where('is_archived', false)
+            ->orderBy('position')
+            ->get();
+
+        $headers = ['CODE', 'FAMILLE', 'DESIGNATION', 'PA HT', 'PA CURRENCY', 'PV HT', 'PV CURRENCY', 'TVA'];
+        $rows = [];
+        foreach ($options as $o) {
+            // Guarantee a stable code on every row so the round-trip matches on
+            // re-import. Options created in the editor may not have one yet —
+            // backfill it now (derived from category + label).
+            $code = $o->code;
+            if (empty($code)) {
+                $code = \Illuminate\Support\Str::slug((string) $o->category) . '__' . \Illuminate\Support\Str::slug((string) $o->label);
+                $o->update(['code' => $code]);
+            }
+            $rows[] = [
+                $code,
+                (string) $o->category,
+                (string) $o->label,
+                (float) ($o->cost ?? 0),
+                'EUR',
+                (float) $o->price,
+                'EUR',
+                $o->vat_rate ?? 20,
+            ];
+        }
+
+        $widths = [22, 18, 40, 12, 14, 12, 14, 8];
+        $path = $this->buildOptionsXlsx($headers, $rows, $widths);
+        $safeName = preg_replace('/[^A-Za-z0-9_-]+/', '-', $boat->name);
+        return response()->download($path, "nautiqs-options-{$safeName}.xlsx", [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ])->deleteFileAfterSend(true);
+    }
+
+    /**
      * Build a temp XLSX with the option-import columns and a few sample
      * rows so dealers can see exactly how it should look.
      *
@@ -1337,6 +1420,21 @@ class CatalogueController extends Controller
             ['Confort',      'Bimini + rideaux',           950, 'EUR', 1800,    'EUR', 20],
             ['Électronique', 'Raymarine Axiom 12 (US)',   3200, 'USD', 4500,    'USD', 20],
         ];
+
+        $widths = [18, 40, 12, 14, 12, 14, 8];
+
+        return $this->buildOptionsXlsx($headers, $samples, $widths);
+    }
+
+    /**
+     * Generic XLSX writer for the option columns. $rows is a list of rows
+     * (positional arrays aligned to $headers): numeric cells stay numeric,
+     * strings go to the shared-strings table. Returns a temp file path.
+     * Shared by the import template and the per-boat export.
+     */
+    private function buildOptionsXlsx(array $headers, array $rows, array $widths): string
+    {
+        $samples = $rows;
 
         $strings = []; $sMap = [];
         $idx = function (string $s) use (&$strings, &$sMap): int {
@@ -1384,8 +1482,6 @@ class CatalogueController extends Controller
         }
         $sstXml .= '</sst>';
 
-        // Width per column (FAMILLE, DESIGNATION, PA HT, PA CURRENCY, PV HT, PV CURRENCY, TVA).
-        $widths = [18, 40, 12, 14, 12, 14, 8];
         $colsXml = '<cols>';
         foreach ($widths as $i => $w) {
             $colsXml .= '<col min="' . ($i + 1) . '" max="' . ($i + 1) . '" width="' . $w . '" customWidth="1"/>';

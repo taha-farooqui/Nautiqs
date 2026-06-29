@@ -101,6 +101,16 @@ class OptionImporter
         'vat'            => 'vat_rate',
         'vat rate'       => 'vat_rate',
         'taux tva'       => 'vat_rate',
+
+        // Stable identifier — present in exported files so a re-import updates
+        // the same option in place even if its label/category was edited. Files
+        // typed by hand can omit it; then matching falls back to (category, label).
+        'code'           => 'code',
+        'option code'    => 'code',
+        'code option'    => 'code',
+        'reference'      => 'code',
+        'référence'      => 'code',
+        'ref'            => 'code',
     ];
 
     private const REQUIRED = ['category', 'label', 'price'];
@@ -132,22 +142,25 @@ class OptionImporter
         $created = 0; $updated = 0;
 
         foreach ($parsed['rows'] as $row) {
-            // Auto-generated stable key from (category, label). Used for
-            // upsert matching only — the dealer never sees or types it.
-            // Examples:
+            // Match key. When the file carries an explicit CODE (exported files
+            // do), we match on it so a price/label edit updates the same row in
+            // place. Otherwise fall back to a key auto-derived from
+            // (category, label) — the dealer never has to type either.
             //   "Transport" + "Bandol → Marseille"  → "transport__bandol-marseille"
             //   "Électronique" + "Garmin 1243xsv"  → "electronique__garmin-1243xsv"
-            $autoCode = Str::slug($row['category']) . '__' . Str::slug($row['label']);
+            $autoCode     = Str::slug($row['category']) . '__' . Str::slug($row['label']);
+            $providedCode = trim((string) ($row['code'] ?? ''));
+            $matchCode    = $providedCode !== '' ? $providedCode : $autoCode;
 
             $existing = CompanyOption::where('company_id', $companyId)
                 ->where('company_model_id', (string) $boat->_id)
-                ->where('code', $autoCode)
+                ->where('code', $matchCode)
                 ->first();
 
             $payload = [
                 'category'                => $row['category'],
                 'label'                   => $row['label'],
-                'code'                    => $autoCode,
+                'code'                    => $matchCode,
                 'price'                   => $row['price'],
                 'cost'                    => $row['cost'],
                 'vat_rate'                => $row['vat_rate'],
@@ -265,6 +278,7 @@ class OptionImporter
 
             $out[] = [
                 'rowNumber'               => $rowNumber,
+                'code'                    => $data['code'],
                 'category'                => $data['category'],
                 'label'                   => $data['label'],
                 'price'                   => $priceEur,
@@ -398,6 +412,7 @@ class OptionImporter
     private function extract(array $rawRow, array $headerMap): array
     {
         $out = [
+            'code'           => '',
             'category'       => '',
             'label'          => '',
             'cost'           => 0.0,
@@ -410,6 +425,7 @@ class OptionImporter
         foreach ($headerMap as $col => $field) {
             $raw = trim((string) ($rawRow[$col] ?? ''));
             switch ($field) {
+                case 'code':
                 case 'category':
                 case 'label':
                     $out[$field] = $raw;

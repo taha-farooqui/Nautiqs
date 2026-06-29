@@ -37,5 +37,20 @@ return Application::configure(basePath: dirname(__DIR__))
         );
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        // A stale CSRF token (419 Page Expired) — typically a tab left open
+        // past the session lifetime, most visibly when logging out. Rather
+        // than show the bare 419 page, complete the logout (if that's what
+        // was attempted) and send the user to the login screen to re-auth.
+        $exceptions->render(function (\Illuminate\Session\TokenMismatchException $e, \Illuminate\Http\Request $request) {
+            if ($request->routeIs('logout') || $request->is('logout')) {
+                \Illuminate\Support\Facades\Auth::guard('web')->logout();
+                if ($request->hasSession()) {
+                    $request->session()->invalidate();
+                    $request->session()->regenerateToken();
+                }
+            }
+
+            return redirect()->route('login')
+                ->with('status', __('Your session expired — please sign in again.'));
+        });
     })->create();

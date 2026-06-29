@@ -151,6 +151,7 @@ Route::middleware(['auth', 'verified', 'maintenance'])->group(function () {
         // omits the CODE MODELE column entirely — the dealer doesn't need to
         // remember or type the boat's internal code.
         Route::get('/models/{modelId}/options/template',   [CatalogueController::class, 'optionsTemplateForBoat'])->name('options.template-for-boat');
+        Route::get('/models/{modelId}/options/export',     [CatalogueController::class, 'optionsExportForBoat'])->name('options.export-for-boat');
         Route::post('/models/{modelId}/options/import-file', [CatalogueController::class, 'importOptionsForBoat'])->name('options.import-for-boat');
 
         // Boat-less variants for the Add-boat screen (no boat id yet): parse a
@@ -196,6 +197,7 @@ Route::middleware(['auth', 'verified', 'maintenance'])->group(function () {
         Route::post('/models/{modelId}/options/sync',            [CatalogueController::class, 'syncOptions'])->name('options.sync');
         Route::post('/models/{modelId}/options/import',          [CatalogueController::class, 'importGlobalOptions'])->name('options.import');
         Route::post('/models/{modelId}/options/reorder',         [CatalogueController::class, 'reorderOptions'])->name('options.reorder');
+        Route::post('/models/{modelId}/options/bulk-destroy',     [CatalogueController::class, 'optionsBulkDestroy'])->name('options.bulk-destroy');
         Route::patch('/options/{optionId}',                      [CatalogueController::class, 'updateOption'])->name('options.update');
         Route::delete('/options/{optionId}',                     [CatalogueController::class, 'destroyOption'])->name('options.destroy');
     });

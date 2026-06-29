@@ -20,7 +20,7 @@
             <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-opacity="0.25"></circle>
             <path d="M22 12a10 10 0 0 1-10 10" stroke="currentColor" stroke-width="3" stroke-linecap="round"></path>
         </svg>
-        Updating…
+        {{ __('Updating…') }}
     </div>
 
     {{-- LEFT: configuration steps (always visible) --}}
@@ -152,7 +152,7 @@
                     class="rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800 text-sm disabled:bg-gray-50 disabled:text-gray-400">
                     <option value="">— {{ __('Model') }} —</option>
                     @foreach ($this->models as $m)
-                        <option value="{{ $m->_id }}">{{ $m->name }} ({{ $m->code }})</option>
+                        <option value="{{ $m->_id }}">{{ $m->name }}</option>
                     @endforeach
                 </select>
             </div>
@@ -501,13 +501,21 @@
                 </label>
             </div>
             @if ($hasTradeIn && $hasVariant)
-                <div class="flex items-center gap-3">
-                    <label class="text-sm text-gray-700">{{ __('Trade-in value') }}</label>
-                    <span class="text-sm text-gray-500">€</span>
-                    <input type="number" step="0.01" min="0" placeholder="0.00"
-                        wire:model.live.debounce.300ms="trade_in_value"
-                        class="flex-1 max-w-xs rounded border-gray-300 text-sm text-right focus:border-primary-800 focus:ring-primary-800" />
-                    <span class="text-xs text-gray-500">{{ __('deducted from total') }}</span>
+                <div class="space-y-3">
+                    <div class="flex items-center gap-3">
+                        <label class="text-sm text-gray-700 w-28 shrink-0">{{ __('Trade-in name') }}</label>
+                        <input type="text" placeholder="{{ __('e.g. Quicksilver 605 (2019)') }}"
+                            wire:model.live.debounce.500ms="trade_in_label"
+                            class="flex-1 max-w-md rounded border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <label class="text-sm text-gray-700 w-28 shrink-0">{{ __('Trade-in value') }}</label>
+                        <span class="text-sm text-gray-500">€</span>
+                        <input type="number" step="0.01" min="0" placeholder="0.00"
+                            wire:model.live.debounce.300ms="trade_in_value"
+                            class="flex-1 max-w-xs rounded border-gray-300 text-sm text-right focus:border-primary-800 focus:ring-primary-800" />
+                        <span class="text-xs text-gray-500">{{ __('deducted from total') }}</span>
+                    </div>
                 </div>
             @endif
         </div>

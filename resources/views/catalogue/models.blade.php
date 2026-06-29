@@ -76,8 +76,8 @@
                 <tbody class="divide-y divide-gray-100">
                     @foreach ($rows as $r)
                         @php
-                            $v = $r['variant']; $m = $r['model']; $b = $r['brand'];
-                            $ttc = $v ? $v->base_price * (1 + ($v->vat_rate ?? 20) / 100) : null;
+                            $m = $r['model']; $b = $r['brand'];
+                            $count = $r['variant_count']; $ttc = $r['min_ttc'];
                         @endphp
                         <tr class="hover:bg-gray-50 cursor-pointer"
                             data-href="{{ route('catalogue.models.edit', $m?->_id) }}"
@@ -85,14 +85,14 @@
                             <td class="px-5 py-3 font-medium text-gray-900">{{ $b?->name ?? '—' }}</td>
                             <td class="px-5 py-3">
                                 <p class="font-medium text-gray-900">{{ $m?->name ?? '—' }}{{ $m?->complement ? ' ' . $m->complement : '' }}</p>
-                                @if ($v)
-                                    <p class="text-xs text-gray-500">{{ $v->name }}</p>
+                                @if ($count > 0)
+                                    <p class="text-xs text-gray-500">{{ $count }} {{ __('version(s)') }}</p>
                                 @else
                                     <p class="text-xs text-amber-600 italic">{{ __('No versions yet') }}</p>
                                 @endif
                             </td>
                             <td class="px-5 py-3">
-                                @if ($v)
+                                @if ($count > 0)
                                     <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[11px] font-semibold">
                                         <i class="ri-checkbox-circle-fill"></i> {{ __('Active') }}
                                     </span>
