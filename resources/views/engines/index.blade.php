@@ -175,9 +175,9 @@
                                 </td>
                                 <td class="px-5 py-3 font-medium text-gray-900">{{ $engine->brand }}</td>
                                 <td class="px-5 py-3 text-gray-700">{{ $engine->code }}</td>
-                                <td class="px-5 py-3 text-right font-semibold text-gray-900">€{{ number_format($engine->price, 2, ',', ' ') }}</td>
+                                <td class="px-5 py-3 text-right font-semibold text-gray-900">{{ number_format($engine->price, 2, ',', ' ') }} €</td>
                                 <td class="px-5 py-3 text-right text-gray-700">{{ number_format($engine->vat_rate, 2) }}%</td>
-                                <td class="px-5 py-3 text-right font-semibold text-gray-900">€{{ number_format($engine->ttc, 2, ',', ' ') }}</td>
+                                <td class="px-5 py-3 text-right font-semibold text-gray-900">{{ number_format($engine->ttc, 2, ',', ' ') }} €</td>
                                 <td class="px-5 py-3">
                                     <div class="flex items-center justify-end gap-1">
                                         <a href="{{ route('engines.edit', $engine->id) }}"

@@ -61,7 +61,7 @@
                 <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
                 <span class="text-sm text-gray-600">{{ __('Total quoted (excl. VAT)') }}</span>
             </div>
-            <p class="text-3xl font-bold text-gray-900">€{{ nautiqs_format_short($totalQuotedThisMonth) }}</p>
+            <p class="text-3xl font-bold text-gray-900">{{ nautiqs_format_short($totalQuotedThisMonth) }} €</p>
             <p class="text-xs mt-2 {{ ($totalQuotedDeltaPct ?? 0) > 0 ? 'text-emerald-600' : (($totalQuotedDeltaPct ?? 0) < 0 ? 'text-red-600' : 'text-gray-500') }}">
                 @if ($totalQuotedDeltaPct === null)
                     <i class="ri-subtract-line"></i> {{ __('No data last month') }}
@@ -81,7 +81,7 @@
                 <span class="w-2 h-2 rounded-full bg-amber-500"></span>
                 <span class="text-sm text-gray-600">{{ __('Revenue won this month') }}</span>
             </div>
-            <p class="text-3xl font-bold text-gray-900">€{{ nautiqs_format_short($revenueWonThisMonth) }}</p>
+            <p class="text-3xl font-bold text-gray-900">{{ nautiqs_format_short($revenueWonThisMonth) }} €</p>
             <p class="text-xs mt-2 {{ ($revenueWonDeltaPct ?? 0) > 0 ? 'text-emerald-600' : (($revenueWonDeltaPct ?? 0) < 0 ? 'text-red-600' : 'text-gray-500') }}">
                 @if ($revenueWonDeltaPct === null)
                     <i class="ri-subtract-line"></i> {{ __('No data last month') }}
@@ -268,10 +268,10 @@
                                     </td>
                                     <td class="px-5 py-3 text-right">
                                         <div class="font-semibold text-gray-900">
-                                            €{{ number_format($q->totals['total_ht'] ?? 0, 0, ',', ' ') }}
+                                            {{ number_format($q->totals['total_ht'] ?? 0, 0, ',', ' ') }} €
                                         </div>
                                         <div class="text-xs text-gray-500">
-                                            {{ __('VAT incl.') }} €{{ number_format($q->totals['total_ttc'] ?? 0, 0, ',', ' ') }}
+                                            {{ __('VAT incl.') }} {{ number_format($q->totals['total_ttc'] ?? 0, 0, ',', ' ') }} €
                                         </div>
                                     </td>
                                     <td class="px-5 py-3"><x-app.status-pill :status="$q->status" /></td>

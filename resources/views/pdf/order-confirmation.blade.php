@@ -110,8 +110,8 @@
     <tr class="item-row">
         <td><span class="qopt-name">{{ $baseLabel }}</span></td>
         <td class="qopt-qty" style="width:12mm;">1</td>
-        <td class="qopt-unit" style="width:30mm;">€{{ number_format($t['base_price_gross'] ?? 0, 2, ',', ' ') }}</td>
-        <td class="qopt-total" style="width:32mm;">€{{ number_format($t['base_ht'] ?? 0, 2, ',', ' ') }}</td>
+        <td class="qopt-unit" style="width:30mm;">{{ number_format($t['base_price_gross'] ?? 0, 2, ',', ' ') }} €</td>
+        <td class="qopt-total" style="width:32mm;">{{ number_format($t['base_ht'] ?? 0, 2, ',', ' ') }} €</td>
     </tr>
 
     @foreach ($optionRows as $category => $items)
@@ -120,8 +120,8 @@
             <tr class="item-row">
                 <td><span class="qopt-name">{{ $opt['label'] ?? '' }}</span></td>
                 <td class="qopt-qty">{{ $opt['quantity'] ?? 1 }}</td>
-                <td class="qopt-unit">€{{ number_format($opt['unit_price'] ?? 0, 2, ',', ' ') }}</td>
-                <td class="qopt-total">€{{ number_format($opt['line_after_cat'] ?? 0, 2, ',', ' ') }}</td>
+                <td class="qopt-unit">{{ number_format($opt['unit_price'] ?? 0, 2, ',', ' ') }} €</td>
+                <td class="qopt-total">{{ number_format($opt['line_after_cat'] ?? 0, 2, ',', ' ') }} €</td>
             </tr>
         @endforeach
     @endforeach
@@ -132,8 +132,8 @@
             <tr class="item-row">
                 <td><span class="qopt-name">{{ $ci['label'] ?? '' }}</span></td>
                 <td class="qopt-qty">1</td>
-                <td class="qopt-unit">€{{ number_format($ci['amount'] ?? 0, 2, ',', ' ') }}</td>
-                <td class="qopt-total">€{{ number_format($ci['line_after_cat'] ?? $ci['amount'] ?? 0, 2, ',', ' ') }}</td>
+                <td class="qopt-unit">{{ number_format($ci['amount'] ?? 0, 2, ',', ' ') }} €</td>
+                <td class="qopt-total">{{ number_format($ci['line_after_cat'] ?? $ci['amount'] ?? 0, 2, ',', ' ') }} €</td>
             </tr>
         @endforeach
     @endif
@@ -158,7 +158,7 @@
                         @if (! empty($quote->trade_in['description']))
                             {{ $quote->trade_in['description'] }}<br>
                         @endif
-                        {{ __('Trade-in value') }}: <strong>€{{ number_format($quote->trade_in['value'], 2, ',', ' ') }}</strong>
+                        {{ __('Trade-in value') }}: <strong>{{ number_format($quote->trade_in['value'], 2, ',', ' ') }} €</strong>
                     </div>
                 </div>
             @endif
@@ -168,29 +168,29 @@
             <table class="qtotals">
                 <tr class="row-white">
                     <td class="label">{{ __('Subtotal excl. VAT') }}</td>
-                    <td class="val">€{{ number_format($t['subtotal_ht'] ?? 0, 2, ',', ' ') }}</td>
+                    <td class="val">{{ number_format($t['subtotal_ht'] ?? 0, 2, ',', ' ') }} €</td>
                 </tr>
                 <tr class="row-white">
                     <td class="label">{{ __('Total excl. VAT') }}</td>
-                    <td class="val">€{{ number_format($t['total_ht'] ?? 0, 2, ',', ' ') }}</td>
+                    <td class="val">{{ number_format($t['total_ht'] ?? 0, 2, ',', ' ') }} €</td>
                 </tr>
                 <tr class="row-white">
                     <td class="label">{{ __('VAT') }} ({{ number_format($t['vat_rate'] ?? 20, 0) }}%)</td>
-                    <td class="val">+€{{ number_format($t['vat_amount'] ?? 0, 2, ',', ' ') }}</td>
+                    <td class="val">+{{ number_format($t['vat_amount'] ?? 0, 2, ',', ' ') }} €</td>
                 </tr>
                 <tr class="row-ttc">
                     <td class="label">{{ __('Total incl. VAT') }}</td>
-                    <td class="val">€{{ number_format($t['total_ttc'] ?? 0, 2, ',', ' ') }}</td>
+                    <td class="val">{{ number_format($t['total_ttc'] ?? 0, 2, ',', ' ') }} €</td>
                 </tr>
                 @if (($t['trade_in_deduction'] ?? 0) > 0)
                     <tr class="row-tradein">
                         <td class="label">{{ __('Trade-in deduction') }}</td>
-                        <td class="val">−€{{ number_format($t['trade_in_deduction'], 2, ',', ' ') }}</td>
+                        <td class="val">-{{ number_format($t['trade_in_deduction'], 2, ',', ' ') }} €</td>
                     </tr>
                 @endif
                 <tr class="row-net">
                     <td class="label">{{ __('Net payable') }}</td>
-                    <td class="val">€{{ number_format($t['net_payable'] ?? $t['total_ttc'] ?? 0, 2, ',', ' ') }}</td>
+                    <td class="val">{{ number_format($t['net_payable'] ?? $t['total_ttc'] ?? 0, 2, ',', ' ') }} €</td>
                 </tr>
             </table>
         </td>

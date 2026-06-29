@@ -180,8 +180,8 @@
                             <td class="px-5 py-3 font-medium text-gray-900">{{ $e->brand }}</td>
                             <td class="px-5 py-3"><span class="font-mono text-xs bg-gray-100 px-2 py-0.5 rounded">{{ $e->code }}</span></td>
                             <td class="px-5 py-3 text-right text-gray-700">{{ $e->horsepower ? number_format($e->horsepower, 0) : '—' }}</td>
-                            <td class="px-5 py-3 text-right text-gray-700">{{ $e->cost ? ($e->currency === 'USD' ? '$' : '€') . number_format($e->cost, 0, ',', ' ') : '—' }}</td>
-                            <td class="px-5 py-3 text-right font-semibold text-gray-900">{{ $e->currency === 'USD' ? '$' : '€' }}{{ number_format($e->price, 0, ',', ' ') }}</td>
+                            <td class="px-5 py-3 text-right text-gray-700">{{ $e->cost ? number_format($e->cost, 0, ',', ' ') . ' ' . ($e->currency === 'USD' ? '$' : '€') : '—' }}</td>
+                            <td class="px-5 py-3 text-right font-semibold text-gray-900">{{ number_format($e->price, 0, ',', ' ') }} {{ $e->currency === 'USD' ? '$' : '€' }}</td>
                             <td class="px-5 py-3 text-right text-gray-700">{{ $e->vat_rate ? $e->vat_rate . '%' : '—' }}</td>
                             <td class="px-5 py-3 text-right whitespace-nowrap">
                                 @if ($status === 'archived')

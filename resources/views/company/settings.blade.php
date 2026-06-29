@@ -178,7 +178,7 @@
                         <span class="text-sm text-gray-700">$1 =</span>
                         <span class="text-sm font-semibold text-gray-900">
                             @if ($usdEur)
-                                €{{ number_format($usdEur, 4, ',', ' ') }}
+                                {{ number_format($usdEur, 4, ',', ' ') }} €
                             @else
                                 {{ __('unavailable') }}
                             @endif

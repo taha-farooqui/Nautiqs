@@ -74,8 +74,8 @@
                                 @endif
                             </td>
                             <td class="px-5 py-3 font-medium text-gray-900">{{ $v->name }}</td>
-                            <td class="px-5 py-3 text-right font-semibold text-gray-900">{{ $v->currency === 'USD' ? '$' : '€' }}{{ number_format($v->base_price, 0, ',', ' ') }}</td>
-                            <td class="px-5 py-3 text-right text-gray-700">{{ $v->cost ? ($v->currency === 'USD' ? '$' : '€') . number_format($v->cost, 0, ',', ' ') : '—' }}</td>
+                            <td class="px-5 py-3 text-right font-semibold text-gray-900">{{ number_format($v->base_price, 0, ',', ' ') }} {{ $v->currency === 'USD' ? '$' : '€' }}</td>
+                            <td class="px-5 py-3 text-right text-gray-700">{{ $v->cost ? number_format($v->cost, 0, ',', ' ') . ' ' . ($v->currency === 'USD' ? '$' : '€') : '—' }}</td>
                             <td class="px-5 py-3 text-gray-700">{{ $v->currency }}</td>
                             <td class="px-5 py-3 text-right whitespace-nowrap">
                                 @if ($status === 'archived')

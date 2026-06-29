@@ -79,7 +79,7 @@
                                     <div class="text-xs text-gray-500">{{ $quote->model_snapshot['brand'] ?? '' }}</div>
                                 </td>
                                 <td class="px-4 py-3 text-right font-semibold text-gray-900">
-                                    €{{ number_format($quote->totals['total_ht'] ?? 0, 0, ',', ' ') }}
+                                    {{ number_format($quote->totals['total_ht'] ?? 0, 0, ',', ' ') }} €
                                 </td>
                                 <td class="px-4 py-3 text-xs text-gray-500">
                                     <div>{{ $quote->trashed_at?->translatedFormat('j M Y') }}</div>

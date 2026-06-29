@@ -298,8 +298,8 @@
                                         <div class="text-xs text-gray-500">{{ $opt['category'] ?? '' }}</div>
                                     </td>
                                     <td class="py-2 text-right">{{ $opt['quantity'] ?? 1 }}</td>
-                                    <td class="py-2 text-right">€{{ number_format($opt['unit_price'] ?? 0, 2, ',', ' ') }}</td>
-                                    <td class="py-2 text-right font-medium">€{{ number_format($opt['line_after_cat'] ?? 0, 2, ',', ' ') }}</td>
+                                    <td class="py-2 text-right">{{ number_format($opt['unit_price'] ?? 0, 2, ',', ' ') }} €</td>
+                                    <td class="py-2 text-right font-medium">{{ number_format($opt['line_after_cat'] ?? 0, 2, ',', ' ') }} €</td>
                                 </tr>
                             @endforeach
                         </tbody>
@@ -316,7 +316,7 @@
                             @foreach ($quote->custom_items as $ci)
                                 <tr>
                                     <td class="py-2 font-medium text-gray-900">{{ $ci['label'] ?? '' }}</td>
-                                    <td class="py-2 text-right font-medium">€{{ number_format($ci['line_after_cat'] ?? $ci['amount'] ?? 0, 2, ',', ' ') }}</td>
+                                    <td class="py-2 text-right font-medium">{{ number_format($ci['line_after_cat'] ?? $ci['amount'] ?? 0, 2, ',', ' ') }} €</td>
                                 </tr>
                             @endforeach
                         </tbody>
@@ -335,7 +335,7 @@
                         <p class="text-sm text-gray-600">{{ __('Deducted from the total payable.') }}</p>
                     </div>
                     <div class="text-2xl font-bold text-amber-700">
-                        −€{{ number_format($quote->trade_in['value'], 2, ',', ' ') }}
+                        -{{ number_format($quote->trade_in['value'], 2, ',', ' ') }} €
                     </div>
                 </div>
             @endif
@@ -365,21 +365,21 @@
                 </div>
                 @php $t = $quote->totals ?? []; @endphp
                 <dl class="p-5 space-y-2 text-sm">
-                    <div class="flex justify-between"><dt class="text-gray-600">{{ __('Base (HT)') }}</dt><dd class="font-medium">€{{ number_format($t['base_ht'] ?? 0, 2, ',', ' ') }}</dd></div>
-                    <div class="flex justify-between"><dt class="text-gray-600">{{ __('Options (HT)') }}</dt><dd class="font-medium">€{{ number_format($t['options_ht'] ?? 0, 2, ',', ' ') }}</dd></div>
-                    <div class="flex justify-between"><dt class="text-gray-600">{{ __('Custom (HT)') }}</dt><dd class="font-medium">€{{ number_format($t['custom_items_ht'] ?? 0, 2, ',', ' ') }}</dd></div>
+                    <div class="flex justify-between"><dt class="text-gray-600">{{ __('Base (HT)') }}</dt><dd class="font-medium">{{ number_format($t['base_ht'] ?? 0, 2, ',', ' ') }} €</dd></div>
+                    <div class="flex justify-between"><dt class="text-gray-600">{{ __('Options (HT)') }}</dt><dd class="font-medium">{{ number_format($t['options_ht'] ?? 0, 2, ',', ' ') }} €</dd></div>
+                    <div class="flex justify-between"><dt class="text-gray-600">{{ __('Custom (HT)') }}</dt><dd class="font-medium">{{ number_format($t['custom_items_ht'] ?? 0, 2, ',', ' ') }} €</dd></div>
                     @if (($t['global_discount_amount'] ?? 0) > 0)
-                        <div class="flex justify-between text-red-600"><dt>{{ __('Global discount') }}</dt><dd class="font-medium">−€{{ number_format($t['global_discount_amount'], 2, ',', ' ') }}</dd></div>
+                        <div class="flex justify-between text-red-600"><dt>{{ __('Global discount') }}</dt><dd class="font-medium">-{{ number_format($t['global_discount_amount'], 2, ',', ' ') }} €</dd></div>
                     @endif
-                    <div class="flex justify-between pt-2 border-t border-gray-100"><dt class="font-semibold">{{ __('Total HT') }}</dt><dd class="font-semibold">€{{ number_format($t['total_ht'] ?? 0, 2, ',', ' ') }}</dd></div>
-                    <div class="flex justify-between"><dt class="text-gray-600">{{ __('VAT') }} ({{ $t['vat_rate'] ?? 20 }}%)</dt><dd class="font-medium">€{{ number_format($t['vat_amount'] ?? 0, 2, ',', ' ') }}</dd></div>
-                    <div class="flex justify-between pt-2 border-t border-gray-100"><dt class="font-semibold">{{ __('Total TTC') }}</dt><dd class="font-semibold">€{{ number_format($t['total_ttc'] ?? 0, 2, ',', ' ') }}</dd></div>
+                    <div class="flex justify-between pt-2 border-t border-gray-100"><dt class="font-semibold">{{ __('Total HT') }}</dt><dd class="font-semibold">{{ number_format($t['total_ht'] ?? 0, 2, ',', ' ') }} €</dd></div>
+                    <div class="flex justify-between"><dt class="text-gray-600">{{ __('VAT') }} ({{ $t['vat_rate'] ?? 20 }}%)</dt><dd class="font-medium">{{ number_format($t['vat_amount'] ?? 0, 2, ',', ' ') }} €</dd></div>
+                    <div class="flex justify-between pt-2 border-t border-gray-100"><dt class="font-semibold">{{ __('Total TTC') }}</dt><dd class="font-semibold">{{ number_format($t['total_ttc'] ?? 0, 2, ',', ' ') }} €</dd></div>
                     @if (($t['trade_in_deduction'] ?? 0) > 0)
-                        <div class="flex justify-between text-gray-600"><dt>{{ __('Trade-in') }}</dt><dd>−€{{ number_format($t['trade_in_deduction'], 2, ',', ' ') }}</dd></div>
+                        <div class="flex justify-between text-gray-600"><dt>{{ __('Trade-in') }}</dt><dd>-{{ number_format($t['trade_in_deduction'], 2, ',', ' ') }} €</dd></div>
                     @endif
                     <div class="flex justify-between pt-3 border-t-2 border-gray-200">
                         <dt class="font-bold text-lg">{{ __('Net payable') }}</dt>
-                        <dd class="font-bold text-lg text-primary-900">€{{ number_format($t['net_payable'] ?? 0, 2, ',', ' ') }}</dd>
+                        <dd class="font-bold text-lg text-primary-900">{{ number_format($t['net_payable'] ?? 0, 2, ',', ' ') }} €</dd>
                     </div>
                 </dl>
                 {{-- Margin is internal-only and hidden by default. Click to reveal.
@@ -398,7 +398,7 @@
                             @else
                                 <span class="px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-semibold">{{ __('ESTIMATED') }}</span>
                             @endif
-                            <span class="font-semibold text-gray-900">€{{ number_format($t['margin_amount'] ?? 0, 0, ',', ' ') }} ({{ $t['margin_pct'] ?? 0 }}%)</span>
+                            <span class="font-semibold text-gray-900">{{ number_format($t['margin_amount'] ?? 0, 0, ',', ' ') }} € ({{ $t['margin_pct'] ?? 0 }}%)</span>
                         </div>
                     </div>
                     <p x-show="! showMargin" x-cloak class="text-gray-400 mt-1">{{ __('Internal only — never shown to the client.') }}</p>

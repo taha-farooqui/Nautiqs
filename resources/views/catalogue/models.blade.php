@@ -102,7 +102,7 @@
                                     </span>
                                 @endif
                             </td>
-                            <td class="px-5 py-3 text-right font-semibold text-gray-900">{{ $ttc !== null ? '€' . number_format($ttc, 0, ',', ' ') : '—' }}</td>
+                            <td class="px-5 py-3 text-right font-semibold text-gray-900">{{ $ttc !== null ? number_format($ttc, 0, ',', ' ') . ' €' : '—' }}</td>
                             <td class="px-5 py-3 text-xs text-gray-500">{{ $m?->updated_at?->diffForHumans() ?? '—' }}</td>
                             <td class="px-5 py-3 text-right whitespace-nowrap">
                                 <a href="{{ route('catalogue.models.edit', $m?->_id) }}"

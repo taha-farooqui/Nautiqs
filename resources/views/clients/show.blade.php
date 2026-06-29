@@ -104,7 +104,7 @@
                                     </td>
                                     <td class="px-5 py-3 text-gray-700">{{ $q->model_snapshot['name'] ?? '—' }}</td>
                                     <td class="px-5 py-3 text-right font-semibold text-gray-900">
-                                        €{{ number_format($q->totals['total_ttc'] ?? 0, 0, ',', ' ') }}
+                                        {{ number_format($q->totals['total_ttc'] ?? 0, 0, ',', ' ') }} €
                                     </td>
                                     <td class="px-5 py-3"><x-app.status-pill :status="$q->status" /></td>
                                     <td class="px-5 py-3 text-gray-600">{{ $q->created_at?->translatedFormat('M j, Y') }}</td>

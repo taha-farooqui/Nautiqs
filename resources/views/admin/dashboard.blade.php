@@ -30,7 +30,7 @@
                 </span>
                 <i class="ri-money-euro-circle-line text-gray-300 text-lg"></i>
             </div>
-            <div class="mt-3 text-3xl font-bold text-gray-900">€{{ number_format($kpis['total_quoted'] / 1000, 0, ',', ' ') }}k</div>
+            <div class="mt-3 text-3xl font-bold text-gray-900">{{ number_format($kpis['total_quoted'] / 1000, 0, ',', ' ') }} €k</div>
             <div class="text-xs mt-1.5
                 {{ ($kpis['total_quoted_delta'] ?? 0) > 0 ? 'text-emerald-600' : (($kpis['total_quoted_delta'] ?? 0) < 0 ? 'text-red-500' : 'text-gray-500') }}">
                 @if ($kpis['total_quoted_delta'] !== null && $kpis['total_quoted_delta'] != 0)
@@ -50,7 +50,7 @@
                 </span>
                 <i class="ri-trophy-line text-gray-300 text-lg"></i>
             </div>
-            <div class="mt-3 text-3xl font-bold text-gray-900">€{{ number_format($kpis['revenue_won'] / 1000, 0, ',', ' ') }}k</div>
+            <div class="mt-3 text-3xl font-bold text-gray-900">{{ number_format($kpis['revenue_won'] / 1000, 0, ',', ' ') }} €k</div>
             <div class="text-xs mt-1.5
                 {{ ($kpis['revenue_won_delta'] ?? 0) > 0 ? 'text-emerald-600' : (($kpis['revenue_won_delta'] ?? 0) < 0 ? 'text-red-500' : 'text-gray-500') }}">
                 @if ($kpis['revenue_won_delta'] !== null && $kpis['revenue_won_delta'] != 0)
@@ -209,7 +209,7 @@
                                         <div class="text-[11px] text-gray-500">{{ $q->model_snapshot['brand'] ?? '' }}</div>
                                     </td>
                                     <td class="px-5 py-3 text-right font-semibold text-gray-900">
-                                        €{{ number_format($q->totals['total_ht'] ?? 0, 0, ',', ' ') }}
+                                        {{ number_format($q->totals['total_ht'] ?? 0, 0, ',', ' ') }} €
                                     </td>
                                     <td class="px-5 py-3">
                                         <x-app.status-pill :status="$q->status ?? 'draft'" />

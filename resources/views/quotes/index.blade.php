@@ -189,10 +189,10 @@
                                 {{-- Amount --}}
                                 <td class="px-4 py-3 text-right">
                                     <div class="font-semibold text-gray-900">
-                                        €{{ number_format($quote->totals['total_ht'] ?? 0, 0, ',', ' ') }}
+                                        {{ number_format($quote->totals['total_ht'] ?? 0, 0, ',', ' ') }} €
                                     </div>
                                     <div class="text-xs text-gray-500">
-                                        {{ __('VAT incl.') }} €{{ number_format($quote->totals['total_ttc'] ?? 0, 0, ',', ' ') }}
+                                        {{ __('VAT incl.') }} {{ number_format($quote->totals['total_ttc'] ?? 0, 0, ',', ' ') }} €
                                     </div>
                                 </td>
 

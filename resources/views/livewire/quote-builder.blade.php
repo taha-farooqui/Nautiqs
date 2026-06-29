@@ -190,9 +190,9 @@
                                 <div class="text-xs text-gray-500">{{ $vCcy }} · {{ __('base price') }}</div>
                             </div>
                             <div class="text-right">
-                                <div class="font-semibold text-gray-900">€{{ number_format($vEur, 0, ',', ' ') }}</div>
+                                <div class="font-semibold text-gray-900">{{ number_format($vEur, 0, ',', ' ') }} €</div>
                                 @if ($vIsFx)
-                                    <div class="text-[11px] text-gray-500">{{ __('was') }} {{ $vSym }}{{ number_format($v->base_price, 0, ',', ' ') }}</div>
+                                    <div class="text-[11px] text-gray-500">{{ __('was') }} {{ number_format($v->base_price, 0, ',', ' ') }} {{ $vSym }}</div>
                                 @endif
                             </div>
                         </label>
@@ -280,10 +280,10 @@
                                             && ! empty($opt->original_price);
                                     @endphp
                                     <div class="w-28 text-right">
-                                        <div class="text-sm font-medium text-gray-900">€{{ number_format($opt->price, 0, ',', ' ') }}</div>
+                                        <div class="text-sm font-medium text-gray-900">{{ number_format($opt->price, 0, ',', ' ') }} €</div>
                                         @if ($optWasFx)
                                             <div class="text-[10px] text-gray-500">
-                                                {{ __('was') }} {{ $opt->original_price_currency === 'USD' ? '$' : $opt->original_price_currency }}{{ number_format($opt->original_price, 0, ',', ' ') }}
+                                                {{ __('was') }} {{ number_format($opt->original_price, 0, ',', ' ') }} {{ $opt->original_price_currency === 'USD' ? '$' : $opt->original_price_currency }}
                                             </div>
                                         @endif
                                     </div>
@@ -378,7 +378,7 @@
                                             </p>
                                         </div>
                                         <span class="text-sm font-semibold text-gray-900 shrink-0"
-                                            x-text="'€' + row.price.toLocaleString('fr-FR')"></span>
+                                            x-text="row.price.toLocaleString('fr-FR') + ' €'"></span>
                                     </button>
                                 </li>
                             </template>
@@ -461,7 +461,7 @@
                     <span class="text-sm text-gray-500 w-3">%</span>
                     <span class="text-sm text-red-600 font-medium w-28 text-right">
                         @if ($t && ($t['boat_discount_amount'] ?? 0) > 0)
-                            −€{{ number_format($t['boat_discount_amount'], 0, ',', ' ') }}
+                            -{{ number_format($t['boat_discount_amount'], 0, ',', ' ') }} €
                         @else — @endif
                     </span>
                 </div>
@@ -472,7 +472,7 @@
                     <span class="text-sm text-gray-500 w-3">%</span>
                     <span class="text-sm text-red-600 font-medium w-28 text-right">
                         @if ($t && ($t['options_discount_amount'] ?? 0) > 0)
-                            −€{{ number_format($t['options_discount_amount'], 0, ',', ' ') }}
+                            -{{ number_format($t['options_discount_amount'], 0, ',', ' ') }} €
                         @else — @endif
                     </span>
                 </div>
@@ -483,7 +483,7 @@
                     <span class="text-sm text-gray-500 w-3">%</span>
                     <span class="text-sm text-red-600 font-medium w-28 text-right">
                         @if ($t && ($t['global_discount_amount'] ?? 0) > 0)
-                            −€{{ number_format($t['global_discount_amount'], 0, ',', ' ') }}
+                            -{{ number_format($t['global_discount_amount'], 0, ',', ' ') }} €
                         @else — @endif
                     </span>
                 </div>
@@ -633,33 +633,33 @@
                     <div class="flex justify-between">
                         <dt class="text-gray-600">{{ __('Base price (excl. VAT)') }}</dt>
                         <dd class="text-right">
-                            <div class="font-medium">€{{ number_format($t['base_price_gross'], 2, ',', ' ') }}</div>
+                            <div class="font-medium">{{ number_format($t['base_price_gross'], 2, ',', ' ') }} €</div>
                             @if (! empty($t['base_price_currency']) && $t['base_price_currency'] !== 'EUR' && ! empty($t['base_price_original']))
-                                <div class="text-[11px] text-gray-500">{{ __('was') }} {{ $t['base_price_currency'] === 'USD' ? '$' : $t['base_price_currency'] }}{{ number_format($t['base_price_original'], 2, ',', ' ') }}</div>
+                                <div class="text-[11px] text-gray-500">{{ __('was') }} {{ number_format($t['base_price_original'], 2, ',', ' ') }} {{ $t['base_price_currency'] === 'USD' ? '$' : $t['base_price_currency'] }}</div>
                             @endif
                         </dd>
                     </div>
                     @if ($t['boat_discount_amount'] > 0)
-                        <div class="flex justify-between text-red-600 text-xs"><dt>{{ __('Boat discount') }} ({{ $t['boat_discount_pct'] }}%)</dt><dd>−€{{ number_format($t['boat_discount_amount'], 2, ',', ' ') }}</dd></div>
+                        <div class="flex justify-between text-red-600 text-xs"><dt>{{ __('Boat discount') }} ({{ $t['boat_discount_pct'] }}%)</dt><dd>-{{ number_format($t['boat_discount_amount'], 2, ',', ' ') }} €</dd></div>
                     @endif
 
                     {{-- Options --}}
-                    <div class="flex justify-between pt-2 border-t border-gray-100"><dt class="text-gray-600">{{ __('Options') }} ({{ count($t['options_rows']) }})</dt><dd class="font-medium">€{{ number_format($t['options_gross'], 2, ',', ' ') }}</dd></div>
+                    <div class="flex justify-between pt-2 border-t border-gray-100"><dt class="text-gray-600">{{ __('Options') }} ({{ count($t['options_rows']) }})</dt><dd class="font-medium">{{ number_format($t['options_gross'], 2, ',', ' ') }} €</dd></div>
                     @if ($t['options_discount_amount'] > 0)
-                        <div class="flex justify-between text-red-600 text-xs"><dt>{{ __('Options discount') }} ({{ $t['options_discount_pct'] }}%)</dt><dd>−€{{ number_format($t['options_discount_amount'], 2, ',', ' ') }}</dd></div>
+                        <div class="flex justify-between text-red-600 text-xs"><dt>{{ __('Options discount') }} ({{ $t['options_discount_pct'] }}%)</dt><dd>-{{ number_format($t['options_discount_amount'], 2, ',', ' ') }} €</dd></div>
                     @endif
 
                     {{-- Custom items --}}
                     @if ($t['custom_items_ht'] > 0)
-                        <div class="flex justify-between pt-2 border-t border-gray-100"><dt class="text-gray-600">{{ __('Custom items') }}</dt><dd class="font-medium">€{{ number_format($t['custom_items_ht'], 2, ',', ' ') }}</dd></div>
+                        <div class="flex justify-between pt-2 border-t border-gray-100"><dt class="text-gray-600">{{ __('Custom items') }}</dt><dd class="font-medium">{{ number_format($t['custom_items_ht'], 2, ',', ' ') }} €</dd></div>
                     @endif
 
                     {{-- Global discount --}}
                     @if ($t['global_discount_amount'] > 0)
-                        <div class="flex justify-between text-red-600 text-xs pt-2 border-t border-gray-100"><dt>{{ __('Global discount') }} ({{ $t['global_discount_pct'] }}%)</dt><dd>−€{{ number_format($t['global_discount_amount'], 2, ',', ' ') }}</dd></div>
+                        <div class="flex justify-between text-red-600 text-xs pt-2 border-t border-gray-100"><dt>{{ __('Global discount') }} ({{ $t['global_discount_pct'] }}%)</dt><dd>-{{ number_format($t['global_discount_amount'], 2, ',', ' ') }} €</dd></div>
                     @endif
 
-                    <div class="flex justify-between pt-2 border-t border-gray-100"><dt class="font-semibold">{{ __('Total excl. VAT') }}</dt><dd class="font-semibold">€{{ number_format($t['total_ht'], 2, ',', ' ') }}</dd></div>
+                    <div class="flex justify-between pt-2 border-t border-gray-100"><dt class="font-semibold">{{ __('Total excl. VAT') }}</dt><dd class="font-semibold">{{ number_format($t['total_ht'], 2, ',', ' ') }} €</dd></div>
                     @php
                         $bands = collect($t['vat_breakdown'] ?? [])->filter(fn ($amt) => $amt > 0.01);
                         $isMixed = $bands->count() > 1;
@@ -673,15 +673,15 @@
                                 ({{ $t['vat_rate'] }}%)
                             @endif
                         </dt>
-                        <dd class="font-medium">€{{ number_format($t['vat_amount'], 2, ',', ' ') }}</dd>
+                        <dd class="font-medium">{{ number_format($t['vat_amount'], 2, ',', ' ') }} €</dd>
                     </div>
-                    <div class="flex justify-between pt-2 border-t border-gray-100"><dt class="font-semibold">{{ __('Total incl. VAT') }}</dt><dd class="font-semibold">€{{ number_format($t['total_ttc'], 2, ',', ' ') }}</dd></div>
+                    <div class="flex justify-between pt-2 border-t border-gray-100"><dt class="font-semibold">{{ __('Total incl. VAT') }}</dt><dd class="font-semibold">{{ number_format($t['total_ttc'], 2, ',', ' ') }} €</dd></div>
                     @if ($t['trade_in_deduction'] > 0)
-                        <div class="flex justify-between text-amber-700 text-xs"><dt>{{ __('Trade-in deduction') }}</dt><dd>−€{{ number_format($t['trade_in_deduction'], 2, ',', ' ') }}</dd></div>
+                        <div class="flex justify-between text-amber-700 text-xs"><dt>{{ __('Trade-in deduction') }}</dt><dd>-{{ number_format($t['trade_in_deduction'], 2, ',', ' ') }} €</dd></div>
                     @endif
                     <div class="flex justify-between pt-3 border-t-2 border-gray-200">
                         <dt class="font-bold text-lg">{{ __('Net payable') }}</dt>
-                        <dd class="font-bold text-lg text-primary-900">€{{ number_format($t['net_payable'], 2, ',', ' ') }}</dd>
+                        <dd class="font-bold text-lg text-primary-900">{{ number_format($t['net_payable'], 2, ',', ' ') }} €</dd>
                     </div>
                 </dl>
 
@@ -696,12 +696,12 @@
                                     <span class="ml-1 px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-semibold">{{ __('ESTIMATED') }}</span>
                                 @endif
                             </span>
-                            <span class="font-semibold text-gray-900">€{{ number_format($t['margin_amount'], 0, ',', ' ') }} ({{ $t['margin_pct'] }}%)</span>
+                            <span class="font-semibold text-gray-900">{{ number_format($t['margin_amount'], 0, ',', ' ') }} € ({{ $t['margin_pct'] }}%)</span>
                         </div>
                         @if ($t['total_cost'])
                             <div class="flex items-center justify-between mt-1 text-gray-500">
                                 <span>{{ $t['margin_type'] === 'real' ? __('Total cost') : __('Estimated cost') }}</span>
-                                <span class="font-medium">€{{ number_format($t['total_cost'], 0, ',', ' ') }}</span>
+                                <span class="font-medium">{{ number_format($t['total_cost'], 0, ',', ' ') }} €</span>
                             </div>
                         @endif
                         <p class="mt-1 text-gray-400">{{ __('Never shown to the client.') }}</p>

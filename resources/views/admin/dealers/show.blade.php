@@ -80,7 +80,7 @@
         </div>
         <div class="bg-white rounded-2xl border border-gray-200 p-4">
             <div class="text-[10px] text-gray-500 uppercase tracking-wider">{{ __('Revenue won YTD') }}</div>
-            <div class="text-2xl font-bold text-gray-900 mt-1">€{{ number_format($stats['revenue_won_ytd'] / 1000, 0, ',', ' ') }}k</div>
+            <div class="text-2xl font-bold text-gray-900 mt-1">{{ number_format($stats['revenue_won_ytd'] / 1000, 0, ',', ' ') }} €k</div>
         </div>
         <div class="bg-white rounded-2xl border border-gray-200 p-4">
             <div class="text-[10px] text-gray-500 uppercase tracking-wider">{{ __('Last activity') }}</div>

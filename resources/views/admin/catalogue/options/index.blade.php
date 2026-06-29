@@ -77,8 +77,8 @@
                                 <span class="text-[11px] font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">{{ $o->category }}</span>
                             </td>
                             <td class="px-5 py-3 text-gray-900">{{ $o->label }}</td>
-                            <td class="px-5 py-3 text-right font-semibold text-gray-900">{{ $o->currency === 'USD' ? '$' : '€' }}{{ number_format($o->price, 2, ',', ' ') }}</td>
-                            <td class="px-5 py-3 text-right text-gray-700">{{ $o->cost ? ($o->currency === 'USD' ? '$' : '€') . number_format($o->cost, 2, ',', ' ') : '—' }}</td>
+                            <td class="px-5 py-3 text-right font-semibold text-gray-900">{{ number_format($o->price, 2, ',', ' ') }} {{ $o->currency === 'USD' ? '$' : '€' }}</td>
+                            <td class="px-5 py-3 text-right text-gray-700">{{ $o->cost ? number_format($o->cost, 2, ',', ' ') . ' ' . ($o->currency === 'USD' ? '$' : '€') : '—' }}</td>
                             <td class="px-5 py-3 text-right whitespace-nowrap">
                                 @if ($status === 'archived')
                                     <form method="POST" action="{{ route('admin.options.archive', $o->_id) }}" class="inline"
