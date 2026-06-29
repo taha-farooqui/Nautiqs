@@ -23,7 +23,7 @@
                 @keydown.up.prevent="navigate(-1)"
                 @keydown.enter.prevent="goToActive()"
                 type="text"
-                placeholder="Search quotes, clients, models..."
+                placeholder="{{ __('Search quotes, clients, models...') }}"
                 class="flex-1 border-0 focus:ring-0 text-base placeholder:text-gray-400 outline-none" />
             <kbd class="text-[10px] font-semibold text-gray-500 bg-gray-100 border border-gray-200 rounded px-1.5 py-0.5">ESC</kbd>
         </div>
@@ -32,18 +32,18 @@
         <div class="max-h-[60vh] overflow-y-auto">
             {{-- Loading --}}
             <div x-show="loading" class="p-6 text-center text-sm text-gray-500">
-                <i class="ri-loader-4-line animate-spin"></i> Searching…
+                <i class="ri-loader-4-line animate-spin"></i> {{ __('Searching…') }}
             </div>
 
             {{-- Empty / prompt states --}}
             <template x-if="! loading && query.length < 2 && ! hasResults()">
                 <div class="p-8 text-center">
                     <i class="ri-search-line text-4xl text-gray-300"></i>
-                    <p class="text-sm text-gray-600 mt-3">Start typing to search across quotes, clients &amp; models.</p>
+                    <p class="text-sm text-gray-600 mt-3">{{ __('Start typing to search across quotes, clients & models.') }}</p>
                     <div class="mt-3 flex flex-wrap items-center justify-center gap-2 text-xs text-gray-500">
-                        <span><kbd class="font-mono px-1.5 py-0.5 bg-gray-100 border border-gray-200 rounded">↑</kbd> <kbd class="font-mono px-1.5 py-0.5 bg-gray-100 border border-gray-200 rounded">↓</kbd> navigate</span>
-                        <span><kbd class="font-mono px-1.5 py-0.5 bg-gray-100 border border-gray-200 rounded">Enter</kbd> open</span>
-                        <span><kbd class="font-mono px-1.5 py-0.5 bg-gray-100 border border-gray-200 rounded">Esc</kbd> close</span>
+                        <span><kbd class="font-mono px-1.5 py-0.5 bg-gray-100 border border-gray-200 rounded">↑</kbd> <kbd class="font-mono px-1.5 py-0.5 bg-gray-100 border border-gray-200 rounded">↓</kbd> {{ __('navigate') }}</span>
+                        <span><kbd class="font-mono px-1.5 py-0.5 bg-gray-100 border border-gray-200 rounded">Enter</kbd> {{ __('open') }}</span>
+                        <span><kbd class="font-mono px-1.5 py-0.5 bg-gray-100 border border-gray-200 rounded">Esc</kbd> {{ __('close') }}</span>
                     </div>
                 </div>
             </template>
@@ -51,7 +51,7 @@
             <template x-if="! loading && query.length >= 2 && ! hasResults()">
                 <div class="p-8 text-center">
                     <i class="ri-search-eye-line text-4xl text-gray-300"></i>
-                    <p class="text-sm text-gray-600 mt-3">No matches for <span class="font-medium" x-text="'“' + query + '”'"></span></p>
+                    <p class="text-sm text-gray-600 mt-3">{{ __('No matches for') }} <span class="font-medium" x-text="'“' + query + '”'"></span></p>
                 </div>
             </template>
 
@@ -59,7 +59,7 @@
             <template x-if="! loading && results.quotes.length > 0">
                 <div>
                     <div class="px-5 py-2 text-[11px] font-semibold uppercase tracking-wider text-gray-500 bg-gray-50 border-y border-gray-100">
-                        Quotes
+                        {{ __('Quotes') }}
                     </div>
                     <template x-for="(q, i) in results.quotes" :key="'q-' + q.id">
                         <a :href="q.url"
@@ -91,7 +91,7 @@
             <template x-if="! loading && results.clients.length > 0">
                 <div>
                     <div class="px-5 py-2 text-[11px] font-semibold uppercase tracking-wider text-gray-500 bg-gray-50 border-y border-gray-100">
-                        Clients
+                        {{ __('Clients') }}
                     </div>
                     <template x-for="(c, i) in results.clients" :key="'c-' + c.id">
                         <a :href="c.url"
@@ -116,7 +116,7 @@
             <template x-if="! loading && results.models && results.models.length > 0">
                 <div>
                     <div class="px-5 py-2 text-[11px] font-semibold uppercase tracking-wider text-gray-500 bg-gray-50 border-y border-gray-100">
-                        Models
+                        {{ __('Models') }}
                     </div>
                     <template x-for="(m, i) in results.models" :key="'m-' + m.id">
                         <a :href="m.url"

@@ -1,4 +1,4 @@
-<x-app-layout title="Profile" header="Profile">
+<x-app-layout :title="__('Profile')" :header="__('Profile')">
     <div class="py-4">
         <div class="max-w-4xl space-y-6">
             <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">

@@ -26,13 +26,13 @@
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Brand') }} <span class="text-red-500">*</span></label>
                 <input type="text" name="brand" required value="{{ old('brand', $engine->brand ?? '') }}"
-                    placeholder="e.g. Suzuki, Yamaha, Mercury"
+                    placeholder="{{ __('e.g. Suzuki, Yamaha, Mercury') }}"
                     class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Code') }} <span class="text-red-500">*</span></label>
                 <input type="text" name="code" required value="{{ old('code', $engine->code ?? '') }}"
-                    placeholder="e.g. DF200A TL/TX"
+                    placeholder="{{ __('e.g. DF200A TL/TX') }}"
                     class="w-full rounded-lg border-gray-300 font-mono text-sm focus:border-primary-800 focus:ring-primary-800" />
             </div>
         </div>

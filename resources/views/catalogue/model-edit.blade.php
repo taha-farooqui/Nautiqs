@@ -5,10 +5,10 @@
     // which is faster for one-off price tweaks.
     $isNew       = ! $model->exists;
     $headerLabel = $isNew
-        ? 'Add boat'
+        ? __('Add boat')
         : (($model->brand?->name ? $model->brand->name . ' · ' : '') . $model->name);
 @endphp
-<x-app-layout :title="$isNew ? 'Add boat' : $model->name" :header="$headerLabel">
+<x-app-layout :title="$isNew ? __('Add boat') : $model->name" :header="$headerLabel">
 
     {{-- Toast --}}
     @if (session('status') || $errors->any())
@@ -95,7 +95,7 @@
                             <div class="md:col-span-5">
                                 <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Version name') }} *</label>
                                 <input type="text" :name="`versions[${i}][name]`" x-model="v.name"
-                                    placeholder="e.g. 2x 200HP"
+                                    placeholder="{{ __('e.g. 2x 200HP') }}"
                                     class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
                             </div>
                             <div class="md:col-span-2">
@@ -211,7 +211,7 @@
                                     {{ __('Add more') }}
                                 </p>
                                 <textarea x-model="equipmentPasteBuffer" @input="promoteBufferLines()" rows="4"
-                                    placeholder="Bathing platform&#10;Bimini top&#10;Bow rail"
+                                    placeholder="{{ __('Bathing platform') }}&#10;{{ __('Bimini top') }}&#10;{{ __('Bow rail') }}"
                                     class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800 font-mono"></textarea>
                                 <p class="text-xs text-gray-500 mt-1">{{ __('Press Enter after each item to add it to the list above.') }}</p>
                             </div>
@@ -414,7 +414,7 @@
                                 <div class="md:col-span-5">
                                     <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Version name') }} *</label>
                                     <input type="text" :name="`versions[${i}][name]`" x-model="v.name" required
-                                        placeholder="e.g. 2x 200HP"
+                                        placeholder="{{ __('e.g. 2x 200HP') }}"
                                         class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
                                 </div>
                                 <div class="md:col-span-2">
@@ -542,7 +542,7 @@
                                 {{ __('Add more') }}
                             </p>
                             <textarea x-model="pasteBuffer" @input="promoteBufferLines()" rows="4"
-                                placeholder="Bathing platform&#10;Bimini top&#10;Bow rail"
+                                placeholder="{{ __('Bathing platform') }}&#10;{{ __('Bimini top') }}&#10;{{ __('Bow rail') }}"
                                 class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800 font-mono"></textarea>
                             <p class="text-xs text-gray-500 mt-1">{{ __('Press Enter after each item to add it to the list above.') }}</p>
                         </div>

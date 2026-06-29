@@ -37,7 +37,7 @@
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Code') }} <span class="text-red-500">*</span></label>
                 <input type="text" name="code" required value="{{ old('code', $model->code ?? '') }}"
-                    placeholder="e.g. SG250"
+                    placeholder="{{ __('e.g. SG250') }}"
                     class="w-full rounded-lg border-gray-300 font-mono text-sm focus:border-primary-800 focus:ring-primary-800" />
             </div>
             <div>

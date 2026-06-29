@@ -552,7 +552,7 @@
                     <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('USD→EUR rate') }}</label>
                     <input type="number" step="0.0001" wire:model.live.debounce.500ms="exchange_rate" @disabled(! $hasVariant)
                         class="w-full rounded border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800 disabled:bg-gray-100"
-                        placeholder="e.g. 0.92" />
+                        placeholder="{{ __('e.g. 0.92') }}" />
                 </div>
             </div>
             {{-- Terms & conditions — printed on the PDF. Leave a field blank

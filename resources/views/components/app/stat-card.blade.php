@@ -35,7 +35,7 @@
             <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold {{ $deltaClasses }}">
                 <i class="{{ $deltaIcon }}"></i> {{ $delta }}
             </span>
-            <span class="text-xs text-gray-500">vs last period</span>
+            <span class="text-xs text-gray-500">{{ __('vs last period') }}</span>
         </div>
     @endif
 </div>

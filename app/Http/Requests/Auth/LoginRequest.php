@@ -58,7 +58,7 @@ class LoginRequest extends FormRequest
             $this->session()->put('unverified_email', $user->email);
 
             throw ValidationException::withMessages([
-                'email' => 'Please verify your email address before logging in. Check your inbox for the verification link.',
+                'email' => __('Please verify your email address before logging in. Check your inbox for the verification link.'),
             ]);
         }
 

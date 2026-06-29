@@ -48,7 +48,7 @@
                 </p>
                 <textarea x-model="pasteBuffer" rows="3"
                     @keydown.enter="$event.shiftKey ? null : ($event.preventDefault(), commitPaste())"
-                    placeholder="Bathing platform&#10;Bimini top&#10;Bow rail"
+                    placeholder="{{ __('Bathing platform') }}&#10;{{ __('Bimini top') }}&#10;{{ __('Bow rail') }}"
                     class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800 font-mono"></textarea>
                 <div class="mt-2 flex items-center gap-2">
                     <button type="button" @click="commitPaste()"

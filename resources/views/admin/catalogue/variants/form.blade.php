@@ -38,7 +38,7 @@
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Variant name') }} <span class="text-red-500">*</span></label>
             <input type="text" name="name" required value="{{ old('name', $variant->name ?? '') }}"
-                placeholder="e.g. 250 Sport — 2x 200HP"
+                placeholder="{{ __('e.g. 250 Sport — 2x 200HP') }}"
                 class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />
         </div>
 
