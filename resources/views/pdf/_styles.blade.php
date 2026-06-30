@@ -166,7 +166,7 @@
     .qsection-badge {
         float: right;
         font-size: 8pt;
-        font-weight: 500;
+        font-weight: bold;
         color: #16a34a;
         background: #f0fdf4;
         padding: 0.5mm 2mm;
@@ -281,7 +281,7 @@
     }
     table.qcond td.val {
         color: #374151;
-        font-weight: 500;
+        font-weight: bold;
     }
 
     /* Trade-in box (left column under conditions) */
