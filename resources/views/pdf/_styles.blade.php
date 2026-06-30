@@ -327,7 +327,7 @@
 
     table.qtotals .row-white td { background: #ffffff; }
     table.qtotals .row-discount td.label { color: #9ca3af; }
-    table.qtotals .row-discount td.val   { color: #ea580c; font-weight: 500; }
+    table.qtotals .row-discount td.val   { color: #ea580c; font-weight: bold; }
     table.qtotals .row-tradein td        { background: #fff7ed; }
     table.qtotals .row-tradein td.label  { color: #ea580c; }
     table.qtotals .row-tradein td.val    { color: #ea580c; }
