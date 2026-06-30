@@ -68,7 +68,7 @@
                                         {{ $n->created_at?->diffForHumans() }}
                                         @if ($n->created_at)
                                             <span class="text-gray-300">·</span>
-                                            {{ $n->created_at->format('d M Y, H:i') }}
+                                            {{ $n->created_at->translatedFormat('d M Y, H:i') }}
                                         @endif
                                     </p>
                                 </div>
