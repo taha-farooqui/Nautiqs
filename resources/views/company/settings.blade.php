@@ -9,10 +9,11 @@
         // otherwise default to Profile. Order of these checks matches the
         // declared tabs below.
         $errorMap = [
-            'profile'  => ['name','legal_form','siren','vat_number','address'],
+            'profile'  => ['name','legal_form','siren','vat_number','address','logo'],
             'sales'    => ['salesperson_name','salesperson_phone','salesperson_email'],
             'defaults' => ['default_vat_rate','default_margin_pct','default_display_mode','timezone'],
             'margins'  => ['margin_presets.hull','margin_presets.engine','margin_presets.options','margin_presets.custom_items'],
+            'followup' => ['follow_up_enabled','follow_up_delay_value','follow_up_delay_unit'],
         ];
         $startTab = 'profile';
         foreach ($errorMap as $tab => $fields) {
@@ -21,6 +22,7 @@
     @endphp
 
     <form action="{{ route('company.settings.update') }}" method="POST" class="max-w-4xl"
+          enctype="multipart/form-data"
           x-data="{ tab: @js($startTab) }">
         @csrf
         @method('PATCH')
@@ -46,6 +48,11 @@
                 :class="tab === 'margins' ? 'border-primary-800 text-primary-900' : 'border-transparent text-gray-500 hover:text-gray-900'"
                 class="px-4 py-2.5 text-sm font-semibold border-b-2 transition whitespace-nowrap">
                 <i class="ri-percent-line"></i> {{ __('Margin presets') }}
+            </button>
+            <button type="button" @click="tab = 'followup'"
+                :class="tab === 'followup' ? 'border-primary-800 text-primary-900' : 'border-transparent text-gray-500 hover:text-gray-900'"
+                class="px-4 py-2.5 text-sm font-semibold border-b-2 transition whitespace-nowrap">
+                <i class="ri-mail-send-line"></i> {{ __('Follow-ups') }}
             </button>
         </div>
 
@@ -80,6 +87,30 @@
                     <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Address') }}</label>
                     <textarea name="address" rows="3"
                         class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800">{{ old('address', $company->address) }}</textarea>
+                </div>
+
+                {{-- Dealership logo — shown in the header of quote/order PDFs. --}}
+                <div class="md:col-span-2 pt-2 border-t border-gray-100">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Logo') }}</label>
+                    <p class="text-xs text-gray-500 mb-2">{{ __('Displayed at the top of your quote and order PDFs. PNG, JPG or WebP — max 2 MB.') }}</p>
+
+                    @if ($company->logo_path)
+                        <div class="flex items-center gap-4 mb-3">
+                            <div class="h-16 px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 flex items-center">
+                                <img src="{{ asset('storage/' . $company->logo_path) }}" alt="{{ $company->name }}"
+                                    class="max-h-12 max-w-[180px] object-contain" />
+                            </div>
+                            <label class="inline-flex items-center gap-2 text-sm text-red-600 cursor-pointer">
+                                <input type="checkbox" name="remove_logo" value="1"
+                                    class="rounded border-gray-300 text-red-600 focus:ring-red-500" />
+                                {{ __('Remove logo') }}
+                            </label>
+                        </div>
+                    @endif
+
+                    <input type="file" name="logo" accept="image/png,image/jpeg,image/webp"
+                        class="block w-full text-sm text-gray-700 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-primary-50 file:text-primary-800 hover:file:bg-primary-100" />
+                    <x-input-error :messages="$errors->get('logo')" class="mt-1" />
                 </div>
             </div>
         </section>
@@ -216,6 +247,45 @@
                     </div>
                 @endforeach
             </div>
+        </section>
+
+        {{-- ============================== FOLLOW-UPS (Relances) ============================== --}}
+        <section x-show="tab === 'followup'" x-cloak class="bg-white rounded-2xl border border-gray-200 p-6"
+            x-data="{ fuEnabled: @js((bool) old('follow_up_enabled', $company->follow_up_enabled ?? false)) }">
+            <h3 class="font-semibold text-gray-900 mb-1">{{ __('Automatic follow-up') }}</h3>
+            <p class="text-xs text-gray-500 mb-4">{{ __('Automatically remind clients who have not replied to a quote.') }}</p>
+
+            <label class="inline-flex items-center gap-2 cursor-pointer">
+                <input type="hidden" name="follow_up_enabled" value="0" />
+                <input type="checkbox" name="follow_up_enabled" value="1" x-model="fuEnabled"
+                    class="rounded border-gray-300 text-primary-800 focus:ring-primary-800" />
+                <span class="text-sm font-medium text-gray-800">{{ __('Enable automatic follow-up') }}</span>
+            </label>
+
+            <div class="mt-4 flex flex-wrap items-center gap-2 text-sm text-gray-700"
+                :class="fuEnabled ? '' : 'opacity-50 pointer-events-none'">
+                <span>{{ __('Send an automatic follow-up') }}</span>
+                <input type="number" min="1" max="365" step="1" name="follow_up_delay_value"
+                    value="{{ old('follow_up_delay_value', $company->follow_up_delay_value ?? 1) }}"
+                    class="w-20 rounded-lg border-gray-300 text-sm text-center focus:border-primary-800 focus:ring-primary-800" />
+                @php $fuUnit = old('follow_up_delay_unit', $company->follow_up_delay_unit ?? 'months'); @endphp
+                <select name="follow_up_delay_unit"
+                    class="rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800">
+                    <option value="days"   @selected($fuUnit === 'days')>{{ __('day(s)') }}</option>
+                    <option value="weeks"  @selected($fuUnit === 'weeks')>{{ __('week(s)') }}</option>
+                    <option value="months" @selected($fuUnit === 'months')>{{ __('month(s)') }}</option>
+                </select>
+                <span>{{ __('after the quote is sent.') }}</span>
+            </div>
+            <x-input-error :messages="$errors->get('follow_up_delay_value')" class="mt-1" />
+            <x-input-error :messages="$errors->get('follow_up_delay_unit')" class="mt-1" />
+
+            <ul class="mt-5 pt-4 border-t border-gray-100 text-xs text-gray-500 space-y-1.5 list-disc list-inside">
+                <li>{{ __('One single follow-up is sent per quote — never more.') }}</li>
+                <li>{{ __('Only quotes sent after activation are followed up; quotes marked Won or Lost are excluded.') }}</li>
+                <li>{{ __('You can exclude an individual quote from its page.') }}</li>
+                <li>{{ __('Uses your « Follow-up » email template, with the quote PDF attached.') }}</li>
+            </ul>
         </section>
 
         <div class="flex justify-end mt-4">

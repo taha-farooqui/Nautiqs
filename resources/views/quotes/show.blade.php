@@ -404,6 +404,61 @@
                     <p x-show="! showMargin" x-cloak class="text-gray-400 mt-1">{{ __('Internal only — never shown to the client.') }}</p>
                 </div>
             </div>
+
+            {{-- ──── Automatic follow-up (per-quote off-switch) ─────────── --}}
+            @php $fuCompany = $quote->company; @endphp
+            @if ($quote->status === \App\Models\Quote::STATUS_SENT && ($fuCompany?->follow_up_enabled ?? false))
+                <div class="mt-4 bg-white rounded-2xl border border-gray-200 p-4">
+                    <div class="flex items-start gap-3">
+                        <span class="w-9 h-9 rounded-lg bg-primary-50 text-primary-800 flex items-center justify-center shrink-0">
+                            <i class="ri-mail-send-line"></i>
+                        </span>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-semibold text-gray-900">{{ __('Automatic follow-up') }}</p>
+                            @if ($followUpSentAt ?? null)
+                                <p class="text-xs text-emerald-700 mt-0.5">
+                                    <i class="ri-checkbox-circle-fill"></i>
+                                    {{ __('Follow-up sent on :date', ['date' => $followUpSentAt->translatedFormat('d M Y')]) }}
+                                </p>
+                            @elseif ($quote->follow_up_disabled)
+                                <p class="text-xs text-gray-500 mt-0.5">{{ __('Disabled for this quote.') }}</p>
+                            @else
+                                @php
+                                    $fuDue = $quote->sent_at?->copy();
+                                    if ($fuDue) {
+                                        $fuDue = match ($fuCompany->follow_up_delay_unit) {
+                                            'days'   => $fuDue->addDays((int) $fuCompany->follow_up_delay_value),
+                                            'weeks'  => $fuDue->addWeeks((int) $fuCompany->follow_up_delay_value),
+                                            'months' => $fuDue->addMonths((int) $fuCompany->follow_up_delay_value),
+                                            default  => null,
+                                        };
+                                    }
+                                @endphp
+                                @if ($fuDue && $quote->sent_at >= $fuCompany->follow_up_enabled_at)
+                                    <p class="text-xs text-gray-500 mt-0.5">
+                                        {{ __('Automatic follow-up scheduled around :date', ['date' => $fuDue->translatedFormat('d M Y')]) }}
+                                    </p>
+                                @else
+                                    <p class="text-xs text-gray-500 mt-0.5">{{ __('Not eligible (sent before follow-ups were activated).') }}</p>
+                                @endif
+                            @endif
+
+                            @if (! ($followUpSentAt ?? null))
+                                <form method="POST" action="{{ route('quotes.toggle-follow-up', $quote->_id) }}" class="mt-2">
+                                    @csrf
+                                    <button type="submit" class="text-xs font-medium {{ $quote->follow_up_disabled ? 'text-primary-800' : 'text-gray-500' }} hover:underline">
+                                        @if ($quote->follow_up_disabled)
+                                            <i class="ri-play-circle-line"></i> {{ __('Re-enable automatic follow-up') }}
+                                        @else
+                                            <i class="ri-pause-circle-line"></i> {{ __('Disable automatic follow-up for this quote') }}
+                                        @endif
+                                    </button>
+                                </form>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            @endif
         </div>
     </div>
 

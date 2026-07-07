@@ -55,6 +55,7 @@ class Notification extends Model
             'quote.won'               => 'Quote won',
             'quote.lost'              => 'Quote lost',
             'quote.deleted'           => 'Quote deleted',
+            'quote.follow_up_sent'    => 'Follow-up sent',
             'client.created'          => 'Client added',
             'client.updated'          => 'Client updated',
             'client.deleted'          => 'Client deleted',

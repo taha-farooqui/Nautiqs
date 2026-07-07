@@ -42,6 +42,8 @@ class CompanySettingsController extends Controller
             'siren'             => ['nullable', 'string', 'max:50'],
             'vat_number'        => ['nullable', 'string', 'max:50'],
             'address'           => ['nullable', 'string', 'max:500'],
+            'logo'              => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:2048'],
+            'remove_logo'       => ['nullable', 'boolean'],
             // §17.2
             'salesperson_name'  => ['nullable', 'string', 'max:100'],
             'salesperson_phone' => ['nullable', 'string', 'max:30'],
@@ -56,7 +58,39 @@ class CompanySettingsController extends Controller
             'margin_presets.engine'       => ['nullable', 'numeric', 'min:0', 'max:100'],
             'margin_presets.options'      => ['nullable', 'numeric', 'min:0', 'max:100'],
             'margin_presets.custom_items' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            // Automatic follow-up ("Relances"). exclude_unless keeps the saved
+            // delay values untouched when the feature is toggled off.
+            'follow_up_enabled'     => ['nullable', 'boolean'],
+            'follow_up_delay_value' => ['exclude_unless:follow_up_enabled,1', 'required', 'integer', 'min:1', 'max:365'],
+            'follow_up_delay_unit'  => ['exclude_unless:follow_up_enabled,1', 'required', 'in:days,weeks,months'],
+        ], [], [
+            'logo'                  => __('Logo'),
+            'follow_up_delay_value' => __('follow-up delay'),
+            'follow_up_delay_unit'  => __('follow-up unit'),
         ]);
+
+        // Dealership logo: uploaded file replaces (and deletes) the previous
+        // one; the "remove" checkbox clears it. Stored on the public disk so
+        // the settings page can preview it; PDFs read the file directly.
+        $removeLogo = (bool) ($validated['remove_logo'] ?? false);
+        unset($validated['logo'], $validated['remove_logo']);
+
+        if ($request->hasFile('logo')) {
+            if ($company->logo_path) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($company->logo_path);
+            }
+            $validated['logo_path'] = $request->file('logo')->store('company-logos', 'public');
+        } elseif ($removeLogo && $company->logo_path) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($company->logo_path);
+            $validated['logo_path'] = null;
+        }
+
+        // Watermark for the auto follow-up: on the OFF→ON transition, only
+        // quotes sent from this moment on become eligible — enabling the
+        // feature must never blast follow-ups for a backlog of old quotes.
+        if (($validated['follow_up_enabled'] ?? false) && ! $company->follow_up_enabled) {
+            $validated['follow_up_enabled_at'] = now();
+        }
 
         $company->update($validated);
 

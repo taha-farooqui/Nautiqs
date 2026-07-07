@@ -110,6 +110,7 @@ Route::middleware(['auth', 'verified', 'maintenance'])->group(function () {
     Route::post('/quotes/{id}/restore',     [QuoteController::class, 'restore'])->name('quotes.restore');
     Route::delete('/quotes/{id}/force',     [QuoteController::class, 'forceDelete'])->name('quotes.force-delete');
     Route::post('/quotes/{id}/mark-sent',   [QuoteController::class, 'markSent'])->name('quotes.mark-sent');
+    Route::post('/quotes/{id}/toggle-follow-up', [QuoteController::class, 'toggleFollowUp'])->name('quotes.toggle-follow-up');
     Route::post('/quotes/{id}/mark-won',    [QuoteController::class, 'markWon'])->name('quotes.mark-won');
     Route::post('/quotes/{id}/mark-lost',   [QuoteController::class, 'markLost'])->name('quotes.mark-lost');
     Route::post('/quotes/{id}/duplicate',   [QuoteController::class, 'duplicate'])->name('quotes.duplicate');

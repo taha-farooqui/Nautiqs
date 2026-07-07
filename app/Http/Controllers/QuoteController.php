@@ -181,6 +181,13 @@ class QuoteController extends Controller
             ->orderBy('sent_at', 'asc')
             ->value('sent_at');
 
+        // Automatic follow-up card state: has one already gone out?
+        $followUpSentAt = EmailLog::where('quote_id', (string) $quote->_id)
+            ->where('type', EmailLog::TYPE_FOLLOW_UP)
+            ->where('status', EmailLog::STATUS_SENT)
+            ->orderBy('sent_at', 'asc')
+            ->value('sent_at');
+
         return view('quotes.show', [
             'quote'              => $quote,
             'emailSubject'       => $rendered['subject'],
@@ -189,6 +196,7 @@ class QuoteController extends Controller
             'sendType'           => $sendType,
             'firstQuoteEmailAt'  => $firstQuoteEmailAt,
             'firstOrderEmailAt'  => $firstOrderEmailAt,
+            'followUpSentAt'     => $followUpSentAt,
         ]);
     }
 
@@ -280,6 +288,18 @@ class QuoteController extends Controller
         return back()->with('status', __('Quote marked as sent.'));
     }
 
+    // Per-quote opt-out from the company's automatic follow-up email.
+    public function toggleFollowUp(string $id)
+    {
+        $quote = Quote::findOrFail($id);
+        $disabled = ! (bool) $quote->follow_up_disabled;
+        $quote->update(['follow_up_disabled' => $disabled]);
+
+        return back()->with('status', $disabled
+            ? __('Automatic follow-up disabled for this quote.')
+            : __('Automatic follow-up re-enabled for this quote.'));
+    }
+
     public function markWon(string $id)
     {
         $quote = Quote::findOrFail($id);
@@ -341,11 +361,10 @@ class QuoteController extends Controller
         return $pdf->download($filename);
     }
 
-    // Send the quote PDF to the client via Postmark
-    public function sendEmail(string $id, Request $request, EmailTemplateService $templates)
+    // Send the quote PDF to the client by email (shared pipeline in QuoteEmailSender)
+    public function sendEmail(string $id, Request $request, \App\Services\QuoteEmailSender $sender)
     {
-        $quote   = Quote::findOrFail($id);
-        $company = $quote->company;
+        $quote = Quote::findOrFail($id);
 
         // For guest quotes the snapshot is empty until first send. Require
         // first/last/email here so the PDF and email both have valid recipient
@@ -394,92 +413,17 @@ class QuoteController extends Controller
             default                              => EmailLog::TYPE_QUOTE,
         };
 
-        $template = $templates->getOrCreate($company, $type);
-        $rendered = $templates->render($template, $company, $quote);
+        $toName = trim(($request->input('first_name') ?? ($quote->client_snapshot['first_name'] ?? '')) . ' ' .
+                       ($request->input('last_name')  ?? ($quote->client_snapshot['last_name']  ?? ''))) ?: null;
 
-        // Caller can override either field on a per-send basis.
-        $subject  = $request->filled('subject') ? $request->input('subject') : $rendered['subject'];
-        $bodyHtml = $request->filled('message') ? $request->input('message') : $rendered['body'];
-
-        // Email open-tracking pixel. Mint a per-quote token on first send
-        // and re-use it for every follow-up so the open-count keeps
-        // accumulating against the same quote. The pixel hits
-        // /e/p/{token} which bumps tracking.open_count.
-        //
-        // The pixel URL must be PUBLICLY reachable — Gmail / Outlook can't
-        // hit http://127.0.0.1 if the email is sent from a local dev box.
-        // We let EMAIL_TRACKING_BASE_URL override the route's host so a
-        // dealer testing locally still produces clickable production URLs.
-        $trackingToken = $quote->tracking_token;
-        if (empty($trackingToken)) {
-            $trackingToken = \Illuminate\Support\Str::random(40);
-            $quote->update(['tracking_token' => $trackingToken]);
-        }
-        $trackingBase = rtrim(config('app.tracking_base_url') ?: '', '/');
-        $pixelUrl = $trackingBase !== ''
-            ? $trackingBase . '/e/p/' . $trackingToken
-            : route('email.pixel', $trackingToken);
-        $bodyHtml .= '<img src="' . e($pixelUrl) . '" width="1" height="1" alt="" style="display:block;width:1px;height:1px;border:0;" />';
-
-        // Order-confirmation emails attach the BC PDF; everything else
-        // attaches the quote PDF.
-        if ($type === EmailLog::TYPE_ORDER_CONFIRMATION && ! empty($quote->order_confirmation_number)) {
-            $pdf = Pdf::loadView('pdf.order-confirmation', compact('quote', 'company'))->setPaper('a4')->setOption('isPhpEnabled', true);
-            $attachmentFilename = $quote->order_confirmation_number . '.pdf';
-        } else {
-            $pdf = Pdf::loadView('pdf.quote', compact('quote', 'company'))->setPaper('a4')->setOption('isPhpEnabled', true);
-            $attachmentFilename = $quote->number . '.pdf';
-        }
-        $pdfBytes = $pdf->output();
-
-        $sendError = null;
-        try {
-            \Illuminate\Support\Facades\Mail::html($bodyHtml, function ($msg) use ($to, $subject, $pdfBytes, $attachmentFilename, $company) {
-                $msg->to($to)
-                    ->subject($subject)
-                    ->attachData($pdfBytes, $attachmentFilename, ['mime' => 'application/pdf']);
-
-                if ($company->salesperson_email) {
-                    $msg->replyTo($company->salesperson_email, $company->salesperson_name);
-                }
-            });
-        } catch (\Throwable $e) {
-            $sendError = $e->getMessage();
-        }
-
-        // Audit row — written even on failure so the dealer can see what
-        // happened and retry. Body is stored verbatim (post-substitution)
-        // so "what did the client see?" is always answerable.
-        $user = auth()->user();
-        EmailLog::create([
-            'company_id'          => $user->company_id,
-            'quote_id'            => (string) $quote->_id,
-            'quote_number'        => $quote->number,
-            'type'                => $type,
-            'to_email'            => $to,
-            'to_name'             => trim(($request->input('first_name') ?? ($quote->client_snapshot['first_name'] ?? '')) . ' ' .
-                                          ($request->input('last_name')  ?? ($quote->client_snapshot['last_name']  ?? ''))) ?: null,
-            'reply_to_email'      => $company->salesperson_email,
-            'subject'             => $subject,
-            'body_html'           => $bodyHtml,
-            'attachment_filename' => $attachmentFilename,
-            'status'              => $sendError ? EmailLog::STATUS_FAILED : EmailLog::STATUS_SENT,
-            'error_message'       => $sendError,
-            'sent_by_user_id'     => (string) $user->_id,
-            'sent_by_user_name'   => $user->name,
-            'sent_at'             => now(),
+        $log = $sender->send($quote, $type, $to, auth()->user(), [
+            'subject' => $request->input('subject'),
+            'body'    => $request->input('message'),
+            'to_name' => $toName,
         ]);
 
-        if ($sendError) {
-            return back()->withErrors(['email' => __('Sending failed') . ": {$sendError}"]);
-        }
-
-        // First successful send moves a draft into Sent state.
-        if ($quote->status === Quote::STATUS_DRAFT) {
-            $quote->update([
-                'status'  => Quote::STATUS_SENT,
-                'sent_at' => now(),
-            ]);
+        if ($log->status === EmailLog::STATUS_FAILED) {
+            return back()->withErrors(['email' => __('Sending failed') . ": {$log->error_message}"]);
         }
 
         $verb = match ($type) {

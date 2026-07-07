@@ -44,10 +44,12 @@ class EmailLog extends Model
         'sent_by_user_id',
         'sent_by_user_name',  // denormalised so deleting the user doesn't blank the log
         'sent_at',
+        'automated',          // true when sent by the follow-up scheduler (no human actor)
     ];
 
     protected $casts = [
-        'sent_at' => 'datetime',
+        'sent_at'   => 'datetime',
+        'automated' => 'boolean',
     ];
 
     public function quote()

@@ -20,22 +20,23 @@
     // Group options by category for the table
     $optionRows = collect($quote->options ?? [])->groupBy(fn ($o) => $o['category'] ?? __('Options'));
 
-    // Salesperson initials for the avatar tile (text-only fallback for the
-    // template's coloured circle)
-    $spName = $company->salesperson_name ?? '';
-    $spInitials = strtoupper(collect(preg_split('/\s+/', $spName))
-        ->filter()
-        ->map(fn ($p) => mb_substr($p, 0, 1))
-        ->take(2)
-        ->join(''));
+    // The person who actually made the quote signs it; company-level
+    // salesperson is the fallback for legacy quotes without a creator.
+    $spName = $quote->creatorName() ?: ($company->salesperson_name ?? '');
+    $logoSrc = $company->logoDataUri();
 @endphp
 
 {{-- ════════════════════════════ HEADER ════════════════════════════ --}}
 <table class="qhead">
     <tr>
         <td style="width:55%;">
-            <div class="qhead-name">{{ $company->name ?? 'Nautiqs' }}</div>
+            @if ($logoSrc)
+                <img src="{{ $logoSrc }}" class="qhead-logo" alt="{{ $company->name }}" />
+            @else
+                <div class="qhead-name">{{ $company->name ?? 'Nautiqs' }}</div>
+            @endif
             <div class="qhead-sub">
+                @if ($logoSrc && $company->name) <strong>{{ $company->name }}</strong><br> @endif
                 @if ($company->address) {{ $company->address }}<br> @endif
                 @if ($company->salesperson_phone) {{ $company->salesperson_phone }} @endif
                 @if ($company->salesperson_phone && $company->salesperson_email) · @endif
@@ -65,6 +66,7 @@
                 @if ($clientCityLine) {{ $clientCityLine }} @endif
             </div>
         </td>
+        <td class="spacer"></td>
         <td>
             <div class="qmeta-label">{{ __('Your contact') }}</div>
             <div class="qmeta-name">{{ $spName ?: $company->name }}</div>
@@ -310,12 +312,12 @@
      counter(pages) approach renders "/ 0" in pseudo-elements, so draw it here. --}}
 <script type="text/php">
 if (isset($pdf)) {
-    $font  = $fontMetrics->getFont("DejaVu Sans", "normal");
-    $size  = 7.5;
+    $font  = $fontMetrics->getFont("Geist", "normal") ?: $fontMetrics->getFont("DejaVu Sans", "normal");
+    $size  = 7;
     $color = [0.612, 0.643, 0.686];
     $text  = "{{ __('Page') }} {PAGE_NUM} / {PAGE_COUNT}";
     $tw    = $fontMetrics->getTextWidth("{{ __('Page') }} 00 / 00", $font, $size);
-    $x     = $pdf->get_width() - $tw - 28;
+    $x     = $pdf->get_width() - $tw - 34;
     $y     = $pdf->get_height() - 32;
     $pdf->page_text($x, $y, $text, $font, $size, $color);
 }

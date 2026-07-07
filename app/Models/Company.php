@@ -37,16 +37,25 @@ class Company extends Model
         // §17.4 Margin Presets
         'margin_presets',        // ['hull' => 12, 'engine' => 8, 'options' => 15, 'custom_items' => 10]
 
+        // Automatic follow-up emails ("Relances")
+        'follow_up_enabled',     // master switch, off by default
+        'follow_up_delay_value', // e.g. 1
+        'follow_up_delay_unit',  // days | weeks | months
+        'follow_up_enabled_at',  // watermark: only quotes SENT after this get auto follow-ups
+
         // Lifecycle
         'status',                // active | suspended
         'onboarded_at',
     ];
 
     protected $casts = [
-        'default_vat_rate'     => 'float',
-        'default_margin_pct'   => 'float',
-        'margin_presets'       => 'array',
-        'onboarded_at'         => 'datetime',
+        'default_vat_rate'      => 'float',
+        'default_margin_pct'    => 'float',
+        'margin_presets'        => 'array',
+        'onboarded_at'          => 'datetime',
+        'follow_up_enabled'     => 'boolean',
+        'follow_up_delay_value' => 'integer',
+        'follow_up_enabled_at'  => 'datetime',
     ];
 
     public function users()
@@ -80,5 +89,55 @@ class Company extends Model
         }
 
         return (float) ($this->default_margin_pct ?? 0);
+    }
+
+    /**
+     * The dealership logo as a base64 data URI for the PDFs. DomPDF has
+     * isRemoteEnabled=false, so asset() URLs never load — we read the file
+     * straight off the public disk instead. Null when unset/missing.
+     */
+    public function logoDataUri(): ?string
+    {
+        if (empty($this->logo_path)) {
+            return null;
+        }
+
+        $path = storage_path('app/public/' . $this->logo_path);
+        if (! is_file($path)) {
+            return null;
+        }
+
+        $mime = match (strtolower(pathinfo($path, PATHINFO_EXTENSION))) {
+            'png'         => 'image/png',
+            'jpg', 'jpeg' => 'image/jpeg',
+            'webp'        => 'image/webp',
+            'svg'         => 'image/svg+xml',
+            default       => null,
+        };
+        if ($mime === null) {
+            return null;
+        }
+
+        return 'data:' . $mime . ';base64,' . base64_encode((string) file_get_contents($path));
+    }
+
+    /**
+     * Earliest sent_at an auto follow-up applies to right now: quotes sent
+     * on/before this moment have waited the configured delay. Null when the
+     * delay is misconfigured.
+     */
+    public function followUpCutoff(): ?\Carbon\Carbon
+    {
+        $value = (int) ($this->follow_up_delay_value ?? 0);
+        if ($value < 1) {
+            return null;
+        }
+
+        return match ($this->follow_up_delay_unit) {
+            'days'   => now()->subDays($value),
+            'weeks'  => now()->subWeeks($value),
+            'months' => now()->subMonths($value),
+            default  => null,
+        };
     }
 }

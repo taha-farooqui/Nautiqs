@@ -113,6 +113,10 @@ class Quote extends Model
         // label survives deactivation of the user record.
         'created_by_user_id',
         'created_by_name',
+
+        // Per-quote opt-out from the company's automatic follow-up email.
+        // Absent/false = follow-up allowed (missing field matches != true).
+        'follow_up_disabled',
     ];
 
     protected $casts = [
@@ -140,6 +144,7 @@ class Quote extends Model
         'won_at'             => 'datetime',
         'lost_at'            => 'datetime',
         'order_confirmation_at' => 'datetime',
+        'follow_up_disabled' => 'boolean',
     ];
 
     /**

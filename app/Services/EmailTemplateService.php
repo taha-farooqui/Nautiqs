@@ -261,7 +261,7 @@ HTML,
             'quote_number'       => 'Q-' . date('Y') . '-001',
             'order_number'       => 'BC-' . date('Y') . '-001',
             'boat_model'         => 'Eagle 10 — 2× 200HP',
-            'total_ttc'          => '€89 500,00',
+            'total_ttc'          => '89 500,00 €',
             'salesperson_name'   => $company->salesperson_name ?? __('Salesperson'),
             'company_name'       => $company->name ?? __('Company'),
             'date'               => now()->translatedFormat('F j, Y'),
@@ -283,8 +283,11 @@ HTML,
             'quote_number'       => $quote->number ?? '',
             'order_number'       => $quote->order_confirmation_number ?? '',
             'boat_model'         => $quote->model_snapshot['name'] ?? '',
-            'total_ttc'          => '€' . number_format($totalTtc, 2, ',', ' '),
-            'salesperson_name'   => $company->salesperson_name ?? '',
+            'total_ttc'          => number_format($totalTtc, 2, ',', ' ') . ' €',
+            // The person who actually made the quote (team subaccounts sign
+            // with their own name); company-level salesperson is the fallback
+            // for legacy quotes without a creator snapshot.
+            'salesperson_name'   => ($quote?->creatorName()) ?: ($company->salesperson_name ?? ''),
             'company_name'       => $company->name ?? '',
             'date'               => now()->translatedFormat('F j, Y'),
         ], $extra);
