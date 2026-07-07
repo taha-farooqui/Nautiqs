@@ -96,9 +96,12 @@
 
                     @if ($company->logo_path)
                         <div class="flex items-center gap-4 mb-3">
-                            <div class="h-16 px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 flex items-center">
+                            {{-- Inline sizes on purpose: arbitrary Tailwind classes aren't in
+                                 the compiled CSS bundle, so constrain the preview directly. --}}
+                            <div class="rounded-lg border border-gray-200 bg-gray-50 flex items-center"
+                                style="height:64px; padding:8px 12px;">
                                 <img src="{{ asset('storage/' . $company->logo_path) }}" alt="{{ $company->name }}"
-                                    class="max-h-12 max-w-[180px] object-contain" />
+                                    style="max-height:48px; max-width:180px; width:auto; height:auto; object-fit:contain; display:block;" />
                             </div>
                             <label class="inline-flex items-center gap-2 text-sm text-red-600 cursor-pointer">
                                 <input type="checkbox" name="remove_logo" value="1"
