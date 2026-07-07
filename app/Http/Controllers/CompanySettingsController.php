@@ -43,7 +43,6 @@ class CompanySettingsController extends Controller
             'vat_number'        => ['nullable', 'string', 'max:50'],
             'address'           => ['nullable', 'string', 'max:500'],
             'logo'              => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:2048'],
-            'remove_logo'       => ['nullable', 'boolean'],
             // §17.2
             'salesperson_name'  => ['nullable', 'string', 'max:100'],
             'salesperson_phone' => ['nullable', 'string', 'max:30'],
@@ -70,19 +69,15 @@ class CompanySettingsController extends Controller
         ]);
 
         // Dealership logo: uploaded file replaces (and deletes) the previous
-        // one; the "remove" checkbox clears it. Stored on the public disk so
-        // the settings page can preview it; PDFs read the file directly.
-        $removeLogo = (bool) ($validated['remove_logo'] ?? false);
-        unset($validated['logo'], $validated['remove_logo']);
+        // one. Stored on the public disk so the settings page can preview it;
+        // PDFs read the file directly. Removal is instant via removeLogo().
+        unset($validated['logo']);
 
         if ($request->hasFile('logo')) {
             if ($company->logo_path) {
                 \Illuminate\Support\Facades\Storage::disk('public')->delete($company->logo_path);
             }
             $validated['logo_path'] = $request->file('logo')->store('company-logos', 'public');
-        } elseif ($removeLogo && $company->logo_path) {
-            \Illuminate\Support\Facades\Storage::disk('public')->delete($company->logo_path);
-            $validated['logo_path'] = null;
         }
 
         // Watermark for the auto follow-up: on the OFF→ON transition, only
@@ -95,5 +90,24 @@ class CompanySettingsController extends Controller
         $company->update($validated);
 
         return redirect()->route('company.settings')->with('status', __('Company settings saved.'));
+    }
+
+    /**
+     * Instantly remove the dealership logo (its own one-click button on the
+     * settings page — no "Save changes" round-trip needed).
+     */
+    public function removeLogo()
+    {
+        if (auth()->user()?->role === User::ROLE_SUPERADMIN) {
+            return redirect()->route('admin.settings.edit');
+        }
+        $company = Company::findOrFail(auth()->user()->company_id);
+
+        if ($company->logo_path) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($company->logo_path);
+            $company->update(['logo_path' => null]);
+        }
+
+        return redirect()->route('company.settings')->with('status', __('Logo removed.'));
     }
 }

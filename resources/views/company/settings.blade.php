@@ -103,11 +103,13 @@
                                 <img src="{{ asset('storage/' . $company->logo_path) }}" alt="{{ $company->name }}"
                                     style="max-height:48px; max-width:180px; width:auto; height:auto; object-fit:contain; display:block;" />
                             </div>
-                            <label class="inline-flex items-center gap-2 text-sm text-red-600 cursor-pointer">
-                                <input type="checkbox" name="remove_logo" value="1"
-                                    class="rounded border-gray-300 text-red-600 focus:ring-red-500" />
-                                {{ __('Remove logo') }}
-                            </label>
+                            {{-- One-click removal — submits the standalone form below via the
+                                 HTML form attribute (this button sits inside the settings form,
+                                 so a nested <form> isn't possible). --}}
+                            <button type="submit" form="remove-logo-form"
+                                class="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium bg-red-50 hover:bg-red-100 text-red-700 rounded-lg">
+                                <i class="ri-delete-bin-line"></i> {{ __('Remove logo') }}
+                            </button>
                         </div>
                     @endif
 
@@ -298,4 +300,12 @@
             </button>
         </div>
     </form>
+
+    {{-- Standalone target for the "Remove logo" button (kept outside the main
+         settings form — HTML forbids nesting). Instant, no Save needed. --}}
+    @if ($company->logo_path)
+        <form id="remove-logo-form" method="POST" action="{{ route('company.settings.logo.remove') }}">
+            @csrf
+        </form>
+    @endif
 </x-app-layout>

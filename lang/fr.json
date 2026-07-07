@@ -17,6 +17,7 @@
     "Export options to file": "Exporter les options vers un fichier",
     "Displayed at the top of your quote and order PDFs. PNG, JPG or WebP — max 2 MB.": "Affiché en haut de vos PDF de devis et de bons de commande. PNG, JPG ou WebP — 2 Mo max.",
     "Remove logo": "Supprimer le logo",
+    "Logo removed.": "Logo supprimé.",
     "Automatic follow-up": "Relance automatique",
     "Automatically remind clients who have not replied to a quote.": "Relancez automatiquement les clients qui n'ont pas répondu à un devis.",
     "Enable automatic follow-up": "Activer la relance automatique",
