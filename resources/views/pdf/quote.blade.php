@@ -46,7 +46,12 @@
         <td style="width:45%; text-align:right;">
             <div class="qhead-doctype">{{ __('Quotation') }}</div>
             <div class="qhead-ref">{{ $quote->number }}</div>
-            <div class="qhead-date">{{ $quote->created_at?->format('d/m/Y') }}</div>
+            <div class="qhead-date">
+                {{ __('Issued on') }} {{ $quote->created_at?->format('d/m/Y') }}
+                @if ($quote->expires_at)
+                    <br>{{ __('Valid until') }} {{ $quote->expires_at->format('d/m/Y') }}
+                @endif
+            </div>
         </td>
     </tr>
 </table>
@@ -78,10 +83,10 @@
     </tr>
 </table>
 
-{{-- ════════════════════════════ BOAT BAND ═══════════════════════ --}}
+{{-- ════════════════════════════ BOAT HEADLINE ═══════════════════ --}}
 <table class="qboat">
     <tr>
-        <td style="width:60%;">
+        <td style="width:62%;">
             <div class="qboat-name">
                 @if (! empty($quote->model_snapshot['brand'])) {{ $quote->model_snapshot['brand'] }} @endif
                 {{ $quote->model_snapshot['name'] ?? '' }}
@@ -90,7 +95,7 @@
                 {{ $quote->variant_snapshot['name'] ?? '' }}
             </div>
         </td>
-        <td style="width:40%; text-align:right;">
+        <td class="right" style="width:38%;">
             @if (! empty($quote->variant_snapshot['currency']))
                 <div class="qboat-spec">{{ __('Currency') }}</div>
                 <div class="qboat-spec-value">{{ $quote->variant_snapshot['currency'] }}</div>
@@ -127,6 +132,14 @@
 </div>
 
 <table class="qoptions">
+    {{-- Column captions --}}
+    <tr class="head-row">
+        <td>{{ __('Description') }}</td>
+        <td style="width:12mm; text-align:center;">{{ __('Qty') }}</td>
+        <td style="width:30mm; text-align:right;">{{ __('Unit price HT') }}</td>
+        <td style="width:32mm; text-align:right;">{{ __('Total HT') }}</td>
+    </tr>
+
     {{-- Base boat row --}}
     <tr class="cat-row"><td colspan="4">{{ __('Base boat') }}</td></tr>
     @php
@@ -308,18 +321,18 @@
     </div>
 </div>
 
-{{-- Page numbering via DomPDF's {PAGE_NUM}/{PAGE_COUNT} placeholders — the CSS
-     counter(pages) approach renders "/ 0" in pseudo-elements, so draw it here. --}}
+{{-- Page numbering. page_script() runs once per page after layout, so the
+     number lands on EVERY page (page_text from an inline script only covers
+     the page being rendered when the script node is reached). --}}
 <script type="text/php">
 if (isset($pdf)) {
-    $font  = $fontMetrics->getFont("Geist", "normal") ?: $fontMetrics->getFont("DejaVu Sans", "normal");
-    $size  = 7;
-    $color = [0.612, 0.643, 0.686];
-    $text  = "{{ __('Page') }} {PAGE_NUM} / {PAGE_COUNT}";
-    $tw    = $fontMetrics->getTextWidth("{{ __('Page') }} 00 / 00", $font, $size);
-    $x     = $pdf->get_width() - $tw - 34;
-    $y     = $pdf->get_height() - 32;
-    $pdf->page_text($x, $y, $text, $font, $size, $color);
+    $pdf->page_script(function ($pageNumber, $pageCount, $canvas, $fontMetrics) {
+        $font = $fontMetrics->getFont("Geist", "normal") ?: $fontMetrics->getFont("DejaVu Sans", "normal");
+        $size = 7;
+        $text = "{{ __('Page') }} {$pageNumber} / {$pageCount}";
+        $tw   = $fontMetrics->getTextWidth($text, $font, $size);
+        $canvas->text($canvas->get_width() - $tw - 34, $canvas->get_height() - 32, $text, $font, $size, [0.612, 0.643, 0.686]);
+    });
 }
 </script>
 

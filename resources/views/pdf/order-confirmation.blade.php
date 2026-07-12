@@ -77,10 +77,10 @@
     </tr>
 </table>
 
-{{-- ════════════════════════════ BOAT BAND ═══════════════════════ --}}
+{{-- ════════════════════════════ BOAT HEADLINE ═══════════════════ --}}
 <table class="qboat">
     <tr>
-        <td style="width:60%;">
+        <td style="width:62%;">
             <div class="qboat-name">
                 @if (! empty($quote->model_snapshot['brand'])) {{ $quote->model_snapshot['brand'] }} @endif
                 {{ $quote->model_snapshot['name'] ?? '' }}
@@ -89,7 +89,7 @@
                 {{ $quote->variant_snapshot['name'] ?? '' }}
             </div>
         </td>
-        <td style="width:40%; text-align:right;">
+        <td class="right" style="width:38%;">
             <div class="qboat-spec">{{ __('Confirmation date') }}</div>
             <div class="qboat-spec-value">{{ $confirmDate?->format('d/m/Y') }}</div>
         </td>
@@ -102,6 +102,14 @@
 </div>
 
 <table class="qoptions">
+    {{-- Column captions --}}
+    <tr class="head-row">
+        <td>{{ __('Description') }}</td>
+        <td style="width:12mm; text-align:center;">{{ __('Qty') }}</td>
+        <td style="width:30mm; text-align:right;">{{ __('Unit price HT') }}</td>
+        <td style="width:32mm; text-align:right;">{{ __('Total HT') }}</td>
+    </tr>
+
     <tr class="cat-row"><td colspan="4">{{ __('Base boat') }}</td></tr>
     @php
         // Avoid "Sun Odyssey 410 — Sun Odyssey 410 — Standard": if the variant
@@ -238,17 +246,17 @@
     </div>
 </div>
 
-{{-- Page numbering via DomPDF's {PAGE_NUM}/{PAGE_COUNT} placeholders. --}}
+{{-- Page numbering. page_script() runs once per page after layout, so the
+     number lands on EVERY page. --}}
 <script type="text/php">
 if (isset($pdf)) {
-    $font  = $fontMetrics->getFont("Geist", "normal") ?: $fontMetrics->getFont("DejaVu Sans", "normal");
-    $size  = 7;
-    $color = [0.612, 0.643, 0.686];
-    $text  = "{{ __('Page') }} {PAGE_NUM} / {PAGE_COUNT}";
-    $tw    = $fontMetrics->getTextWidth("{{ __('Page') }} 00 / 00", $font, $size);
-    $x     = $pdf->get_width() - $tw - 34;
-    $y     = $pdf->get_height() - 32;
-    $pdf->page_text($x, $y, $text, $font, $size, $color);
+    $pdf->page_script(function ($pageNumber, $pageCount, $canvas, $fontMetrics) {
+        $font = $fontMetrics->getFont("Geist", "normal") ?: $fontMetrics->getFont("DejaVu Sans", "normal");
+        $size = 7;
+        $text = "{{ __('Page') }} {$pageNumber} / {$pageCount}";
+        $tw   = $fontMetrics->getTextWidth($text, $font, $size);
+        $canvas->text($canvas->get_width() - $tw - 34, $canvas->get_height() - 32, $text, $font, $size, [0.612, 0.643, 0.686]);
+    });
 }
 </script>
 
