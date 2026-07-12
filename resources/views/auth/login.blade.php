@@ -81,5 +81,12 @@
                 {{ __('Log in') }}
             </button>
         </form>
+
+        <p class="text-center text-sm text-gray-500 mt-6">
+            {{ __('No account yet?') }}
+            <a href="{{ route('account-request.create') }}" class="font-semibold text-primary-800 hover:text-primary-900">
+                {{ __('Request an account') }}
+            </a>
+        </p>
     </div>
 </x-guest-layout>

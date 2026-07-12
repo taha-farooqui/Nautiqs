@@ -24,6 +24,16 @@ Route::get('/', function () {
 Route::get('/e/p/{token}', \App\Http\Controllers\EmailPixelController::class)
     ->name('email.pixel');
 
+// Public "request an account" flow (linked from the login page). No
+// self-service signup — requests queue up for superadmin approval under
+// /admin/account-requests. Throttled against form spam.
+Route::middleware('guest')->group(function () {
+    Route::get('/request-account',  [\App\Http\Controllers\AccountRequestController::class, 'create'])->name('account-request.create');
+    Route::post('/request-account', [\App\Http\Controllers\AccountRequestController::class, 'store'])
+        ->middleware('throttle:5,10')
+        ->name('account-request.store');
+});
+
 // UI locale switcher — drops a 1-year `locale` cookie and bounces the user
 // back where they came from. Reachable while logged in or out so the login
 // screen language toggle works.
@@ -253,6 +263,12 @@ Route::middleware(['auth', 'verified', 'maintenance'])->group(function () {
         Route::get('/dealers/{id}',                  [\App\Http\Controllers\Admin\DealerController::class, 'show'])->name('dealers.show');
         Route::post('/dealers/{id}/suspend',         [\App\Http\Controllers\Admin\DealerController::class, 'suspend'])->name('dealers.suspend');
         Route::post('/dealers/{id}/reactivate',      [\App\Http\Controllers\Admin\DealerController::class, 'reactivate'])->name('dealers.reactivate');
+
+        // Public registration requests — review queue; approving provisions
+        // the dealership + emails a setup link.
+        Route::get('/account-requests',               [\App\Http\Controllers\Admin\AccountRequestController::class, 'index'])->name('account-requests.index');
+        Route::post('/account-requests/{id}/approve', [\App\Http\Controllers\Admin\AccountRequestController::class, 'approve'])->name('account-requests.approve');
+        Route::post('/account-requests/{id}/reject',  [\App\Http\Controllers\Admin\AccountRequestController::class, 'reject'])->name('account-requests.reject');
 
         // Activity log (audit trail of superadmin actions).
         Route::get('/audit',                [\App\Http\Controllers\Admin\AuditController::class, 'index'])->name('audit.index');

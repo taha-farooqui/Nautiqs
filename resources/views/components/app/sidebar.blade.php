@@ -57,12 +57,18 @@
         ],
     ];
 
+    // Pending registration requests — red pill on the superadmin nav entry.
+    $pendingAccountRequests = $isSuperadmin
+        ? \App\Models\AccountRequest::where('status', \App\Models\AccountRequest::STATUS_PENDING)->count()
+        : 0;
+
     $superadminNav = [
         [
             'section' => 'Platform',
             'items' => [
                 ['label' => 'Overview',        'icon' => 'ri-line-chart-line',      'route' => 'admin.dashboard',  'active' => 'admin.dashboard'],
                 ['label' => 'Dealers',         'icon' => 'ri-store-2-line',         'route' => 'admin.dealers.index', 'active' => 'admin.dealers.*'],
+                ['label' => 'Account requests', 'icon' => 'ri-user-received-line',  'route' => 'admin.account-requests.index', 'active' => 'admin.account-requests.*', 'badge' => $pendingAccountRequests > 0 ? (string) $pendingAccountRequests : null],
             ],
         ],
         [
