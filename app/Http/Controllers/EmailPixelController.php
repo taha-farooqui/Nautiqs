@@ -111,10 +111,13 @@ class EmailPixelController extends Controller
             if (str_contains($ua, $needle)) return false;
         }
 
-        // 3. Ignore the immediate post-send window. Brevo's link-warmer
-        // and most spam scanners fire within the first minute.
+        // 3. Ignore the immediate post-send window. Provider link-warmers
+        // and most spam scanners fire within the first minute. Compared as
+        // an absolute instant (sent_at + grace) — Carbon 3's diffInSeconds()
+        // is SIGNED, so `now()->diffInSeconds($sentAt)` is negative for any
+        // past sent_at and would swallow every open forever.
         $sentAt = $quote->sent_at;
-        if ($sentAt && now()->diffInSeconds($sentAt) < self::GRACE_SECONDS) {
+        if ($sentAt && now()->lt($sentAt->copy()->addSeconds(self::GRACE_SECONDS))) {
             return false;
         }
 
