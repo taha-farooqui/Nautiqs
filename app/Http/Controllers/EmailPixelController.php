@@ -14,16 +14,18 @@ use Illuminate\Support\Facades\Log;
  * the quote's open counter.
  *
  * Filters that PREVENT a hit from counting:
- *   - HEAD requests (link-warmers, bots).
- *   - User-Agent matching known outbound-provider / scanner patterns.
- *   - Hits within :GRACE_SECONDS of the quote being marked sent
- *     (catches the immediate Brevo / Gmail-proxy prefetch).
- *   - Same client IP hitting the same token within :DEDUP_SECONDS
- *     (Gmail's image proxy re-fetches the pixel multiple times during a
- *     single inbox view — we count those as one open).
+ *   - Anything that isn't a plain GET (link-warmers, bots).
+ *   - Empty User-Agent, or one matching a known scanner / ESP pattern.
+ *   - A second hit for the same QUOTE inside :DEDUP_SECONDS (one inbox
+ *     view fans out into several proxy fetches — that's one open).
  *
  * IMPORTANT: GoogleImageProxy is NOT in the bot list — that's the User-
  * Agent for genuine Gmail opens. Blocking it would zero out the count.
+ *
+ * Equally important: do NOT re-introduce a "skip hits soon after sending"
+ * window. It looks sensible but the proxy fetch happens when the client
+ * OPENS the mail, typically seconds after the dealer sent it, so such a
+ * window discards real opens and the UI wrongly reads "never opened".
  *
  * Public route — no auth. The tracking_token in the URL is the only
  * credential; it's a 40-char random string scoped to a single quote.
@@ -34,16 +36,21 @@ class EmailPixelController extends Controller
     // whether the token matched so we never give 200/404 timing hints.
     private const GIF_BYTES = "GIF89a\x01\x00\x01\x00\x80\x00\x00\x00\x00\x00\xff\xff\xff!\xf9\x04\x01\x00\x00\x00\x00,\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02D\x01\x00;";
 
-    // Ignore hits within this many seconds of `sent_at` — covers the
-    // outbound provider's link-warmer and the inbox image-proxy
-    // prefetch that fires the moment the email lands.
-    private const GRACE_SECONDS = 60;
-
-    // Per-IP dedup window. Gmail's image proxy re-hits the pixel a few
-    // times in quick succession during a single inbox view — we treat
-    // those as one open. A fresh open from the same client more than
-    // this many seconds later counts as a new open.
-    private const DEDUP_SECONDS = 60;
+    // Dedup window, keyed on the QUOTE (not the IP). A single inbox view
+    // produces a burst of fetches — measured on this install: +5s from a
+    // Gmail IP carrying a mail.google.com referer, then +17s and +30s from
+    // two DIFFERENT GoogleImageProxy IPs (142.250.32.2 and .3). Keying on
+    // the IP would score that one read as three opens, so we collapse per
+    // quote instead: one open per viewing session, and a genuine re-open
+    // later still counts.
+    //
+    // There is deliberately NO "ignore hits just after sending" window.
+    // The proxy fetches when the recipient OPENS the mail, which is often
+    // seconds after it was sent (the dealer sends, the client is waiting
+    // for it) — a time-based guard cannot tell that apart from a scanner
+    // prefetch and silently ate every real open. Scanners are filtered by
+    // user agent below instead.
+    private const DEDUP_SECONDS = 300;
 
     // User-Agent substrings we treat as non-human. We DO NOT include
     // GoogleImageProxy / ggpht.com here: those are real Gmail opens.
@@ -111,22 +118,11 @@ class EmailPixelController extends Controller
             if (str_contains($ua, $needle)) return false;
         }
 
-        // 3. Ignore the immediate post-send window. Provider link-warmers
-        // and most spam scanners fire within the first minute. Compared as
-        // an absolute instant (sent_at + grace) — Carbon 3's diffInSeconds()
-        // is SIGNED, so `now()->diffInSeconds($sentAt)` is negative for any
-        // past sent_at and would swallow every open forever.
-        $sentAt = $quote->sent_at;
-        if ($sentAt && now()->lt($sentAt->copy()->addSeconds(self::GRACE_SECONDS))) {
-            return false;
-        }
-
-        // 4. Per-IP dedup: same IP hitting the same token within the
-        // dedup window = one open. A genuine re-open >60s later (or any
-        // hit from a different IP) gets a fresh count. Cache::add() is
-        // atomic — only the first concurrent caller wins, so two
-        // simultaneous Gmail proxy hits can't both pass through.
-        $key = 'pixel:' . (string) $quote->_id . ':' . (string) $request->ip();
+        // 3. Per-quote dedup: the burst of fetches behind one inbox view
+        // counts once, however many proxy IPs it arrives from. Cache::add()
+        // is atomic — only the first concurrent caller wins, so simultaneous
+        // proxy hits can't both pass through.
+        $key = 'pixel:' . (string) $quote->_id;
         if (! Cache::add($key, 1, self::DEDUP_SECONDS)) {
             return false;
         }
