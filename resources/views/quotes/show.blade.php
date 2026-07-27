@@ -99,6 +99,24 @@
                 @if ($quote->duplicated_from)
                     <span class="text-xs text-gray-500">{{ __('Duplicated from') }} <span class="font-mono">{{ $quote->duplicated_from }}</span></span>
                 @endif
+
+                {{-- Email opens. Only meaningful once something was sent —
+                     before that "never opened" would just be noise. --}}
+                @if ($quote->sent_at || $firstQuoteEmailAt)
+                    @php $opens = $quote->openCount(); @endphp
+                    @if ($opens > 0)
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold"
+                            title="{{ __('Last opened') }}: {{ $quote->lastOpenedAt()?->translatedFormat('j M Y, H:i') }}">
+                            <i class="ri-eye-line"></i>
+                            {{ $opens }} {{ $opens === 1 ? __('open') : __('opens') }}
+                        </span>
+                    @else
+                        <span class="inline-flex items-center gap-1 text-xs text-gray-400"
+                            title="{{ __('Opens are counted when the client loads the images in the email. Some mail apps block them.') }}">
+                            <i class="ri-eye-off-line"></i> {{ __('Never opened') }}
+                        </span>
+                    @endif
+                @endif
             </div>
         </div>
 
@@ -263,12 +281,14 @@
                 </div>
             </div>
 
-            {{-- Included equipment --}}
-            @if (! empty($quote->included_equipment))
+            {{-- Included equipment (snapshot, or the version's current kit
+                 when the snapshot is empty — matches the PDF exactly). --}}
+            @php $quoteEquipment = $quote->equipmentForDisplay(); @endphp
+            @if (! empty($quoteEquipment))
                 <div class="bg-white rounded-2xl border border-gray-200 p-6">
                     <h4 class="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3">{{ __('Included equipment') }}</h4>
                     <ul class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-sm text-gray-700">
-                        @foreach ($quote->included_equipment as $eq)
+                        @foreach ($quoteEquipment as $eq)
                             <li class="flex items-center gap-2">
                                 <i class="ri-check-line text-emerald-600"></i> {{ $eq['label'] ?? '' }}
                             </li>

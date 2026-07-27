@@ -220,7 +220,26 @@
                             </span>
                         </li>
                     @empty
-                        <li class="text-sm text-gray-500">{{ __('No standard equipment defined for this variant.') }}</li>
+                        {{-- Loud on purpose: an empty kit here means the PDF
+                             prints no "standard included equipment" section at
+                             all, which dealers only notice after sending. --}}
+                        <li class="sm:col-span-2">
+                            <div class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-800">
+                                <p class="font-medium">
+                                    <i class="ri-alert-line"></i>
+                                    {{ __('This version has no standard equipment recorded.') }}
+                                </p>
+                                <p class="text-xs text-amber-700 mt-1">
+                                    {{ __('Nothing will be printed under “Standard included equipment” on the quote PDF.') }}
+                                    @if ($variant?->company_model_id)
+                                        <a href="{{ route('catalogue.models.edit', ['modelId' => $variant->company_model_id, 'tab' => 'versions']) }}"
+                                            target="_blank" class="font-semibold underline hover:no-underline">
+                                            {{ __('Add it to this version') }}
+                                        </a>
+                                    @endif
+                                </p>
+                            </div>
+                        </li>
                     @endforelse
                 </ul>
             @endif
@@ -295,25 +314,57 @@
             @endif
         </div>
 
-        {{-- Step 5b: Engines (global options independent of the boat).
-             Even though engines aren't tied to a specific variant, we still
-             gate them behind variant selection — totals can't render until
-             a variant exists, and adding engines first would be confusing. --}}
+        {{-- Step 5b: Engines. Not tied to a specific variant, but gated behind
+             variant selection — totals can't render until a variant exists.
+             Multi-select with quantities: twin and triple installations are
+             normal, so the same engine can appear 2 or 3 times. --}}
         <div class="rounded-2xl border border-gray-200 p-5 {{ $hasVariant ? $cardEnabled : $cardDisabled }}">
             <div class="flex items-center justify-between mb-3">
                 <h3 class="font-semibold text-gray-900 flex items-center gap-2">
                     <span class="w-6 h-6 rounded-full {{ $hasVariant ? $stepActive : $stepInactive }} text-xs font-bold flex items-center justify-center">
                         <i class="ri-settings-3-line text-xs"></i>
                     </span>
-                    {{ __('Engines & global options') }}
-                    @if (count($selectedEngines) > 0)
-                        <span class="text-xs text-gray-400 font-normal ml-1">{{ count($selectedEngines) }} {{ __('selected') }}</span>
+                    {{ __('Engines') }}
+                    @php $engineUnits = collect($selectedEngines)->sum(); @endphp
+                    @if ($engineUnits > 0)
+                        <span class="text-xs text-gray-400 font-normal ml-1">{{ $engineUnits }} {{ $engineUnits === 1 ? __('selected') : __('selected (plural)') }}</span>
                     @endif
                 </h3>
                 <a href="{{ route('engines.index') }}" target="_blank" class="text-xs text-primary-800 hover:underline">
                     <i class="ri-external-link-line"></i> {{ __('Manage engines') }}
                 </a>
             </div>
+
+            {{-- Chosen engines with quantities --}}
+            @if ($this->selectedEngineRows->isNotEmpty())
+                <div class="mb-3 space-y-2">
+                    @foreach ($this->selectedEngineRows as $row)
+                        <div class="flex items-center gap-3 px-3 py-2 rounded-lg border border-primary-200 bg-primary-50/40" wire:key="eng-{{ $row->id }}">
+                            <i class="ri-settings-3-line text-primary-800 shrink-0"></i>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-medium text-gray-900 truncate">{{ $row->label }}</p>
+                                <p class="text-xs text-gray-500">
+                                    @if ($row->hp) {{ (int) $row->hp }} HP · @endif
+                                    {{ number_format($row->price, 0, ',', ' ') }} € {{ __('each') }}
+                                </p>
+                            </div>
+                            <div class="flex items-center gap-1.5 shrink-0">
+                                <label class="text-xs text-gray-500">{{ __('Qty') }}</label>
+                                <input type="number" min="1" max="99" value="{{ $row->quantity }}"
+                                    wire:change="setEngineQty('{{ $row->id }}', $event.target.value)"
+                                    class="w-16 text-center rounded border-gray-300 text-sm py-1 focus:border-primary-800 focus:ring-primary-800" />
+                            </div>
+                            <div class="w-28 text-right shrink-0">
+                                <span class="text-sm font-semibold text-gray-900">{{ number_format($row->price * $row->quantity, 0, ',', ' ') }} €</span>
+                            </div>
+                            <button type="button" wire:click="toggleEngine('{{ $row->id }}')"
+                                class="text-gray-400 hover:text-red-600 shrink-0" title="{{ __('Remove') }}">
+                                <i class="ri-close-line"></i>
+                            </button>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
 
             @if ($this->engines->isEmpty())
                 <p class="text-sm text-gray-500 italic">
@@ -334,22 +385,14 @@
                         'price' => (float) $e->price,
                         'label' => trim($e->brand . ' ' . $e->code . ($e->horsepower ? ' · ' . (int) $e->horsepower . ' HP' : '')),
                     ])->values()->all();
-                    $selectedOne = ! empty($selectedEngines) ? array_key_first($selectedEngines) : null;
-                    $selectedEngineLabel = null;
-                    if ($selectedOne) {
-                        foreach ($engineList as $row) {
-                            if ($row['id'] === $selectedOne) { $selectedEngineLabel = $row['label']; break; }
-                        }
-                    }
                 @endphp
 
-                <div x-data="engineDropdown(@js($engineList), @js($selectedOne), @js($selectedEngineLabel))" class="relative">
+                <div x-data="engineDropdown(@js($engineList), @js(array_keys($selectedEngines)))" class="relative">
                     <button type="button" @click="open = !open"
                         class="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg border border-gray-200 bg-white hover:border-gray-300 text-left">
                         <span class="flex items-center gap-2 min-w-0">
-                            <i class="ri-settings-3-line text-gray-400"></i>
-                            <span class="text-sm truncate" x-text="selectedLabel || '{{ __('Select an engine…') }}'"
-                                :class="selectedLabel ? 'text-gray-900' : 'text-gray-500'"></span>
+                            <i class="ri-add-line text-gray-400"></i>
+                            <span class="text-sm text-gray-500">{{ __('Add an engine…') }}</span>
                         </span>
                         <i class="ri-arrow-down-s-line text-gray-400" :class="open ? 'rotate-180' : ''"></i>
                     </button>
@@ -364,18 +407,22 @@
                         <ul class="max-h-72 overflow-y-auto py-1">
                             <template x-for="row in filtered" :key="row.id">
                                 <li>
-                                    <button type="button" @click="pick(row)"
-                                        :class="row.id === selectedId ? 'bg-primary-50/40' : 'hover:bg-gray-50'"
+                                    <button type="button" @click="toggle(row)"
+                                        :class="isSelected(row.id) ? 'bg-primary-50/40' : 'hover:bg-gray-50'"
                                         class="w-full text-left px-3 py-2 flex items-center justify-between gap-3">
-                                        <div class="min-w-0">
-                                            <p class="text-sm font-medium text-gray-900 truncate">
-                                                <span x-text="row.brand"></span>
-                                                <span class="text-gray-500 font-mono text-xs" x-text="row.code"></span>
-                                            </p>
-                                            <p class="text-xs text-gray-500">
-                                                <span x-text="row.hp ? Math.round(row.hp) + ' HP' : ''"></span>
-                                                <template x-if="row.fuel"><span> · <span x-text="row.fuel.charAt(0).toUpperCase() + row.fuel.slice(1)"></span></span></template>
-                                            </p>
+                                        <div class="flex items-center gap-2 min-w-0">
+                                            <i class="text-base shrink-0"
+                                                :class="isSelected(row.id) ? 'ri-checkbox-line text-primary-800' : 'ri-checkbox-blank-line text-gray-300'"></i>
+                                            <div class="min-w-0">
+                                                <p class="text-sm font-medium text-gray-900 truncate">
+                                                    <span x-text="row.brand"></span>
+                                                    <span class="text-gray-500 font-mono text-xs" x-text="row.code"></span>
+                                                </p>
+                                                <p class="text-xs text-gray-500">
+                                                    <span x-text="row.hp ? Math.round(row.hp) + ' HP' : ''"></span>
+                                                    <template x-if="row.fuel"><span> · <span x-text="row.fuel.charAt(0).toUpperCase() + row.fuel.slice(1)"></span></span></template>
+                                                </p>
+                                            </div>
                                         </div>
                                         <span class="text-sm font-semibold text-gray-900 shrink-0"
                                             x-text="row.price.toLocaleString('fr-FR') + ' €'"></span>
@@ -386,14 +433,11 @@
                                 <li class="px-3 py-4 text-center text-sm text-gray-500 italic">{{ __('No engines match.') }}</li>
                             </template>
                         </ul>
-                        <template x-if="selectedId">
-                            <div class="p-2 border-t border-gray-100">
-                                <button type="button" @click="clear()"
-                                    class="w-full text-xs text-red-600 hover:underline py-1">
-                                    <i class="ri-close-circle-line"></i> {{ __('Clear selection') }}
-                                </button>
-                            </div>
-                        </template>
+                        <div class="p-2 border-t border-gray-100">
+                            <p class="text-[11px] text-gray-500 text-center">
+                                {{ __('Select several engines for twin or triple installations, then set the quantity.') }}
+                            </p>
+                        </div>
                     </div>
                 </div>
             @endif
@@ -726,18 +770,18 @@
 @push('scripts')
 <script>
     /**
-     * Searchable single-select engine picker. Client-side filter so typing
-     * doesn't hit Livewire on every keystroke; picking an item flips the
-     * Livewire `selectedEngines` map via toggleEngine() actions (clearing
-     * any previous pick first so the dropdown stays single-select).
+     * Searchable MULTI-select engine picker. Client-side filter so typing
+     * doesn't hit Livewire on every keystroke; ticking a row flips it in the
+     * Livewire `selectedEngines` map via toggleEngine(). Multi-select because
+     * twin/triple engine installations are common — quantities are then set
+     * on the selected-engine rows above the picker.
      */
-    function engineDropdown(rows, initialId, initialLabel) {
+    function engineDropdown(rows, initialIds) {
         return {
             rows: rows || [],
             open: false,
             query: '',
-            selectedId: initialId || null,
-            selectedLabel: initialLabel || '',
+            selectedIds: initialIds || [],
 
             get filtered() {
                 const q = this.query.trim().toLowerCase();
@@ -749,26 +793,17 @@
                 );
             },
 
-            pick(row) {
-                // Clear any previous pick first, then toggle the new one on.
-                // Single-select semantics for boats with one engine slot.
-                if (this.selectedId && this.selectedId !== row.id) {
-                    this.$wire.toggleEngine(this.selectedId);
-                }
-                this.$wire.toggleEngine(row.id);
-                this.selectedId = row.id;
-                this.selectedLabel = row.label;
-                this.open = false;
-                this.query = '';
+            isSelected(id) {
+                return this.selectedIds.includes(id);
             },
 
-            clear() {
-                if (this.selectedId) {
-                    this.$wire.toggleEngine(this.selectedId);
-                }
-                this.selectedId = null;
-                this.selectedLabel = '';
-                this.open = false;
+            toggle(row) {
+                // Optimistic local flip keeps the tick instant; Livewire
+                // re-renders the rows above with the authoritative state.
+                this.selectedIds = this.isSelected(row.id)
+                    ? this.selectedIds.filter(id => id !== row.id)
+                    : [...this.selectedIds, row.id];
+                this.$wire.toggleEngine(row.id);
             },
         };
     }

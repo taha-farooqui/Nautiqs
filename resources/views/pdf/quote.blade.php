@@ -24,6 +24,10 @@
     // salesperson is the fallback for legacy quotes without a creator.
     $spName = $quote->creatorName() ?: ($company->salesperson_name ?? '');
     $logoSrc = $company->logoDataUri();
+
+    // Snapshot first; falls back to the version's current kit when the
+    // snapshot is empty (see Quote::equipmentForDisplay()).
+    $equipment = $quote->equipmentForDisplay();
 @endphp
 
 {{-- ════════════════════════════ HEADER ════════════════════════════ --}}
@@ -105,14 +109,14 @@
 </table>
 
 {{-- ════════════ INCLUDED EQUIPMENT ════════════ --}}
-@if (! empty($quote->included_equipment))
+@if (! empty($equipment))
     <div class="qsection">
         <span class="qsection-title">{{ __('Standard included equipment') }}</span>
         <span class="qsection-badge">{{ __('Included in base price') }}</span>
     </div>
     <table class="qincluded">
         @php
-            $equip = collect($quote->included_equipment)->values();
+            $equip = collect($equipment)->values();
             $rows = $equip->chunk(2);
         @endphp
         @foreach ($rows as $row)

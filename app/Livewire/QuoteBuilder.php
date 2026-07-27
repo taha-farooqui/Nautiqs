@@ -362,6 +362,57 @@ class QuoteBuilder extends Component
         }
     }
 
+    /**
+     * Quantity for an already-selected engine — twin/triple installations are
+     * common, so the same engine can be on the quote 2 or 3 times. Clearing
+     * the field (or entering < 1) keeps it at 1 rather than dropping the row;
+     * removal is the explicit X button.
+     */
+    public function setEngineQty(string $engineId, $qty): void
+    {
+        if (! isset($this->selectedEngines[$engineId])) {
+            return;
+        }
+
+        $qty = (int) $qty;
+        $this->selectedEngines[$engineId] = max(1, min($qty, 99));
+    }
+
+    /**
+     * The chosen engines, resolved straight from the library so a selection
+     * survives a variant change that filters it out of the HP-matched list.
+     */
+    #[Computed]
+    public function selectedEngineRows()
+    {
+        if (empty($this->selectedEngines)) {
+            return collect();
+        }
+
+        $privateIds = [];
+        foreach (array_keys($this->selectedEngines) as $namespacedId) {
+            [$ns, $rawId] = array_pad(explode(':', $namespacedId, 2), 2, null);
+            if ($ns === 'private' && $rawId) $privateIds[] = $rawId;
+        }
+
+        $byId = Engine::whereIn('_id', $privateIds)->get()->keyBy(fn ($e) => 'private:' . (string) $e->_id);
+
+        return collect($this->selectedEngines)
+            ->map(function ($qty, $id) use ($byId) {
+                $e = $byId[$id] ?? null;
+                if (! $e) return null;
+                return (object) [
+                    'id'       => $id,
+                    'label'    => trim(($e->brand ?? '') . ' ' . ($e->code ?? '')),
+                    'hp'       => $e->horsepower,
+                    'price'    => (float) $e->price,
+                    'quantity' => (int) $qty,
+                ];
+            })
+            ->filter()
+            ->values();
+    }
+
     public function addCustomItem(): void
     {
         $this->custom_items[] = [

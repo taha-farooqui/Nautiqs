@@ -56,6 +56,13 @@ class QuoteEmailSender
         $pixelUrl = $trackingBase !== ''
             ? $trackingBase . '/e/p/' . $trackingToken
             : route('email.pixel', $trackingToken);
+
+        // Cache-buster, unique per SEND. Gmail/Outlook proxy and cache remote
+        // images by URL, so without this a follow-up re-using the quote's
+        // tracking token could be served from the cached copy of the first
+        // email and never register an open. The controller ignores the param.
+        $pixelUrl .= (str_contains($pixelUrl, '?') ? '&' : '?') . 's=' . Str::random(10);
+
         $bodyHtml .= '<img src="' . e($pixelUrl) . '" width="1" height="1" alt="" style="display:block;width:1px;height:1px;border:0;" />';
 
         // Order-confirmation emails attach the BC PDF; everything else

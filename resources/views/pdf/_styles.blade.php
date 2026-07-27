@@ -457,7 +457,10 @@
         border-top: 0.35mm solid #0e4f79;
         font-size: 7pt;
         color: #9ca3af;
-        background: #ffffff;
+        /* NO opaque background: the page number is stamped onto the canvas by
+           page_script(), and from page 2 onwards the fixed footer is painted
+           AFTER that stamp — a white fill here hides the number on every page
+           but the first. Paper is white anyway. */
     }
     .qfooter .legal { float: left; max-width: 78%; line-height: 1.55; }
     .qfooter .legal strong { color: #4b5563; }

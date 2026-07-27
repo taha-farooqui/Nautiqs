@@ -265,4 +265,26 @@ class Quote extends Model
         }
         return null;
     }
+
+    /**
+     * Standard equipment to show on the quote page + PDF.
+     *
+     * Prefers the snapshot captured when the quote was saved — quotes are
+     * snapshots and a saved one must never change under the client's feet.
+     * Falls back to the version's CURRENT equipment only when that snapshot
+     * is empty, so a boat whose included kit was filled in after the quote
+     * was drafted still prints it instead of silently omitting the section.
+     */
+    public function equipmentForDisplay(): array
+    {
+        $snapshot = $this->included_equipment ?? [];
+        if (! empty($snapshot) || empty($this->variant_id)) {
+            return $snapshot;
+        }
+
+        return CompanyBoatVariant::withoutGlobalScopes()
+            ->where('_id', $this->variant_id)
+            ->where('company_id', (string) $this->company_id)
+            ->first()?->included_equipment ?? [];
+    }
 }
