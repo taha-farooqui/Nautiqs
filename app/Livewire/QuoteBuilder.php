@@ -486,14 +486,19 @@ class QuoteBuilder extends Component
             if ($ns === 'global'  && $rawId) $globalIds[]  = $rawId;
             if ($ns === 'private' && $rawId) $privateIds[] = $rawId;
         }
-        $globalEngines  = \App\Models\GlobalEngine::whereIn('_id', $globalIds)->get()->keyBy(fn ($e) => 'global:' . (string) $e->_id);
-        $privateEngines = Engine::whereIn('_id', $privateIds)->get()->keyBy(fn ($e) => 'private:' . (string) $e->_id);
-        // merge(), NOT concat(): concat() appends VALUES and re-indexes the
-        // collection numerically, which threw away the "private:<id>" keys we
-        // just built — every $allEngines[$engineId] lookup below then missed,
-        // so selected engines were silently skipped and their price never
-        // reached the totals. merge() preserves string keys.
-        $allEngines     = $globalEngines->merge($privateEngines);
+        // Keyed by the namespaced id in a PLAIN ARRAY on purpose. Do not use
+        // Collection::concat() (appends values, re-indexes numerically) or
+        // Eloquent\Collection::merge() (overridden: re-keys by primary key and
+        // returns array_values) — both discard the "private:<id>" keys, every
+        // lookup below then misses, and selected engines get silently skipped
+        // so their price never reaches the totals.
+        $allEngines = [];
+        foreach (\App\Models\GlobalEngine::whereIn('_id', $globalIds)->get() as $e) {
+            $allEngines['global:' . (string) $e->_id] = $e;
+        }
+        foreach (Engine::whereIn('_id', $privateIds)->get() as $e) {
+            $allEngines['private:' . (string) $e->_id] = $e;
+        }
 
         foreach ($this->selectedEngines as $engineId => $qty) {
             $eng = $allEngines[$engineId] ?? null;

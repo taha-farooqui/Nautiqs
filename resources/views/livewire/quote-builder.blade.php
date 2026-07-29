@@ -327,7 +327,7 @@
                     {{ __('Engines') }}
                     @php $engineUnits = collect($selectedEngines)->sum(); @endphp
                     @if ($engineUnits > 0)
-                        <span class="text-xs text-gray-400 font-normal ml-1">{{ $engineUnits }} {{ $engineUnits === 1 ? __('selected') : __('selected (plural)') }}</span>
+                        <span class="text-xs text-gray-400 font-normal ml-1">{{ $engineUnits }} {{ __('selected') }}</span>
                     @endif
                 </h3>
                 <a href="{{ route('engines.index') }}" target="_blank" class="text-xs text-primary-800 hover:underline">
