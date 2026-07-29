@@ -132,7 +132,7 @@
     </tr>
 
     @foreach ($optionRows as $category => $items)
-        <tr class="cat-row"><td colspan="4">{{ $category }}</td></tr>
+        <tr class="cat-row"><td colspan="4">{{ $category === 'Engine' ? __('Engines') : $category }}</td></tr>
         @foreach ($items as $opt)
             <tr class="item-row">
                 <td><span class="qopt-name">{{ $opt['label'] ?? '' }}</span></td>

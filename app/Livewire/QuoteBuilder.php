@@ -488,7 +488,12 @@ class QuoteBuilder extends Component
         }
         $globalEngines  = \App\Models\GlobalEngine::whereIn('_id', $globalIds)->get()->keyBy(fn ($e) => 'global:' . (string) $e->_id);
         $privateEngines = Engine::whereIn('_id', $privateIds)->get()->keyBy(fn ($e) => 'private:' . (string) $e->_id);
-        $allEngines     = $globalEngines->concat($privateEngines);
+        // merge(), NOT concat(): concat() appends VALUES and re-indexes the
+        // collection numerically, which threw away the "private:<id>" keys we
+        // just built — every $allEngines[$engineId] lookup below then missed,
+        // so selected engines were silently skipped and their price never
+        // reached the totals. merge() preserves string keys.
+        $allEngines     = $globalEngines->merge($privateEngines);
 
         foreach ($this->selectedEngines as $engineId => $qty) {
             $eng = $allEngines[$engineId] ?? null;
@@ -561,14 +566,16 @@ class QuoteBuilder extends Component
         // Re-compute totals server-side (never trust client)
         $totals = $this->totals;
 
-        // Build options snapshot from totals rows (preserves pricing)
+        // Build options snapshot from totals rows (preserves pricing). Each
+        // row already carries its own option_id + source from the calculator.
+        // Do NOT re-derive the id by position: engine rows are appended after
+        // the option rows, so index-matching against selectedOptions assigned
+        // them a null id and dropped source=engine — a saved quote then lost
+        // its engines when reopened for editing.
         $optionsSnapshot = [];
-        foreach ($totals['options_rows'] as $i => $row) {
-            // Find matching selected option to preserve option_id
-            $optionIdKeys = array_keys($this->selectedOptions);
+        foreach ($totals['options_rows'] as $row) {
             $optionsSnapshot[] = array_merge($row, [
-                'option_id' => $optionIdKeys[$i] ?? null,
-                'quantity'  => $row['quantity'],
+                'quantity'     => $row['quantity'],
                 'discount_pct' => $row['item_discount_pct'],
             ]);
         }

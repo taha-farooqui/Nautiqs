@@ -174,9 +174,10 @@
         </tr>
     @endif
 
-    {{-- Options grouped by category --}}
+    {{-- Options grouped by category. Internal category keys get a localised
+         label; dealer-typed categories print as entered. --}}
     @foreach ($optionRows as $category => $items)
-        <tr class="cat-row"><td colspan="4">{{ $category }}</td></tr>
+        <tr class="cat-row"><td colspan="4">{{ $category === 'Engine' ? __('Engines') : $category }}</td></tr>
         @foreach ($items as $opt)
             @php
                 $itemDisc = (float) ($opt['item_discount_pct'] ?? 0);

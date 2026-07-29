@@ -77,6 +77,11 @@ class QuoteCalculator
                 : (float) ($input['vat_rate'] ?? $company->default_vat_rate ?? 20);
 
             $optionsRows[] = [
+                // Identity is carried through so the caller can persist the
+                // snapshot without re-deriving which input produced which row
+                // (engines live in this list too and must stay identifiable).
+                'option_id'          => $opt['option_id'] ?? null,
+                'source'             => $opt['source'] ?? null,
                 'category'           => $opt['category'] ?? 'Options',
                 'label'              => $opt['label'] ?? '',
                 'quantity'           => $qty,
