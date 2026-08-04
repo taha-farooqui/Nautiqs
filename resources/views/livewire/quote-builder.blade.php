@@ -570,7 +570,10 @@
                 <span class="w-6 h-6 rounded-full {{ $hasVariant ? $stepActive : $stepInactive }} text-xs font-bold flex items-center justify-center">9</span>
                 {{ __('Quote settings') }}
             </h3>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {{-- No manual USD→EUR field: the rate is fetched live from the ECB
+                 feed in totals() whenever a non-EUR price is involved, and
+                 frozen onto the quote when it's saved. --}}
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('VAT rate %') }}</label>
                     <input type="number" step="0.1" wire:model.live.debounce.300ms="vat_rate" @disabled(! $hasVariant)
@@ -591,12 +594,6 @@
                         <option value="TTC">{{ __('TTC (incl. VAT)') }}</option>
                         <option value="HT">{{ __('HT (excl. VAT)') }}</option>
                     </select>
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('USD→EUR rate') }}</label>
-                    <input type="number" step="0.0001" wire:model.live.debounce.500ms="exchange_rate" @disabled(! $hasVariant)
-                        class="w-full rounded border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800 disabled:bg-gray-100"
-                        placeholder="{{ __('e.g. 0.92') }}" />
                 </div>
             </div>
             {{-- Terms & conditions — printed on the PDF. Leave a field blank
