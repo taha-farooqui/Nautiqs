@@ -660,6 +660,7 @@ class QuoteBuilder extends Component
             // Name snapshot persists even if the user is later deactivated.
             $payload['created_by_user_id'] = (string) auth()->id();
             $payload['created_by_name']    = auth()->user()->name;
+            $payload['created_by_email']   = auth()->user()->email;
             $quote = Quote::create($payload);
         }
 

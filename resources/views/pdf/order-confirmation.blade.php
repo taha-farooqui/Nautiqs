@@ -21,6 +21,8 @@
     // The person who actually made the quote signs it; company-level
     // salesperson is the fallback for legacy quotes without a creator.
     $spName = $quote->creatorName() ?: ($company->salesperson_name ?? '');
+    // Contact email = the teammate who wrote it (see pdf/quote.blade.php).
+    $spEmail = $quote->creatorEmail() ?: ($company->salesperson_email ?? '');
     $logoSrc = $company->logoDataUri();
 @endphp
 
@@ -71,7 +73,7 @@
             <div class="qmeta-name">{{ $spName ?: $company->name }}</div>
             <div class="qmeta-detail">
                 @if ($company->salesperson_phone) {{ $company->salesperson_phone }}<br>@endif
-                @if ($company->salesperson_email) {{ $company->salesperson_email }} @endif
+                @if ($spEmail) {{ $spEmail }} @endif
             </div>
         </td>
     </tr>

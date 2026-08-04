@@ -113,6 +113,7 @@ class Quote extends Model
         // label survives deactivation of the user record.
         'created_by_user_id',
         'created_by_name',
+        'created_by_email',
 
         // Per-quote opt-out from the company's automatic follow-up email.
         // Absent/false = follow-up allowed (missing field matches != true).
@@ -262,6 +263,23 @@ class Quote extends Model
         if ($this->created_by_user_id) {
             $u = User::find($this->created_by_user_id);
             if ($u) return $u->name;
+        }
+        return null;
+    }
+
+    /**
+     * Email of whoever created this quote, so the client-facing contact block
+     * shows the teammate who actually wrote it rather than the company's
+     * configured salesperson. Snapshot first (durable if the user is later
+     * removed), then the live User record. Null lets callers fall back to the
+     * company address.
+     */
+    public function creatorEmail(): ?string
+    {
+        if (! empty($this->created_by_email)) return $this->created_by_email;
+        if ($this->created_by_user_id) {
+            $u = User::find($this->created_by_user_id);
+            if ($u) return $u->email;
         }
         return null;
     }

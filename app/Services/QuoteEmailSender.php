@@ -76,19 +76,21 @@ class QuoteEmailSender
         }
         $pdfBytes = $pdf->output();
 
-        // Reply-To: the company mailbox, displayed under the name of the
-        // person who made the quote (fallback: the configured salesperson).
-        $replyToName = $quote->creatorName() ?: $company->salesperson_name;
+        // Reply-To goes to the teammate who wrote the quote, so the client's
+        // reply lands with them rather than with whoever registered the
+        // dealership. Company salesperson stays as the fallback.
+        $replyToName  = $quote->creatorName() ?: $company->salesperson_name;
+        $replyToEmail = $quote->creatorEmail() ?: $company->salesperson_email;
 
         $sendError = null;
         try {
-            Mail::html($bodyHtml, function ($msg) use ($to, $subject, $pdfBytes, $attachmentFilename, $company, $replyToName) {
+            Mail::html($bodyHtml, function ($msg) use ($to, $subject, $pdfBytes, $attachmentFilename, $replyToEmail, $replyToName) {
                 $msg->to($to)
                     ->subject($subject)
                     ->attachData($pdfBytes, $attachmentFilename, ['mime' => 'application/pdf']);
 
-                if ($company->salesperson_email) {
-                    $msg->replyTo($company->salesperson_email, $replyToName);
+                if ($replyToEmail) {
+                    $msg->replyTo($replyToEmail, $replyToName);
                 }
             });
         } catch (\Throwable $e) {
@@ -107,7 +109,7 @@ class QuoteEmailSender
             'to_name'             => filled($overrides['to_name'] ?? null)
                 ? $overrides['to_name']
                 : (trim(($quote->client_snapshot['first_name'] ?? '') . ' ' . ($quote->client_snapshot['last_name'] ?? '')) ?: null),
-            'reply_to_email'      => $company->salesperson_email,
+            'reply_to_email'      => $replyToEmail,
             'subject'             => $subject,
             'body_html'           => $bodyHtml,
             'attachment_filename' => $attachmentFilename,

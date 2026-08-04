@@ -66,7 +66,7 @@ class EmailTemplateService
 <div><br></div>
 <div>Please find attached your quotation for the <strong>{{boat_model}}</strong>.</div>
 <div><br></div>
-<div>The total amount is <strong>{{total_ttc}}</strong>, including VAT.</div>
+<div>The total amount is <strong>{{net_payable}}</strong>, including VAT.</div>
 <div><br></div>
 <div>Let me know if you have any questions or would like to discuss the details.</div>
 <div><br></div>
@@ -80,7 +80,7 @@ HTML,
 <div><br></div>
 <div>Thank you for trusting us with your order. Please find attached the official order confirmation <strong>{{order_number}}</strong> for the <strong>{{boat_model}}</strong>.</div>
 <div><br></div>
-<div>The total amount confirmed is <strong>{{total_ttc}}</strong>, including VAT.</div>
+<div>The total amount confirmed is <strong>{{net_payable}}</strong>, including VAT.</div>
 <div><br></div>
 <div>We'll be in touch shortly with the next steps. In the meantime, don't hesitate to reach out if you have any questions.</div>
 <div><br></div>
@@ -110,7 +110,7 @@ HTML,
 <div><br></div>
 <div>Veuillez trouver ci-joint votre devis pour le <strong>{{boat_model}}</strong>.</div>
 <div><br></div>
-<div>Le montant total est de <strong>{{total_ttc}}</strong> TTC.</div>
+<div>Le montant total est de <strong>{{net_payable}}</strong> TTC.</div>
 <div><br></div>
 <div>N'hésitez pas à me contacter pour toute question ou pour discuter des détails.</div>
 <div><br></div>
@@ -124,7 +124,7 @@ HTML,
 <div><br></div>
 <div>Merci de votre confiance pour cette commande. Veuillez trouver ci-joint le bon de commande officiel <strong>{{order_number}}</strong> pour le <strong>{{boat_model}}</strong>.</div>
 <div><br></div>
-<div>Le montant total confirmé est de <strong>{{total_ttc}}</strong> TTC.</div>
+<div>Le montant total confirmé est de <strong>{{net_payable}}</strong> TTC.</div>
 <div><br></div>
 <div>Nous reviendrons vers vous très prochainement pour la suite. En attendant, n'hésitez pas à nous contacter pour toute question.</div>
 <div><br></div>
@@ -262,6 +262,7 @@ HTML,
             'order_number'       => 'BC-' . date('Y') . '-001',
             'boat_model'         => 'Eagle 10 — 2× 200HP',
             'total_ttc'          => '89 500,00 €',
+            'net_payable'        => '84 500,00 €',
             'salesperson_name'   => $company->salesperson_name ?? __('Salesperson'),
             'company_name'       => $company->name ?? __('Company'),
             'date'               => now()->translatedFormat('F j, Y'),
@@ -276,6 +277,9 @@ HTML,
         $first = $quote?->client_snapshot['first_name'] ?? '';
         $last  = $quote?->client_snapshot['last_name']  ?? '';
         $totalTtc = $quote ? ($quote->totals['total_ttc'] ?? 0) : 0;
+        // What the client actually pays: total incl. VAT minus any trade-in.
+        // Falls back to the TTC total when the quote has no trade-in.
+        $netPayable = $quote ? ($quote->totals['net_payable'] ?? $totalTtc) : 0;
 
         return array_merge([
             'client_name'        => trim($first . ' ' . $last) ?: __('Client'),
@@ -284,6 +288,7 @@ HTML,
             'order_number'       => $quote->order_confirmation_number ?? '',
             'boat_model'         => $quote->model_snapshot['name'] ?? '',
             'total_ttc'          => number_format($totalTtc, 2, ',', ' ') . ' €',
+            'net_payable'        => number_format($netPayable, 2, ',', ' ') . ' €',
             // The person who actually made the quote (team subaccounts sign
             // with their own name); company-level salesperson is the fallback
             // for legacy quotes without a creator snapshot.
@@ -350,6 +355,7 @@ HTML;
             'order_number'       => __('Order confirmation reference'),
             'boat_model'         => __('Boat model + variant'),
             'total_ttc'          => __('Total incl. VAT'),
+            'net_payable'        => __('Net payable (after trade-in)'),
             'salesperson_name'   => __('Salesperson name'),
             'company_name'       => __('Your company name'),
             'date'               => __("Today's date"),

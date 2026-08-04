@@ -386,7 +386,18 @@
                 @php $t = $quote->totals ?? []; @endphp
                 <dl class="p-5 space-y-2 text-sm">
                     <div class="flex justify-between"><dt class="text-gray-600">{{ __('Base (HT)') }}</dt><dd class="font-medium">{{ number_format($t['base_ht'] ?? 0, 2, ',', ' ') }} €</dd></div>
-                    <div class="flex justify-between"><dt class="text-gray-600">{{ __('Options (HT)') }}</dt><dd class="font-medium">{{ number_format($t['options_ht'] ?? 0, 2, ',', ' ') }} €</dd></div>
+                    @php
+                        // Engines are option rows in the maths; show them on
+                        // their own line so the two read separately.
+                        $engineRows = collect($t['options_rows'] ?? [])->filter(fn ($r) => ($r['source'] ?? null) === 'engine');
+                        $optionOnly = collect($t['options_rows'] ?? [])->reject(fn ($r) => ($r['source'] ?? null) === 'engine');
+                    @endphp
+                    @if ($engineRows->isNotEmpty())
+                        <div class="flex justify-between"><dt class="text-gray-600">{{ __('Options') }} ({{ $optionOnly->count() }})</dt><dd class="font-medium">{{ number_format($optionOnly->sum('line_after_cat'), 2, ',', ' ') }} €</dd></div>
+                        <div class="flex justify-between"><dt class="text-gray-600">{{ __('Engines') }} ({{ (int) $engineRows->sum('quantity') }})</dt><dd class="font-medium">{{ number_format($engineRows->sum('line_after_cat'), 2, ',', ' ') }} €</dd></div>
+                    @else
+                        <div class="flex justify-between"><dt class="text-gray-600">{{ __('Options (HT)') }}</dt><dd class="font-medium">{{ number_format($t['options_ht'] ?? 0, 2, ',', ' ') }} €</dd></div>
+                    @endif
                     <div class="flex justify-between"><dt class="text-gray-600">{{ __('Custom (HT)') }}</dt><dd class="font-medium">{{ number_format($t['custom_items_ht'] ?? 0, 2, ',', ' ') }} €</dd></div>
                     @if (($t['global_discount_amount'] ?? 0) > 0)
                         <div class="flex justify-between text-red-600"><dt>{{ __('Global discount') }}</dt><dd class="font-medium">-{{ number_format($t['global_discount_amount'], 2, ',', ' ') }} €</dd></div>

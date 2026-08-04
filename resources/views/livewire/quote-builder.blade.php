@@ -687,8 +687,18 @@
                         <div class="flex justify-between text-red-600 text-xs"><dt>{{ __('Boat discount') }} ({{ $t['boat_discount_pct'] }}%)</dt><dd>-{{ number_format($t['boat_discount_amount'], 2, ',', ' ') }} €</dd></div>
                     @endif
 
-                    {{-- Options --}}
-                    <div class="flex justify-between pt-2 border-t border-gray-100"><dt class="text-gray-600">{{ __('Options') }} ({{ count($t['options_rows']) }})</dt><dd class="font-medium">{{ number_format($t['options_gross'], 2, ',', ' ') }} €</dd></div>
+                    {{-- Options and engines are both option rows in the maths,
+                         but the dealer reads them as different things — so
+                         split the summary by source instead of lumping them. --}}
+                    @php
+                        $engineRows = collect($t['options_rows'])->filter(fn ($r) => ($r['source'] ?? null) === 'engine');
+                        $optionOnly = collect($t['options_rows'])->reject(fn ($r) => ($r['source'] ?? null) === 'engine');
+                        $engineQty  = (int) $engineRows->sum('quantity');
+                    @endphp
+                    <div class="flex justify-between pt-2 border-t border-gray-100"><dt class="text-gray-600">{{ __('Options') }} ({{ $optionOnly->count() }})</dt><dd class="font-medium">{{ number_format($optionOnly->sum('line_after_cat'), 2, ',', ' ') }} €</dd></div>
+                    @if ($engineRows->isNotEmpty())
+                        <div class="flex justify-between"><dt class="text-gray-600">{{ __('Engines') }} ({{ $engineQty }})</dt><dd class="font-medium">{{ number_format($engineRows->sum('line_after_cat'), 2, ',', ' ') }} €</dd></div>
+                    @endif
                     @if ($t['options_discount_amount'] > 0)
                         <div class="flex justify-between text-red-600 text-xs"><dt>{{ __('Options discount') }} ({{ $t['options_discount_pct'] }}%)</dt><dd>-{{ number_format($t['options_discount_amount'], 2, ',', ' ') }} €</dd></div>
                     @endif
