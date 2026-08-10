@@ -731,7 +731,13 @@
                                 class="opt-handle cursor-grab text-gray-400 hover:text-gray-600 pt-7 shrink-0">
                                 <i class="ri-draggable text-lg"></i>
                             </button>
-                            <div class="flex-1 grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+                            {{-- Wrapper so the description can sit BELOW the field
+                                 grid at full width. It used to be a grid child with
+                                 md:col-span-12, but that class isn't in the compiled
+                                 CSS bundle (col-span-12 is absent entirely), so it
+                                 collapsed to a single narrow column. --}}
+                            <div class="flex-1 min-w-0">
+                            <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
                                 <input type="hidden" :name="`options[${i}][id]`" :value="o.id" />
                                 <div class="md:col-span-3">
                                     <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Category') }} *</label>
@@ -768,17 +774,20 @@
                                         <i class="ri-delete-bin-line"></i>
                                     </button>
                                 </div>
-                                {{-- Optional detail printed under the option on
-                                     the quote (e.g. what a "Pack A" contains). --}}
-                                <div class="md:col-span-12">
-                                    <label class="block text-xs font-medium text-gray-700 mb-1">
-                                        {{ __('Description') }}
-                                        <span class="text-gray-400 font-normal">({{ __('optional') }})</span>
-                                    </label>
-                                    <textarea :name="`options[${i}][description]`" x-model="o.description" rows="2"
-                                        placeholder="{{ __('Detail shown under this option on the quote — e.g. what the pack includes.') }}"
-                                        class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800"></textarea>
-                                </div>
+                            </div>
+
+                            {{-- Optional detail printed under the option on the
+                                 quote (e.g. what a "Pack A" contains). Full row
+                                 width, outside the column grid. --}}
+                            <div class="mt-3">
+                                <label class="block text-xs font-medium text-gray-700 mb-1">
+                                    {{ __('Description') }}
+                                    <span class="text-gray-400 font-normal">({{ __('optional') }})</span>
+                                </label>
+                                <textarea :name="`options[${i}][description]`" x-model="o.description" rows="2"
+                                    placeholder="{{ __('Detail shown under this option on the quote — e.g. what the pack includes.') }}"
+                                    class="block w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800"></textarea>
+                            </div>
                             </div>
                         </div>
                     </template>
