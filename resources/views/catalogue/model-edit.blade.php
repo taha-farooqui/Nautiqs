@@ -695,12 +695,13 @@
             {{-- Per-boat options list — one form, bulk "Save options" --}}
             @php
                 $initialOptions = $options->map(fn ($o) => [
-                    'id'       => (string) $o->_id,
-                    'category' => $o->category,
-                    'label'    => $o->label,
-                    'price'    => (float) $o->price,
-                    'cost'     => (float) ($o->cost ?? 0),
-                    'currency' => $o->currency ?? 'EUR',
+                    'id'          => (string) $o->_id,
+                    'category'    => $o->category,
+                    'label'       => $o->label,
+                    'description' => $o->description ?? '',
+                    'price'       => (float) $o->price,
+                    'cost'        => (float) ($o->cost ?? 0),
+                    'currency'    => $o->currency ?? 'EUR',
                 ])->values();
             @endphp
             <div class="bg-white rounded-2xl border border-gray-200 p-6" x-data="optionsBulk(@js($initialOptions))"
@@ -766,6 +767,17 @@
                                         title="{{ __('Remove') }}">
                                         <i class="ri-delete-bin-line"></i>
                                     </button>
+                                </div>
+                                {{-- Optional detail printed under the option on
+                                     the quote (e.g. what a "Pack A" contains). --}}
+                                <div class="md:col-span-12">
+                                    <label class="block text-xs font-medium text-gray-700 mb-1">
+                                        {{ __('Description') }}
+                                        <span class="text-gray-400 font-normal">({{ __('optional') }})</span>
+                                    </label>
+                                    <textarea :name="`options[${i}][description]`" x-model="o.description" rows="2"
+                                        placeholder="{{ __('Detail shown under this option on the quote — e.g. what the pack includes.') }}"
+                                        class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800"></textarea>
                                 </div>
                             </div>
                         </div>
@@ -1144,6 +1156,7 @@
                     id: o.id || '',
                     category: o.category ?? '',
                     label: o.label ?? '',
+                    description: o.description ?? '',
                     price: o.price ?? '',
                     cost: o.cost ?? '',
                     currency: o.currency || 'EUR',
@@ -1196,7 +1209,7 @@
                     this.selected = [];
                 },
                 addOption() {
-                    this.options.push({ _k: k++, id: '', category: '', label: '', price: '', cost: '', currency: 'EUR' });
+                    this.options.push({ _k: k++, id: '', category: '', label: '', description: '', price: '', cost: '', currency: 'EUR' });
                 },
                 removeOption(i) {
                     this.options.splice(i, 1);

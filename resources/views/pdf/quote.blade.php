@@ -33,6 +33,16 @@
     // Snapshot first; falls back to the version's current kit when the
     // snapshot is empty (see Quote::equipmentForDisplay()).
     $equipment = $quote->equipmentForDisplay();
+
+    // Category headings. Internal keys ("Engine") and the generic singular
+    // "OPTION" that comes out of the import get a proper localised plural;
+    // categories the dealer typed themselves print exactly as entered.
+    $catLabel = function ($category) {
+        $c = trim((string) $category);
+        if (strcasecmp($c, 'Engine') === 0)  return __('Engines');
+        if (strcasecmp($c, 'Option') === 0)  return __('Options');
+        return $c;
+    };
 @endphp
 
 {{-- ════════════════════════════ HEADER ════════════════════════════ --}}
@@ -152,8 +162,10 @@
     {{-- Base boat row --}}
     <tr class="cat-row"><td colspan="4">{{ __('Base boat') }}</td></tr>
     @php
+        // Reads "Brand Version" — e.g. "Seagame 200 SF".
         // Avoid "Sun Odyssey 410 — Sun Odyssey 410 — Standard": if the variant
         // name already contains the model name, show the variant alone.
+        $bBrand   = $quote->model_snapshot['brand'] ?? '';
         $bModel   = $quote->model_snapshot['name'] ?? '';
         $bVariant = $quote->variant_snapshot['name'] ?? '';
         if ($bVariant === '') {
@@ -162,6 +174,10 @@
             $baseLabel = $bVariant;
         } else {
             $baseLabel = trim($bModel . ' — ' . $bVariant, ' —');
+        }
+        // Prefix the brand unless it's already part of the label.
+        if ($bBrand !== '' && stripos($baseLabel, $bBrand) === false) {
+            $baseLabel = trim($bBrand . ' ' . $baseLabel);
         }
     @endphp
     <tr class="item-row">
@@ -179,10 +195,9 @@
         </tr>
     @endif
 
-    {{-- Options grouped by category. Internal category keys get a localised
-         label; dealer-typed categories print as entered. --}}
+    {{-- Options grouped by category (see $catLabel above). --}}
     @foreach ($optionRows as $category => $items)
-        <tr class="cat-row"><td colspan="4">{{ $category === 'Engine' ? __('Engines') : $category }}</td></tr>
+        <tr class="cat-row"><td colspan="4">{{ $catLabel($category) }}</td></tr>
         @foreach ($items as $opt)
             @php
                 $itemDisc = (float) ($opt['item_discount_pct'] ?? 0);
@@ -196,6 +211,9 @@
                     <span class="qopt-name">{{ $opt['label'] ?? '' }}</span>
                     @if ($itemDisc > 0)
                         <span class="qopt-disc-badge">-{{ number_format($itemDisc, 0) }}%</span>
+                    @endif
+                    @if (! empty($opt['description']))
+                        <div class="qopt-desc">{{ $opt['description'] }}</div>
                     @endif
                 </td>
                 <td class="qopt-qty">{{ $opt['quantity'] ?? 1 }}</td>

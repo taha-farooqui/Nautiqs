@@ -276,6 +276,14 @@
         vertical-align: middle;
     }
     .qopt-name { font-size: 9pt; color: #1f2937; }
+    /* Optional detail under an option — e.g. what a "Pack A" includes. */
+    .qopt-desc {
+        font-size: 7.8pt;
+        color: #6b7280;
+        line-height: 1.45;
+        margin-top: 0.6mm;
+        padding-right: 6mm;
+    }
     .qopt-qty   { font-size: 8.5pt; color: #9ca3af; text-align: center; }
     .qopt-unit  { font-size: 8.5pt; color: #6b7280; text-align: right; white-space: nowrap; }
     .qopt-total { font-size: 9pt; font-weight: bold; color: #1f2937; text-align: right; white-space: nowrap; }

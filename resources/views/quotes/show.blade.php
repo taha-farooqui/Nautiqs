@@ -315,6 +315,9 @@
                                 <tr>
                                     <td class="py-2">
                                         <div class="font-medium text-gray-900">{{ $opt['label'] ?? '' }}</div>
+                                        @if (! empty($opt['description']))
+                                            <div class="text-xs text-gray-600">{{ $opt['description'] }}</div>
+                                        @endif
                                         <div class="text-xs text-gray-500">{{ $opt['category'] ?? '' }}</div>
                                     </td>
                                     <td class="py-2 text-right">{{ $opt['quantity'] ?? 1 }}</td>

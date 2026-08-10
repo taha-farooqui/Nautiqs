@@ -84,6 +84,7 @@ class QuoteCalculator
                 'source'             => $opt['source'] ?? null,
                 'category'           => $opt['category'] ?? 'Options',
                 'label'              => $opt['label'] ?? '',
+                'description'        => $opt['description'] ?? null,
                 'quantity'           => $qty,
                 'unit_price'         => $unit,
                 'unit_price_original'=> $unitOriginal,

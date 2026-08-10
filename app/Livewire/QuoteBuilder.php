@@ -55,6 +55,9 @@ class QuoteBuilder extends Component
     // independent of the chosen boat. Map: [engine_id => qty].
     public array $selectedEngines = [];
 
+    // Per-engine discount %, keyed by the same namespaced engine id.
+    public array $engineDiscounts = [];
+
     // §8.1 Step 5 — Custom line items
     public array $custom_items = [];
 
@@ -132,11 +135,13 @@ class QuoteBuilder extends Component
         $this->selectedOptions = [];
         $this->optionDiscounts = [];
         $this->selectedEngines = [];
+        $this->engineDiscounts = [];
         foreach (($quote->options ?? []) as $row) {
             if (empty($row['option_id'])) continue;
             // Distinguish engines from regular options when re-loading.
             if (($row['source'] ?? null) === 'engine') {
                 $this->selectedEngines[$row['option_id']] = $row['quantity'] ?? 1;
+                $this->engineDiscounts[$row['option_id']] = $row['item_discount_pct'] ?? $row['discount_pct'] ?? 0;
             } else {
                 $this->selectedOptions[$row['option_id']] = $row['quantity'] ?? 1;
                 $this->optionDiscounts[$row['option_id']] = $row['discount_pct'] ?? 0;
@@ -356,10 +361,25 @@ class QuoteBuilder extends Component
     public function toggleEngine(string $engineId): void
     {
         if (isset($this->selectedEngines[$engineId])) {
-            unset($this->selectedEngines[$engineId]);
+            unset($this->selectedEngines[$engineId], $this->engineDiscounts[$engineId]);
         } else {
             $this->selectedEngines[$engineId] = 1;
         }
+    }
+
+    /**
+     * Discount % on a single engine line, mirroring the per-option discount.
+     * A cleared field means 0, and the value is clamped to 0–100 so a typo
+     * can't invert the line total.
+     */
+    public function setEngineDiscount(string $engineId, $pct): void
+    {
+        if (! isset($this->selectedEngines[$engineId])) {
+            return;
+        }
+
+        $pct = ($pct === '' || $pct === null) ? 0 : (float) $pct;
+        $this->engineDiscounts[$engineId] = max(0, min($pct, 100));
     }
 
     /**
@@ -401,12 +421,18 @@ class QuoteBuilder extends Component
             ->map(function ($qty, $id) use ($byId) {
                 $e = $byId[$id] ?? null;
                 if (! $e) return null;
+                $price    = (float) $e->price;
+                $quantity = (int) $qty;
+                $discount = (float) ($this->engineDiscounts[$id] ?? 0);
+
                 return (object) [
                     'id'       => $id,
                     'label'    => trim(($e->brand ?? '') . ' ' . ($e->code ?? '')),
                     'hp'       => $e->horsepower,
-                    'price'    => (float) $e->price,
-                    'quantity' => (int) $qty,
+                    'price'    => $price,
+                    'quantity' => $quantity,
+                    'discount' => $discount,
+                    'line'     => $price * $quantity * (1 - $discount / 100),
                 ];
             })
             ->filter()
@@ -462,6 +488,7 @@ class QuoteBuilder extends Component
                 'option_id'    => (string) $opt->_id,
                 'category'     => $opt->category,
                 'label'        => $opt->label,
+                'description'  => $opt->description ?: null,
                 'unit_price'   => (float) $opt->price,
                 'unit_cost'    => (float) $opt->cost,
                 'currency'     => $opt->currency ?? 'EUR',
@@ -511,7 +538,7 @@ class QuoteBuilder extends Component
                 'unit_cost'    => (float) ($eng->cost ?? 0),
                 'currency'     => $eng->currency ?? 'EUR',
                 'quantity'     => (int) $qty,
-                'discount_pct' => 0.0,
+                'discount_pct' => (float) ($this->engineDiscounts[$engineId] ?? 0),
                 'source'       => 'engine',
             ];
         }

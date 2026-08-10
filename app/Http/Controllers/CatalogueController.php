@@ -860,6 +860,7 @@ class CatalogueController extends Controller
             $payload = [
                 'category'                => $row['category'],
                 'label'                   => $row['label'],
+                'description'             => $row['description'] ?? null,
                 'price'                   => $priceEur,
                 'cost'                    => $costEur,
                 'currency'                => 'EUR',
@@ -928,6 +929,7 @@ class CatalogueController extends Controller
             'options.*.id'           => 'nullable|string',
             'options.*.category'     => 'required|string|max:100',
             'options.*.label'        => 'required|string|max:200',
+            'options.*.description'  => 'nullable|string|max:1000',
             'options.*.price'        => 'required|numeric|min:0',
             'options.*.cost'         => 'nullable|numeric|min:0',
             'options.*.currency'     => 'nullable|in:EUR,USD',

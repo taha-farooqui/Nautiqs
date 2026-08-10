@@ -24,6 +24,7 @@ class CompanyOption extends Model
         'source',             // global | private
         'category',
         'label',
+        'description',        // optional detail printed under the label (e.g. what a "Pack A" contains)
         'label_en',           // optional English label (filled from import)
         'brand',              // optional, e.g. Mercury-specific option
         'code',               // dealer SKU — e.g. ANT7OB_TRA_0001 (upsert key)

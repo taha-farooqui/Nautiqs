@@ -270,10 +270,15 @@
                                     {{-- Whole label area is clickable (not just the box): clicking the
                                          checkbox OR the option text toggles it. Qty/discount inputs and the
                                          price sit outside this label so editing them never toggles. --}}
-                                    <label class="flex items-center gap-3 flex-1 min-w-0 cursor-pointer">
+                                    <label class="flex items-start gap-3 flex-1 min-w-0 cursor-pointer">
                                         <input type="checkbox" wire:click="toggleOption('{{ $oid }}')" @checked($checked)
-                                            class="text-primary-800 focus:ring-primary-800 rounded shrink-0" />
-                                        <span class="flex-1 text-sm text-gray-800">{{ $opt->label }}</span>
+                                            class="text-primary-800 focus:ring-primary-800 rounded shrink-0 mt-0.5" />
+                                        <span class="flex-1 min-w-0">
+                                            <span class="block text-sm text-gray-800">{{ $opt->label }}</span>
+                                            @if (! empty($opt->description))
+                                                <span class="block text-xs text-gray-500 mt-0.5">{{ $opt->description }}</span>
+                                            @endif
+                                        </span>
                                     </label>
                                     @if ($checked)
                                         <input type="number" min="1" value="{{ $selectedOptions[$oid] ?? 1 }}"
@@ -354,8 +359,19 @@
                                     wire:change="setEngineQty('{{ $row->id }}', $event.target.value)"
                                     class="w-16 text-center rounded border-gray-300 text-sm py-1 focus:border-primary-800 focus:ring-primary-800" />
                             </div>
+                            <div class="flex items-center gap-1 shrink-0">
+                                <input type="number" min="0" max="100" step="0.5" placeholder="0"
+                                    value="{{ $row->discount ?: '' }}"
+                                    wire:change="setEngineDiscount('{{ $row->id }}', $event.target.value)"
+                                    title="{{ __('Discount %') }}"
+                                    class="w-16 text-right rounded border-gray-300 text-sm py-1 focus:border-primary-800 focus:ring-primary-800" />
+                                <span class="text-xs text-gray-400">%</span>
+                            </div>
                             <div class="w-28 text-right shrink-0">
-                                <span class="text-sm font-semibold text-gray-900">{{ number_format($row->price * $row->quantity, 0, ',', ' ') }} €</span>
+                                <span class="text-sm font-semibold {{ $row->discount > 0 ? 'text-orange-600' : 'text-gray-900' }}">{{ number_format($row->line, 0, ',', ' ') }} €</span>
+                                @if ($row->discount > 0)
+                                    <div class="text-[10px] text-gray-400 line-through">{{ number_format($row->price * $row->quantity, 0, ',', ' ') }} €</div>
+                                @endif
                             </div>
                             <button type="button" wire:click="toggleEngine('{{ $row->id }}')"
                                 class="text-gray-400 hover:text-red-600 shrink-0" title="{{ __('Remove') }}">
