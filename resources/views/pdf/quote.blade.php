@@ -279,15 +279,51 @@
 
         {{-- Right: totals box --}}
         <td class="right">
+            @php
+                // Every discount granted, itemised, so the client sees the full
+                // saving at a glance instead of only the global one. Per-line
+                // discounts stay visible in the items table too.
+                $dBoat    = (float) ($t['boat_discount_amount'] ?? 0);
+                $dOptions = (float) ($t['options_discount_amount'] ?? 0);
+                $dGlobal  = (float) ($t['global_discount_amount'] ?? 0);
+                // Item/category-level savings, summed off the option rows.
+                $dItems = collect($t['options_rows'] ?? [])
+                    ->sum(fn ($r) => (float) ($r['line_gross'] ?? 0) - (float) ($r['line_after_cat'] ?? 0));
+                $dTotal = $dBoat + $dItems + $dOptions + $dGlobal;
+            @endphp
             <table class="qtotals">
                 <tr class="row-white">
                     <td class="label">{{ __('Subtotal excl. VAT') }}</td>
                     <td class="val">{{ number_format($t['subtotal_ht'] ?? 0, 2, ',', ' ') }} €</td>
                 </tr>
-                @if (($t['global_discount_amount'] ?? 0) > 0)
+                @if ($dBoat > 0)
+                    <tr class="row-discount row-white">
+                        <td class="label">{{ __('Boat discount') }} ({{ number_format($t['boat_discount_pct'] ?? 0, 1) }}%)</td>
+                        <td class="val">-{{ number_format($dBoat, 2, ',', ' ') }} €</td>
+                    </tr>
+                @endif
+                @if ($dItems > 0.005)
+                    <tr class="row-discount row-white">
+                        <td class="label">{{ __('Discounts on options') }}</td>
+                        <td class="val">-{{ number_format($dItems, 2, ',', ' ') }} €</td>
+                    </tr>
+                @endif
+                @if ($dOptions > 0)
+                    <tr class="row-discount row-white">
+                        <td class="label">{{ __('Options discount') }} ({{ number_format($t['options_discount_pct'] ?? 0, 1) }}%)</td>
+                        <td class="val">-{{ number_format($dOptions, 2, ',', ' ') }} €</td>
+                    </tr>
+                @endif
+                @if ($dGlobal > 0)
                     <tr class="row-discount row-white">
                         <td class="label">{{ __('Global discount') }} ({{ number_format($t['global_discount_pct'] ?? 0, 1) }}%)</td>
-                        <td class="val">-{{ number_format($t['global_discount_amount'], 2, ',', ' ') }} €</td>
+                        <td class="val">-{{ number_format($dGlobal, 2, ',', ' ') }} €</td>
+                    </tr>
+                @endif
+                @if ($dTotal > 0.005)
+                    <tr class="row-savings">
+                        <td class="label">{{ __('Total savings') }}</td>
+                        <td class="val">-{{ number_format($dTotal, 2, ',', ' ') }} €</td>
                     </tr>
                 @endif
                 <tr class="row-white">

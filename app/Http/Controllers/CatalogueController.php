@@ -217,7 +217,16 @@ class CatalogueController extends Controller
                 'variant_count' => $mv->count(),
                 'min_ttc'       => $minTtc,
             ];
-        })->values();
+        })
+        // Group the list by brand, then by model inside each brand — importing
+        // several brands in one go otherwise interleaves them by model name and
+        // the catalogue reads as a jumble. Case-insensitive, accent-tolerant;
+        // brandless boats sort last rather than jumping to the top.
+        ->sortBy(fn ($r) => [
+            $r['brand']?->name ? mb_strtolower($r['brand']->name) : 'zzzz',
+            mb_strtolower((string) ($r['model']->name ?? '')),
+        ], SORT_NATURAL)
+        ->values();
 
         return view('catalogue.models', [
             'rows'        => $rows,
@@ -929,7 +938,8 @@ class CatalogueController extends Controller
             'options.*.id'           => 'nullable|string',
             'options.*.category'     => 'required|string|max:100',
             'options.*.label'        => 'required|string|max:200',
-            'options.*.description'  => 'nullable|string|max:1000',
+            // No length cap: dealers paste full pack contents in here.
+            'options.*.description'  => 'nullable|string',
             'options.*.price'        => 'required|numeric|min:0',
             'options.*.cost'         => 'nullable|numeric|min:0',
             'options.*.currency'     => 'nullable|in:EUR,USD',

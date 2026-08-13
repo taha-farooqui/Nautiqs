@@ -709,13 +709,24 @@
                 <h2 class="text-base font-semibold text-gray-900 mb-1">{{ __('Options on this boat') }}</h2>
                 <p class="text-xs text-gray-500 mb-4">{{ __('Add options and set prices. Drag the handle to reorder. USD amounts convert to EUR on save. Everything is saved together with the Save button at the bottom.') }}</p>
 
-                    {{-- Select-all + mass delete --}}
+                    {{-- Select-all + description toggle + mass delete --}}
                     <div class="flex items-center justify-between mb-3" x-show="options.length > 0" x-cloak>
-                        <label class="inline-flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
-                            <input type="checkbox" @change="toggleAll($event)" :checked="allChecked"
-                                class="rounded border-gray-300 text-primary-800 focus:ring-primary-800" />
-                            {{ __('Select all') }}
-                        </label>
+                        <div class="flex items-center gap-5">
+                            <label class="inline-flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                                <input type="checkbox" @change="toggleAll($event)" :checked="allChecked"
+                                    class="rounded border-gray-300 text-primary-800 focus:ring-primary-800" />
+                                {{ __('Select all') }}
+                            </label>
+                            {{-- Descriptions are long and most options don't need
+                                 one, so they stay collapsed until asked for. The
+                                 textareas stay in the DOM (just hidden) so their
+                                 values still submit with the form. --}}
+                            <label class="inline-flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                                <input type="checkbox" x-model="showDescriptions"
+                                    class="rounded border-gray-300 text-primary-800 focus:ring-primary-800" />
+                                {{ __('Show descriptions') }}
+                            </label>
+                        </div>
                         <button type="button" x-show="selected.length > 0" x-cloak @click="deleteSelected()"
                             class="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium bg-red-50 hover:bg-red-100 text-red-700 rounded-lg">
                             <i class="ri-delete-bin-line"></i> {{ __('Delete selected') }} (<span x-text="selected.length"></span>)
@@ -778,8 +789,10 @@
 
                             {{-- Optional detail printed under the option on the
                                  quote (e.g. what a "Pack A" contains). Full row
-                                 width, outside the column grid. --}}
-                            <div class="mt-3">
+                                 width, outside the column grid. Hidden (not
+                                 removed) when the toggle is off, so values still
+                                 post with the form. --}}
+                            <div class="mt-3" x-show="showDescriptions || (o.description || '').length > 0" x-cloak>
                                 <label class="block text-xs font-medium text-gray-700 mb-1">
                                     {{ __('Description') }}
                                     <span class="text-gray-400 font-normal">({{ __('optional') }})</span>
@@ -1171,6 +1184,10 @@
                     currency: o.currency || 'EUR',
                 })),
                 sortable: null,
+
+                // Description textareas are collapsed by default — rows that
+                // already carry text reveal themselves regardless (see x-show).
+                showDescriptions: false,
 
                 // Mass-select / delete. `selected` holds the `_k` of ticked rows.
                 selected: [],

@@ -120,18 +120,17 @@ class Quote extends Model
         'follow_up_disabled',
     ];
 
+    /*
+     * NOTE — the snapshot/array fields are deliberately NOT cast to 'array'.
+     * Laravel's 'array' cast json_encodes on write, which stored them as JSON
+     * STRINGS instead of native embedded documents. Reads still worked (the
+     * cast decoded them), but MongoDB cannot look inside a string, so every
+     * nested query silently matched nothing — that is why the quotes list's
+     * brand / model filters and the client-name search returned "no matches".
+     * The MongoDB driver maps PHP arrays to embedded documents natively, so
+     * dropping the cast both fixes the queries and keeps reads identical.
+     */
     protected $casts = [
-        'client_snapshot'    => 'array',
-        'model_snapshot'     => 'array',
-        'variant_snapshot'   => 'array',
-        'included_equipment' => 'array',
-        'options'            => 'array',
-        'custom_items'       => 'array',
-        'category_discounts' => 'array',
-        'trade_in'           => 'array',
-        'totals'             => 'array',
-        'tracking'           => 'array',
-        'terms'              => 'array',
         'trashed_at'         => 'datetime',
         'boat_discount_pct'    => 'float',
         'options_discount_pct' => 'float',
