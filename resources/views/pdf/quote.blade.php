@@ -286,15 +286,25 @@
                 $dBoat    = (float) ($t['boat_discount_amount'] ?? 0);
                 $dOptions = (float) ($t['options_discount_amount'] ?? 0);
                 $dGlobal  = (float) ($t['global_discount_amount'] ?? 0);
-                // Item/category-level savings, summed off the option rows.
+                // Item/category-level savings, summed off the rows.
                 $dItems = collect($t['options_rows'] ?? [])
                     ->sum(fn ($r) => (float) ($r['line_gross'] ?? 0) - (float) ($r['line_after_cat'] ?? 0));
-                $dTotal = $dBoat + $dItems + $dOptions + $dGlobal;
+                $dCustom = collect($t['custom_items_rows'] ?? [])
+                    ->sum(fn ($r) => (float) ($r['amount'] ?? 0) - (float) ($r['line_after_cat'] ?? 0));
+                $dTotal = $dBoat + $dItems + $dOptions + $dCustom + $dGlobal;
+
+                // The stored subtotal is already NET of the boat/option
+                // discounts, so listing deductions under it would show the same
+                // figure twice and read as if nothing had been deducted. Start
+                // from the gross instead: gross - all discounts = total HT.
+                $grossHt = (float) ($t['base_price_gross'] ?? 0)
+                    + collect($t['options_rows'] ?? [])->sum(fn ($r) => (float) ($r['line_gross'] ?? 0))
+                    + collect($t['custom_items_rows'] ?? [])->sum(fn ($r) => (float) ($r['amount'] ?? 0));
             @endphp
             <table class="qtotals">
                 <tr class="row-white">
-                    <td class="label">{{ __('Subtotal excl. VAT') }}</td>
-                    <td class="val">{{ number_format($t['subtotal_ht'] ?? 0, 2, ',', ' ') }} €</td>
+                    <td class="label">{{ $dTotal > 0.005 ? __('Subtotal before discounts') : __('Subtotal excl. VAT') }}</td>
+                    <td class="val">{{ number_format($dTotal > 0.005 ? $grossHt : ($t['subtotal_ht'] ?? 0), 2, ',', ' ') }} €</td>
                 </tr>
                 @if ($dBoat > 0)
                     <tr class="row-discount row-white">
@@ -302,10 +312,10 @@
                         <td class="val">-{{ number_format($dBoat, 2, ',', ' ') }} €</td>
                     </tr>
                 @endif
-                @if ($dItems > 0.005)
+                @if ($dItems + $dCustom > 0.005)
                     <tr class="row-discount row-white">
                         <td class="label">{{ __('Discounts on options') }}</td>
-                        <td class="val">-{{ number_format($dItems, 2, ',', ' ') }} €</td>
+                        <td class="val">-{{ number_format($dItems + $dCustom, 2, ',', ' ') }} €</td>
                     </tr>
                 @endif
                 @if ($dOptions > 0)

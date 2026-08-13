@@ -709,24 +709,13 @@
                 <h2 class="text-base font-semibold text-gray-900 mb-1">{{ __('Options on this boat') }}</h2>
                 <p class="text-xs text-gray-500 mb-4">{{ __('Add options and set prices. Drag the handle to reorder. USD amounts convert to EUR on save. Everything is saved together with the Save button at the bottom.') }}</p>
 
-                    {{-- Select-all + description toggle + mass delete --}}
+                    {{-- Select-all + mass delete --}}
                     <div class="flex items-center justify-between mb-3" x-show="options.length > 0" x-cloak>
-                        <div class="flex items-center gap-5">
-                            <label class="inline-flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
-                                <input type="checkbox" @change="toggleAll($event)" :checked="allChecked"
-                                    class="rounded border-gray-300 text-primary-800 focus:ring-primary-800" />
-                                {{ __('Select all') }}
-                            </label>
-                            {{-- Descriptions are long and most options don't need
-                                 one, so they stay collapsed until asked for. The
-                                 textareas stay in the DOM (just hidden) so their
-                                 values still submit with the form. --}}
-                            <label class="inline-flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
-                                <input type="checkbox" x-model="showDescriptions"
-                                    class="rounded border-gray-300 text-primary-800 focus:ring-primary-800" />
-                                {{ __('Show descriptions') }}
-                            </label>
-                        </div>
+                        <label class="inline-flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                            <input type="checkbox" @change="toggleAll($event)" :checked="allChecked"
+                                class="rounded border-gray-300 text-primary-800 focus:ring-primary-800" />
+                            {{ __('Select all') }}
+                        </label>
                         <button type="button" x-show="selected.length > 0" x-cloak @click="deleteSelected()"
                             class="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium bg-red-50 hover:bg-red-100 text-red-700 rounded-lg">
                             <i class="ri-delete-bin-line"></i> {{ __('Delete selected') }} (<span x-text="selected.length"></span>)
@@ -787,17 +776,26 @@
                                 </div>
                             </div>
 
-                            {{-- Optional detail printed under the option on the
-                                 quote (e.g. what a "Pack A" contains). Full row
-                                 width, outside the column grid. Hidden (not
-                                 removed) when the toggle is off, so values still
-                                 post with the form. --}}
-                            <div class="mt-3" x-show="showDescriptions || (o.description || '').length > 0" x-cloak>
-                                <label class="block text-xs font-medium text-gray-700 mb-1">
-                                    {{ __('Description') }}
-                                    <span class="text-gray-400 font-normal">({{ __('optional') }})</span>
-                                </label>
-                                <textarea :name="`options[${i}][description]`" x-model="o.description" rows="2"
+                            {{-- Per-row description toggle. Most options don't
+                                 need one, so the textarea stays collapsed until
+                                 this row asks for it; rows that already carry
+                                 text open expanded (see _showDesc seeding). When
+                                 collapsed the textarea is only hidden, never
+                                 removed, so its value still posts. --}}
+                            <button type="button" @click="o._showDesc = ! o._showDesc"
+                                :class="o._showDesc ? 'border-primary-200 bg-primary-50 text-primary-800' : 'border-gray-200 bg-white text-gray-600 hover:text-gray-900 hover:border-gray-300'"
+                                class="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium transition">
+                                <i class="ri-file-text-line"></i>
+                                <span x-text="o._showDesc
+                                    ? @js(__('Hide description'))
+                                    : ((o.description || '').trim().length ? @js(__('Edit description')) : @js(__('Add a description')))"></span>
+                                {{-- Dot marks rows that already carry text while collapsed. --}}
+                                <span x-show="! o._showDesc && (o.description || '').trim().length" x-cloak
+                                    class="w-1.5 h-1.5 rounded-full bg-primary-800"></span>
+                            </button>
+
+                            <div class="mt-2" x-show="o._showDesc" x-cloak>
+                                <textarea :name="`options[${i}][description]`" x-model="o.description" rows="3"
                                     placeholder="{{ __('Detail shown under this option on the quote — e.g. what the pack includes.') }}"
                                     class="block w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800"></textarea>
                             </div>
@@ -1175,6 +1173,9 @@
                 // agree on identity while dragging (DB id may be blank for new rows).
                 options: (initial || []).map(o => ({
                     _k: k++,
+                    // Rows that already have text open expanded so the dealer
+                    // sees it without hunting; empty ones stay collapsed.
+                    _showDesc: (o.description ?? '').trim().length > 0,
                     id: o.id || '',
                     category: o.category ?? '',
                     label: o.label ?? '',
@@ -1184,10 +1185,6 @@
                     currency: o.currency || 'EUR',
                 })),
                 sortable: null,
-
-                // Description textareas are collapsed by default — rows that
-                // already carry text reveal themselves regardless (see x-show).
-                showDescriptions: false,
 
                 // Mass-select / delete. `selected` holds the `_k` of ticked rows.
                 selected: [],
@@ -1235,7 +1232,7 @@
                     this.selected = [];
                 },
                 addOption() {
-                    this.options.push({ _k: k++, id: '', category: '', label: '', description: '', price: '', cost: '', currency: 'EUR' });
+                    this.options.push({ _k: k++, _showDesc: false, id: '', category: '', label: '', description: '', price: '', cost: '', currency: 'EUR' });
                 },
                 removeOption(i) {
                     this.options.splice(i, 1);

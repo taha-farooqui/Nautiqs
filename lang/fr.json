@@ -18,7 +18,6 @@
     "Displayed at the top of your quote and order PDFs. PNG, JPG or WebP — max 2 MB.": "Affiché en haut de vos PDF de devis et de bons de commande. PNG, JPG ou WebP — 2 Mo max.",
     "Remove logo": "Supprimer le logo",
     "Logo removed.": "Logo supprimé.",
-    "Show descriptions": "Afficher les descriptions",
     "Discounts on options": "Remises sur les options",
     "Total savings": "Total des remises",
     "Detail shown under this option on the quote — e.g. what the pack includes.": "Détail affiché sous cette option sur le devis — par ex. ce que contient le pack.",
@@ -1089,5 +1088,9 @@
     "Import failed. See details below.": "Échec de l'import. Détails ci-dessous.",
     ":count row(s) could not be imported": ":count ligne(s) n'ont pas pu être importées",
     "Row": "Ligne",
-    "…and :count more": "…et :count autres"
+    "…and :count more": "…et :count autres",
+    "Add a description": "Ajouter une description",
+    "Edit description": "Modifier la description",
+    "Hide description": "Masquer la description",
+    "Subtotal before discounts": "Sous-total avant remises"
 }
