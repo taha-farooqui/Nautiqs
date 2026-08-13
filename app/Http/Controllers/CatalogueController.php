@@ -211,21 +211,30 @@ class CatalogueController extends Controller
             $minTtc = $mv->isNotEmpty()
                 ? $mv->map(fn ($v) => (float) $v->base_price * (1 + ($v->vat_rate ?? 20) / 100))->min()
                 : null;
+            $brand = $brandsById[(string) $m->company_brand_id] ?? null;
+
             return [
                 'model'         => $m,
-                'brand'         => $brandsById[(string) $m->company_brand_id] ?? null,
+                'brand'         => $brand,
                 'variant_count' => $mv->count(),
                 'min_ttc'       => $minTtc,
+                // Pre-computed lowercase sort keys. Brandless boats sort last
+                // instead of jumping to the top of the list.
+                '_sort_brand'   => $brand?->name ? mb_strtolower($brand->name) : 'zzzz',
+                '_sort_model'   => mb_strtolower((string) ($m->name ?? '')),
             ];
         })
         // Group the list by brand, then by model inside each brand — importing
         // several brands in one go otherwise interleaves them by model name and
-        // the catalogue reads as a jumble. Case-insensitive, accent-tolerant;
-        // brandless boats sort last rather than jumping to the top.
-        ->sortBy(fn ($r) => [
-            $r['brand']?->name ? mb_strtolower($r['brand']->name) : 'zzzz',
-            mb_strtolower((string) ($r['model']->name ?? '')),
-        ], SORT_NATURAL)
+        // the catalogue reads as a jumble.
+        //
+        // Multi-key form on purpose: a closure returning [brand, model] makes
+        // sortBy() hand ARRAYS to asort(), which fatals with "Array to string
+        // conversion" and 500s the whole catalogue page.
+        ->sortBy([
+            ['_sort_brand', 'asc'],
+            ['_sort_model', 'asc'],
+        ])
         ->values();
 
         return view('catalogue.models', [
