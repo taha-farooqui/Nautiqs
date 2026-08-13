@@ -37,17 +37,34 @@ return Application::configure(basePath: dirname(__DIR__))
         );
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        // A stale CSRF token (419 Page Expired) — typically a tab left open
-        // past the session lifetime, most visibly when logging out. Rather
-        // than show the bare 419 page, complete the logout (if that's what
-        // was attempted) and send the user to the login screen to re-auth.
-        $exceptions->render(function (\Illuminate\Session\TokenMismatchException $e, \Illuminate\Http\Request $request) {
+        // A stale CSRF token (419 Page Expired) — a tab left open past the
+        // session lifetime, or a page restored from the mobile back-swipe
+        // cache. Show the login screen with an explanation instead of the bare
+        // 419 page.
+        //
+        // Typed against HttpExceptionInterface, NOT TokenMismatchException:
+        // Laravel's prepareException() rewrites a token mismatch into a plain
+        // HttpException(419) BEFORE custom renderers run, so a callback typed
+        // against TokenMismatchException never matches and users still got the
+        // raw 419 screen.
+        $exceptions->render(function (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e, \Illuminate\Http\Request $request) {
+            if ($e->getStatusCode() !== 419) {
+                return null;   // everything else keeps Laravel's handling
+            }
+
+            // Livewire/XHR handle a 419 themselves by refreshing the component;
+            // hijacking those with a redirect would render login inside a panel.
+            if ($request->expectsJson() || $request->hasHeader('X-Livewire')) {
+                return null;
+            }
+
             if ($request->routeIs('logout') || $request->is('logout')) {
                 \Illuminate\Support\Facades\Auth::guard('web')->logout();
-                if ($request->hasSession()) {
-                    $request->session()->invalidate();
-                    $request->session()->regenerateToken();
-                }
+            }
+
+            if ($request->hasSession()) {
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
             }
 
             return redirect()->route('login')
