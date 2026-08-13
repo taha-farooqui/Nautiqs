@@ -1092,5 +1092,7 @@
     "Add a description": "Ajouter une description",
     "Edit description": "Modifier la description",
     "Hide description": "Masquer la description",
-    "Subtotal before discounts": "Sous-total avant remises"
+    "Subtotal before discounts": "Sous-total avant remises",
+    "Discounts on engines": "Remises sur les moteurs",
+    "Discounts on custom items": "Remises sur les lignes personnalisées"
 }
