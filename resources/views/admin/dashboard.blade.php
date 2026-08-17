@@ -205,7 +205,7 @@
                                         <span class="font-mono text-xs px-2 py-1 rounded bg-gray-100 text-gray-700">{{ $q->number }}</span>
                                     </td>
                                     <td class="px-5 py-3">
-                                        <div class="text-sm text-gray-900">{{ $q->model_snapshot['name'] ?? '—' }}</div>
+                                        <div class="text-sm text-gray-900">{{ $q->boatLabel() ?: '—' }}</div>
                                         <div class="text-[11px] text-gray-500">{{ $q->model_snapshot['brand'] ?? '' }}</div>
                                     </td>
                                     <td class="px-5 py-3 text-right font-semibold text-gray-900">

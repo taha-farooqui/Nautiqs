@@ -286,7 +286,9 @@ HTML,
             'client_first_name'  => $first ?: __('Client'),
             'quote_number'       => $quote->number ?? '',
             'order_number'       => $quote->order_confirmation_number ?? '',
-            'boat_model'         => $quote->model_snapshot['name'] ?? '',
+            // Brand + model, e.g. "Beneteau Antares 8 OB V2" — the model name
+            // alone reads as an anonymous reference in the client's inbox.
+            'boat_model'         => $quote?->boatLabel() ?? '',
             'total_ttc'          => number_format($totalTtc, 2, ',', ' ') . ' €',
             'net_payable'        => number_format($netPayable, 2, ',', ' ') . ' €',
             // The person who actually made the quote (team subaccounts sign

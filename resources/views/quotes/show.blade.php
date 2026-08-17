@@ -274,7 +274,7 @@
                     </div>
                     <div>
                         <h4 class="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2">{{ __('Boat') }}</h4>
-                        <p class="font-semibold text-gray-900">{{ $quote->model_snapshot['name'] ?? '' }}</p>
+                        <p class="font-semibold text-gray-900">{{ $quote->boatLabel() }}</p>
                         <p class="text-sm text-gray-700">{{ $quote->variant_snapshot['name'] ?? '' }}</p>
                         <p class="text-sm text-gray-500">{{ $quote->model_snapshot['brand'] ?? '' }}</p>
                     </div>
@@ -316,7 +316,7 @@
                                     <td class="py-2">
                                         <div class="font-medium text-gray-900">{{ $opt['label'] ?? '' }}</div>
                                         @if (! empty($opt['description']))
-                                            <div class="text-xs text-gray-600">{{ $opt['description'] }}</div>
+                                            <div class="text-xs text-gray-600">{!! nl2br(e($opt['description'])) !!}</div>
                                         @endif
                                         <div class="text-xs text-gray-500">{{ $opt['category'] ?? '' }}</div>
                                     </td>
@@ -531,7 +531,7 @@
                 </div>
                 <div class="flex-1 min-w-0">
                     <h3 class="font-semibold text-gray-900">{{ __('Quote') }} {{ $quote->number }}</h3>
-                    <p class="text-xs text-gray-500 truncate">{{ $quote->client_snapshot['first_name'] ?? '' }} {{ $quote->client_snapshot['last_name'] ?? '' }} · {{ $quote->model_snapshot['name'] ?? '' }}</p>
+                    <p class="text-xs text-gray-500 truncate">{{ $quote->client_snapshot['first_name'] ?? '' }} {{ $quote->client_snapshot['last_name'] ?? '' }} · {{ $quote->boatLabel() }}</p>
                 </div>
                 <a href="{{ route('quotes.pdf', $quote->_id) }}"
                     class="inline-flex items-center gap-2 bg-primary-800 hover:bg-primary-900 text-white font-semibold px-4 py-2 rounded-lg text-sm transition">

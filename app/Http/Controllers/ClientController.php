@@ -47,6 +47,7 @@ class ClientController extends Controller
     public function store(ClientRequest $request)
     {
         $client = Client::create($request->validated());
+        $this->rememberLeadSource($request->input('lead_source'));
 
         return redirect()
             ->route('clients.show', $client->_id)
@@ -78,6 +79,7 @@ class ClientController extends Controller
     {
         $client = Client::findOrFail($id);
         $client->update($request->validated());
+        $this->rememberLeadSource($request->input('lead_source'));
 
         return redirect()
             ->route('clients.show', $client->_id)
@@ -101,5 +103,14 @@ class ClientController extends Controller
         return redirect()
             ->route('clients.index')
             ->with('status', __('Client deleted.'));
+    }
+    /**
+     * A source typed by hand joins this dealership's dropdown for next time
+     * (spec-adjacent request: "Pakistan Auto Show (PAPS) 2026"). Scoped to
+     * the caller's own company — never shared across tenants.
+     */
+    private function rememberLeadSource(?string $source): void
+    {
+        auth()->user()?->company?->rememberLeadSource($source);
     }
 }

@@ -284,6 +284,23 @@ class Quote extends Model
     }
 
     /**
+     * "Brand Model" for display — e.g. "Beneteau Antares 8 OB V2". The model
+     * name alone reads as half a boat in emails and lists. The brand is only
+     * prefixed when the model name doesn't already carry it, so brands that
+     * name their models after themselves don't come out doubled.
+     */
+    public function boatLabel(): string
+    {
+        $brand = trim((string) ($this->model_snapshot['brand'] ?? ''));
+        $name  = trim((string) ($this->model_snapshot['name'] ?? ''));
+
+        if ($name === '')  return $brand;
+        if ($brand === '') return $name;
+
+        return stripos($name, $brand) === false ? $brand . ' ' . $name : $name;
+    }
+
+    /**
      * Standard equipment to show on the quote page + PDF.
      *
      * Prefers the snapshot captured when the quote was saved — quotes are

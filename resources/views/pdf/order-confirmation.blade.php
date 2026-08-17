@@ -31,6 +31,20 @@
     // Contact email = the teammate who wrote it (see pdf/quote.blade.php).
     $spEmail = $quote->creatorEmail() ?: ($company->salesperson_email ?? '');
     $logoSrc = $company->logoDataUri();
+
+    // Display mode (HT | TTC) — same rule as pdf/quote.blade.php: it swaps the
+    // line-item price columns only; the totals ladder stays HT → VAT → TTC.
+    $showTtc  = strcasecmp((string) ($quote->display_mode ?? 'TTC'), 'TTC') === 0;
+    $quoteVat = (float) ($t['vat_rate'] ?? $quote->vat_rate ?? 0);
+    $withVat  = function ($amount, $rate = null) use ($showTtc, $quoteVat) {
+        if (! $showTtc) {
+            return (float) $amount;
+        }
+        $r = ($rate === null || $rate === '') ? $quoteVat : (float) $rate;
+        return (float) $amount * (1 + $r / 100);
+    };
+    $colUnit  = $showTtc ? __('Unit price TTC') : __('Unit price HT');
+    $colTotal = $showTtc ? __('Total TTC')      : __('Total HT');
 @endphp
 
 {{-- ════════════════════════════ HEADER ════════════════════════════ --}}
@@ -115,8 +129,8 @@
     <tr class="head-row">
         <td>{{ __('Description') }}</td>
         <td style="width:12mm; text-align:center;">{{ __('Qty') }}</td>
-        <td style="width:30mm; text-align:right;">{{ __('Unit price HT') }}</td>
-        <td style="width:32mm; text-align:right;">{{ __('Total HT') }}</td>
+        <td style="width:30mm; text-align:right;">{{ $colUnit }}</td>
+        <td style="width:32mm; text-align:right;">{{ $colTotal }}</td>
     </tr>
 
     <tr class="cat-row"><td colspan="4">{{ __('Base boat') }}</td></tr>
@@ -141,8 +155,8 @@
     <tr class="item-row">
         <td><span class="qopt-name">{{ $baseLabel }}</span></td>
         <td class="qopt-qty" style="width:12mm;">1</td>
-        <td class="qopt-unit" style="width:30mm;">{{ number_format($t['base_price_gross'] ?? 0, 2, ',', ' ') }} €</td>
-        <td class="qopt-total" style="width:32mm;">{{ number_format($t['base_ht'] ?? 0, 2, ',', ' ') }} €</td>
+        <td class="qopt-unit" style="width:30mm;">{{ number_format($withVat($t['base_price_gross'] ?? 0), 2, ',', ' ') }} €</td>
+        <td class="qopt-total" style="width:32mm;">{{ number_format($withVat($t['base_ht'] ?? 0), 2, ',', ' ') }} €</td>
     </tr>
 
     @foreach ($optionRows as $category => $items)
@@ -152,12 +166,12 @@
                 <td>
                     <span class="qopt-name">{{ $opt['label'] ?? '' }}</span>
                     @if (! empty($opt['description']))
-                        <div class="qopt-desc">{{ $opt['description'] }}</div>
+                        <div class="qopt-desc">{!! nl2br(e($opt['description'])) !!}</div>
                     @endif
                 </td>
                 <td class="qopt-qty">{{ $opt['quantity'] ?? 1 }}</td>
-                <td class="qopt-unit">{{ number_format($opt['unit_price'] ?? 0, 2, ',', ' ') }} €</td>
-                <td class="qopt-total">{{ number_format($opt['line_after_cat'] ?? 0, 2, ',', ' ') }} €</td>
+                <td class="qopt-unit">{{ number_format($withVat($opt['unit_price'] ?? 0, $opt['line_vat_rate'] ?? null), 2, ',', ' ') }} €</td>
+                <td class="qopt-total">{{ number_format($withVat($opt['line_after_cat'] ?? 0, $opt['line_vat_rate'] ?? null), 2, ',', ' ') }} €</td>
             </tr>
         @endforeach
     @endforeach
@@ -168,8 +182,8 @@
             <tr class="item-row">
                 <td><span class="qopt-name">{{ $ci['label'] ?? '' }}</span></td>
                 <td class="qopt-qty">1</td>
-                <td class="qopt-unit">{{ number_format($ci['amount'] ?? 0, 2, ',', ' ') }} €</td>
-                <td class="qopt-total">{{ number_format($ci['line_after_cat'] ?? $ci['amount'] ?? 0, 2, ',', ' ') }} €</td>
+                <td class="qopt-unit">{{ number_format($withVat($ci['amount'] ?? 0), 2, ',', ' ') }} €</td>
+                <td class="qopt-total">{{ number_format($withVat($ci['line_after_cat'] ?? $ci['amount'] ?? 0), 2, ',', ' ') }} €</td>
             </tr>
         @endforeach
     @endif

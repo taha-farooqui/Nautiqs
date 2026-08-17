@@ -33,6 +33,32 @@ class Client extends Model
 
         // §11.4 internal — never in any PDF or email
         'internal_notes',
+        'navigation_area',  // where they sail — free text
+        'current_boat',     // what they own today — free text
+        'lead_source',      // how they found us (see LEAD_SOURCES)
+    ];
+
+    /**
+     * The built-in "how did this lead reach us" list. Dealers can add their
+     * own entries (a local boat show, a specific partner…) — those are kept
+     * per-company on COMPANY.custom_lead_sources and merged in by
+     * Company::leadSources(), so one dealership's additions never leak into
+     * another's dropdown.
+     */
+    public const LEAD_SOURCES = [
+        'Website',
+        'Google Ads',
+        'Social Media',
+        'Boat Show / Event',
+        'Marketplace',
+        'Referral',
+        'Partner / Broker',
+        'Walk-in',
+        'Phone Call',
+        'Email',
+        'Existing Customer',
+        'Prospecting',
+        'Other',
     ];
 
     public function company()

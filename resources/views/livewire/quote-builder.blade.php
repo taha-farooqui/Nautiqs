@@ -276,7 +276,7 @@
                                         <span class="flex-1 min-w-0">
                                             <span class="block text-sm text-gray-800">{{ $opt->label }}</span>
                                             @if (! empty($opt->description))
-                                                <span class="block text-xs text-gray-500 mt-0.5">{{ $opt->description }}</span>
+                                                <span class="block text-xs text-gray-500 mt-0.5">{!! nl2br(e($opt->description)) !!}</span>
                                             @endif
                                         </span>
                                     </label>
@@ -610,6 +610,9 @@
                         <option value="TTC">{{ __('TTC (incl. VAT)') }}</option>
                         <option value="HT">{{ __('HT (excl. VAT)') }}</option>
                     </select>
+                    <span class="block text-[10px] text-gray-400 mt-1">
+                        {{ __('Sets whether the price columns on the PDF print excl. or incl. VAT. The totals box always shows both.') }}
+                    </span>
                 </div>
             </div>
             {{-- Terms & conditions — printed on the PDF. Leave a field blank

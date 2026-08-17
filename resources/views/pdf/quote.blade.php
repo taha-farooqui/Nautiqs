@@ -43,6 +43,23 @@
         if (strcasecmp($c, 'Option') === 0)  return __('Options');
         return $c;
     };
+
+    // The quote's Display mode (HT | TTC) decides how the price columns read.
+    // HT prints the raw excl.-VAT figures the calculator works in; TTC scales
+    // each line by its own VAT rate so the client sees what they actually pay.
+    // The totals box below always shows the full HT → VAT → TTC breakdown, so
+    // this only affects the line-item columns.
+    $showTtc  = strcasecmp((string) ($quote->display_mode ?? 'TTC'), 'TTC') === 0;
+    $quoteVat = (float) ($t['vat_rate'] ?? $quote->vat_rate ?? 0);
+    $withVat  = function ($amount, $rate = null) use ($showTtc, $quoteVat) {
+        if (! $showTtc) {
+            return (float) $amount;
+        }
+        $r = ($rate === null || $rate === '') ? $quoteVat : (float) $rate;
+        return (float) $amount * (1 + $r / 100);
+    };
+    $colUnit  = $showTtc ? __('Unit price TTC') : __('Unit price HT');
+    $colTotal = $showTtc ? __('Total TTC')      : __('Total HT');
 @endphp
 
 {{-- ════════════════════════════ HEADER ════════════════════════════ --}}
@@ -155,8 +172,8 @@
     <tr class="head-row">
         <td>{{ __('Description') }}</td>
         <td style="width:12mm; text-align:center;">{{ __('Qty') }}</td>
-        <td style="width:30mm; text-align:right;">{{ __('Unit price HT') }}</td>
-        <td style="width:32mm; text-align:right;">{{ __('Total HT') }}</td>
+        <td style="width:30mm; text-align:right;">{{ $colUnit }}</td>
+        <td style="width:32mm; text-align:right;">{{ $colTotal }}</td>
     </tr>
 
     {{-- Base boat row --}}
@@ -183,15 +200,15 @@
     <tr class="item-row">
         <td><span class="qopt-name">{{ $baseLabel }}</span></td>
         <td class="qopt-qty" style="width:12mm;">1</td>
-        <td class="qopt-unit" style="width:30mm;">{{ number_format($t['base_price_gross'] ?? 0, 2, ',', ' ') }} €</td>
-        <td class="qopt-total" style="width:32mm;">{{ number_format($t['base_ht'] ?? 0, 2, ',', ' ') }} €</td>
+        <td class="qopt-unit" style="width:30mm;">{{ number_format($withVat($t['base_price_gross'] ?? 0), 2, ',', ' ') }} €</td>
+        <td class="qopt-total" style="width:32mm;">{{ number_format($withVat($t['base_ht'] ?? 0), 2, ',', ' ') }} €</td>
     </tr>
     @if (($t['boat_discount_pct'] ?? 0) > 0)
         <tr class="item-row">
             <td><span class="qopt-name" style="color:#9ca3af;">{{ __('Boat discount') }} ({{ number_format($t['boat_discount_pct'], 1) }}%)</span></td>
             <td class="qopt-qty"></td>
             <td class="qopt-unit"></td>
-            <td class="qopt-total discount-applied">-{{ number_format($t['boat_discount_amount'] ?? 0, 2, ',', ' ') }} €</td>
+            <td class="qopt-total discount-applied">-{{ number_format($withVat($t['boat_discount_amount'] ?? 0), 2, ',', ' ') }} €</td>
         </tr>
     @endif
 
@@ -203,8 +220,8 @@
                 $itemDisc = (float) ($opt['item_discount_pct'] ?? 0);
                 $catDisc  = (float) ($opt['cat_discount_pct'] ?? 0);
                 $totalDisc = $itemDisc + $catDisc;
-                $unit = (float) ($opt['unit_price'] ?? 0);
-                $line = (float) ($opt['line_after_cat'] ?? 0);
+                $unit = $withVat($opt['unit_price'] ?? 0, $opt['line_vat_rate'] ?? null);
+                $line = $withVat($opt['line_after_cat'] ?? 0, $opt['line_vat_rate'] ?? null);
             @endphp
             <tr class="item-row">
                 <td>
@@ -213,7 +230,7 @@
                         <span class="qopt-disc-badge">-{{ number_format($itemDisc, 0) }}%</span>
                     @endif
                     @if (! empty($opt['description']))
-                        <div class="qopt-desc">{{ $opt['description'] }}</div>
+                        <div class="qopt-desc">{!! nl2br(e($opt['description'])) !!}</div>
                     @endif
                 </td>
                 <td class="qopt-qty">{{ $opt['quantity'] ?? 1 }}</td>
@@ -238,8 +255,8 @@
             <tr class="item-row">
                 <td><span class="qopt-name">{{ $ci['label'] ?? '' }}</span></td>
                 <td class="qopt-qty">1</td>
-                <td class="qopt-unit">{{ number_format($ci['amount'] ?? 0, 2, ',', ' ') }} €</td>
-                <td class="qopt-total">{{ number_format($ci['line_after_cat'] ?? $ci['amount'] ?? 0, 2, ',', ' ') }} €</td>
+                <td class="qopt-unit">{{ number_format($withVat($ci['amount'] ?? 0), 2, ',', ' ') }} €</td>
+                <td class="qopt-total">{{ number_format($withVat($ci['line_after_cat'] ?? $ci['amount'] ?? 0), 2, ',', ' ') }} €</td>
             </tr>
         @endforeach
     @endif
@@ -303,7 +320,9 @@
             @endphp
             <table class="qtotals">
                 <tr class="row-white">
-                    <td class="label">{{ $dTotal > 0.005 ? __('Subtotal before discounts') : __('Subtotal excl. VAT') }}</td>
+                    {{-- Always excl. VAT here, even when the columns above print
+                         TTC — this box is the canonical HT → VAT → TTC ladder. --}}
+                    <td class="label">{{ $dTotal > 0.005 ? __('Subtotal before discounts (excl. VAT)') : __('Subtotal excl. VAT') }}</td>
                     <td class="val">{{ number_format($dTotal > 0.005 ? $grossHt : ($t['subtotal_ht'] ?? 0), 2, ',', ' ') }} €</td>
                 </tr>
                 @if ($dBoat > 0)

@@ -38,6 +38,22 @@
                             <span class="text-gray-700">{{ $client->full_address }}</span>
                         </div>
                     @endif
+                    {{-- Boating profile — internal context, never printed. --}}
+                    @if ($client->navigation_area)
+                        <div class="flex items-start gap-2"><i class="ri-compass-3-line text-gray-400 mt-0.5"></i>
+                            <span class="text-gray-700">{{ $client->navigation_area }}</span>
+                        </div>
+                    @endif
+                    @if ($client->current_boat)
+                        <div class="flex items-start gap-2"><i class="ri-sailboat-line text-gray-400 mt-0.5"></i>
+                            <span class="text-gray-700">{{ $client->current_boat }}</span>
+                        </div>
+                    @endif
+                    @if ($client->lead_source)
+                        <div class="flex items-start gap-2"><i class="ri-flag-line text-gray-400 mt-0.5"></i>
+                            <span class="text-gray-700">{{ __($client->lead_source) }}</span>
+                        </div>
+                    @endif
                 </dl>
 
                 <div class="mt-5 flex gap-2">
@@ -102,7 +118,7 @@
                                             {{ $q->number }}
                                         </a>
                                     </td>
-                                    <td class="px-5 py-3 text-gray-700">{{ $q->model_snapshot['name'] ?? '—' }}</td>
+                                    <td class="px-5 py-3 text-gray-700">{{ $q->boatLabel() ?: '—' }}</td>
                                     <td class="px-5 py-3 text-right font-semibold text-gray-900">
                                         {{ number_format($q->totals['total_ttc'] ?? 0, 0, ',', ' ') }} €
                                     </td>

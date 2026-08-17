@@ -43,6 +43,10 @@ class Company extends Model
         'follow_up_delay_unit',  // days | weeks | months
         'follow_up_enabled_at',  // watermark: only quotes SENT after this get auto follow-ups
 
+        // Lead sources the dealer typed themselves, on top of
+        // Client::LEAD_SOURCES (e.g. "Pakistan Auto Show (PAPS) 2026").
+        'custom_lead_sources',
+
         // Lifecycle
         'status',                // active | suspended
         'onboarded_at',
@@ -71,6 +75,58 @@ class Company extends Model
     public function quotes()
     {
         return $this->hasMany(Quote::class, 'company_id');
+    }
+
+    /**
+     * The lead-source dropdown for this dealership: the built-in list plus
+     * whatever the team has added itself, in that order, de-duplicated
+     * case-insensitively. Deliberately NOT an 'array' cast — casting writes
+     * a JSON string into Mongo, which breaks every array read downstream.
+     */
+    public function leadSources(): array
+    {
+        $custom = is_array($this->custom_lead_sources) ? $this->custom_lead_sources : [];
+
+        $out  = [];
+        $seen = [];
+        foreach (array_merge(Client::LEAD_SOURCES, $custom) as $s) {
+            $s = trim((string) $s);
+            if ($s === '') {
+                continue;
+            }
+            $k = mb_strtolower($s);
+            if (isset($seen[$k])) {
+                continue;
+            }
+            $seen[$k] = true;
+            $out[]    = $s;
+        }
+
+        return $out;
+    }
+
+    /**
+     * Persist a one-off source the dealer typed so it's in the dropdown next
+     * time. No-op when it's blank or already known (built-in or custom).
+     */
+    public function rememberLeadSource(?string $source): void
+    {
+        $source = trim((string) $source);
+        if ($source === '') {
+            return;
+        }
+
+        foreach ($this->leadSources() as $known) {
+            if (mb_strtolower($known) === mb_strtolower($source)) {
+                return;
+            }
+        }
+
+        $custom   = is_array($this->custom_lead_sources) ? $this->custom_lead_sources : [];
+        $custom[] = $source;
+
+        $this->custom_lead_sources = array_values($custom);
+        $this->save();
     }
 
     /**

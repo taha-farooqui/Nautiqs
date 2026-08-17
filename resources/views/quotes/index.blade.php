@@ -182,7 +182,7 @@
 
                                 {{-- Boat --}}
                                 <td class="px-4 py-3">
-                                    <div class="text-gray-900">{{ $quote->model_snapshot['name'] ?? '—' }}</div>
+                                    <div class="text-gray-900">{{ $quote->boatLabel() ?: '—' }}</div>
                                     <div class="text-xs text-gray-500">{{ $quote->model_snapshot['brand'] ?? '' }}</div>
                                 </td>
 

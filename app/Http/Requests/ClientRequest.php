@@ -11,9 +11,24 @@ class ClientRequest extends FormRequest
         return auth()->check() && auth()->user()->company_id;
     }
 
+    /**
+     * The dropdown carries a "＋ Add a new source" sentinel; when it's picked
+     * the real value lives in lead_source_custom. Fold it back before
+     * validation so the rest of the stack only ever sees lead_source.
+     */
+    protected function prepareForValidation(): void
+    {
+        if ($this->input('lead_source') === '__new__') {
+            $this->merge(['lead_source' => trim((string) $this->input('lead_source_custom', ''))]);
+        }
+    }
+
     public function rules(): array
     {
         return [
+            'navigation_area' => ['nullable', 'string', 'max:150'],
+            'current_boat'    => ['nullable', 'string', 'max:150'],
+            'lead_source'     => ['nullable', 'string', 'max:100'],
             'first_name'     => ['required', 'string', 'max:100'],
             'last_name'      => ['required', 'string', 'max:100'],
             'company_name'   => ['nullable', 'string', 'max:150'],
