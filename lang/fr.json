@@ -1125,5 +1125,6 @@
     "Figures below": "Montants ci-dessous",
     "incl. VAT": "TTC",
     "excl. VAT": "HT",
-    "Base price (incl. VAT)": "Prix de base (TTC)"
+    "Base price (incl. VAT)": "Prix de base (TTC)",
+    "HT": "HT"
 }

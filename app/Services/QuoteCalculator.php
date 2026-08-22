@@ -49,10 +49,21 @@ class QuoteCalculator
         // so a euro entry is converted to the equivalent percentage of the
         // base it applies to and everything downstream — including the
         // per-line VAT scaling — keeps working unchanged.
-        $asPct = function (string $key, float $base) use ($input): float {
+        //
+        // A euro amount also carries the basis it was typed in ('ttc' or 'ht'),
+        // captured from the quote's display mode at entry time. Without it, a
+        // dealer working in TTC who types "500 EUR off" would have 500 taken off
+        // the excl.-VAT base, and the buyer's total would drop by 600 — 20% more
+        // discount than was intended. A TTC entry is converted back to excl. VAT
+        // here so the figure the dealer typed is exactly the figure the buyer
+        // gets off, and it stays fixed if the display mode is flipped later.
+        $asPct = function (string $key, float $base) use ($input, $vatRate): float {
             $mode = $input[$key . '_discount_mode'] ?? 'pct';
             if ($mode === 'eur') {
                 $amount = (float) ($input[$key . '_discount_amount'] ?? 0);
+                if (($input[$key . '_discount_basis'] ?? 'ht') === 'ttc') {
+                    $amount = $amount / (1 + $vatRate / 100);
+                }
                 if ($base <= 0) {
                     return 0.0;
                 }
@@ -225,6 +236,9 @@ class QuoteCalculator
             'base_price_original'      => $basePriceOriginal,
             'base_price_currency'      => $variantCurrency,
             'fx_rate_used'             => $rate,
+            'boat_discount_basis'      => $input['boat_discount_basis'] ?? 'ht',
+            'options_discount_basis'   => $input['options_discount_basis'] ?? 'ht',
+            'global_discount_basis'    => $input['global_discount_basis'] ?? 'ht',
             'boat_discount_mode'       => $input['boat_discount_mode'] ?? 'pct',
             'options_discount_mode'    => $input['options_discount_mode'] ?? 'pct',
             'global_discount_mode'     => $input['global_discount_mode'] ?? 'pct',

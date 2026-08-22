@@ -9,6 +9,20 @@
     // "(5.6%)" — the percentage a euro discount works out to, trimmed of
     // trailing zeros. Shown as a hint next to a euro entry.
     $discRate = fn ($pct) => '(' . rtrim(rtrim(number_format((float) $pct, 1), '0'), '.') . '%)';
+
+    // Display basis, shared by step 7 and the summary panel. The quote is
+    // computed excl. VAT throughout; $d() scales a figure into the basis the
+    // dealer chose to view, using a line's own VAT rate where it has one.
+    $showTtc = strcasecmp($display_mode, 'TTC') === 0;
+    $qVat    = (float) ($t['vat_rate'] ?? 0);
+    $d = function ($amount, $rate = null) use ($showTtc, $qVat) {
+        if (! $showTtc) {
+            return (float) $amount;
+        }
+        $r = ($rate === null || $rate === '') ? $qVat : (float) $rate;
+        return (float) $amount * (1 + $r / 100);
+    };
+    $basisLabel = fn ($basis) => $basis === 'ttc' ? __('TTC') : __('HT');
 @endphp
 
 <div class="relative grid grid-cols-1 xl:grid-cols-3 gap-6"
@@ -571,7 +585,7 @@
                     @if ($boat_discount_mode === 'eur')
                         <input type="number" min="0" step="50" wire:model.live.debounce.300ms="boat_discount_amount" @disabled(! $hasVariant)
                             class="w-24 text-right rounded border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800 disabled:bg-gray-100" />
-                        <span class="text-sm text-gray-500 w-3">€</span>
+                        <span class="text-sm text-gray-500">€ <span class="text-xs text-gray-400">{{ $basisLabel($boat_discount_basis) }}</span></span>
                     @else
                         <input type="number" min="0" max="100" step="0.5" wire:model.live.debounce.300ms="boat_discount_pct" @disabled(! $hasVariant)
                             class="w-24 text-right rounded border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800 disabled:bg-gray-100" />
@@ -579,7 +593,9 @@
                     @endif
                     <span class="text-sm text-red-600 font-medium w-28 text-right">
                         @if ($t && ($t['boat_discount_amount'] ?? 0) > 0)
-                            -{{ number_format($t['boat_discount_amount'], 0, ',', ' ') }} €
+                            {{-- Same basis as the summary and as the field above, so a
+                                 euro entry reads back as the number that was typed. --}}
+                            -{{ number_format($d($t['boat_discount_amount']), 0, ',', ' ') }} €
                             @if ($boat_discount_mode === 'eur' && ($t['boat_discount_pct'] ?? 0) > 0)
                                 <span class="block text-xs text-gray-400">{{ trim($discRate($t['boat_discount_pct'])) }}</span>
                             @endif
@@ -601,7 +617,7 @@
                     @if ($options_discount_mode === 'eur')
                         <input type="number" min="0" step="50" wire:model.live.debounce.300ms="options_discount_amount" @disabled(! $hasVariant)
                             class="w-24 text-right rounded border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800 disabled:bg-gray-100" />
-                        <span class="text-sm text-gray-500 w-3">€</span>
+                        <span class="text-sm text-gray-500">€ <span class="text-xs text-gray-400">{{ $basisLabel($options_discount_basis) }}</span></span>
                     @else
                         <input type="number" min="0" max="100" step="0.5" wire:model.live.debounce.300ms="options_discount_pct" @disabled(! $hasVariant)
                             class="w-24 text-right rounded border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800 disabled:bg-gray-100" />
@@ -609,7 +625,9 @@
                     @endif
                     <span class="text-sm text-red-600 font-medium w-28 text-right">
                         @if ($t && ($t['options_discount_amount'] ?? 0) > 0)
-                            -{{ number_format($t['options_discount_amount'], 0, ',', ' ') }} €
+                            {{-- Same basis as the summary and as the field above, so a
+                                 euro entry reads back as the number that was typed. --}}
+                            -{{ number_format($d($t['options_discount_amount']), 0, ',', ' ') }} €
                             @if ($options_discount_mode === 'eur' && ($t['options_discount_pct'] ?? 0) > 0)
                                 <span class="block text-xs text-gray-400">{{ trim($discRate($t['options_discount_pct'])) }}</span>
                             @endif
@@ -631,7 +649,7 @@
                     @if ($global_discount_mode === 'eur')
                         <input type="number" min="0" step="50" wire:model.live.debounce.300ms="global_discount_amount" @disabled(! $hasVariant)
                             class="w-24 text-right rounded border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800 disabled:bg-gray-100" />
-                        <span class="text-sm text-gray-500 w-3">€</span>
+                        <span class="text-sm text-gray-500">€ <span class="text-xs text-gray-400">{{ $basisLabel($global_discount_basis) }}</span></span>
                     @else
                         <input type="number" min="0" max="100" step="0.5" wire:model.live.debounce.300ms="global_discount_pct" @disabled(! $hasVariant)
                             class="w-24 text-right rounded border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800 disabled:bg-gray-100" />
@@ -639,7 +657,9 @@
                     @endif
                     <span class="text-sm text-red-600 font-medium w-28 text-right">
                         @if ($t && ($t['global_discount_amount'] ?? 0) > 0)
-                            -{{ number_format($t['global_discount_amount'], 0, ',', ' ') }} €
+                            {{-- Same basis as the summary and as the field above, so a
+                                 euro entry reads back as the number that was typed. --}}
+                            -{{ number_format($d($t['global_discount_amount']), 0, ',', ' ') }} €
                             @if ($global_discount_mode === 'eur' && ($t['global_discount_pct'] ?? 0) > 0)
                                 <span class="block text-xs text-gray-400">{{ trim($discRate($t['global_discount_pct'])) }}</span>
                             @endif
@@ -799,15 +819,7 @@
                     // figure by the rate that actually applies to it: a line's
                     // own rate when per-option VAT is on, the quote rate
                     // otherwise. In HT mode it is a no-op.
-                    $showTtc = strcasecmp($display_mode, 'TTC') === 0;
-                    $qVat    = (float) ($t['vat_rate'] ?? 0);
-                    $d = function ($amount, $rate = null) use ($showTtc, $qVat) {
-                        if (! $showTtc) {
-                            return (float) $amount;
-                        }
-                        $r = ($rate === null || $rate === '') ? $qVat : (float) $rate;
-                        return (float) $amount * (1 + $r / 100);
-                    };
+                    // $showTtc / $qVat / $d come from the view header.
                     // Blocks of option/engine rows are summed at each row's own
                     // rate rather than a blended average, so mixed-VAT quotes
                     // still add up to the TTC total at the bottom.
