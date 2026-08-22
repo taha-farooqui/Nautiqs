@@ -73,10 +73,6 @@ class Quote extends Model
         'boat_discount_amount',
         'options_discount_amount',
         'global_discount_amount',
-        // Basis a euro amount was typed in: 'ttc' or 'ht'.
-        'boat_discount_basis',
-        'options_discount_basis',
-        'global_discount_basis',
 
         // §10 Trade-in
         'trade_in',          // [brand, model, year, engine, engine_hours, description, value]

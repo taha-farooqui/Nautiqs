@@ -67,6 +67,13 @@
         }
         return ' (' . number_format((float) ($t[$key . '_discount_pct'] ?? 0), 1) . '%)';
     };
+    // A euro discount comes straight off the price (VAT is then charged on
+    // what's left), so it prints as the sum that was agreed rather than scaled
+    // into the display basis. A percentage is proportional and does scale.
+    $discShown = function (string $key) use ($t, $withVat) {
+        $amount = (float) ($t[$key . '_discount_amount'] ?? 0);
+        return ($t[$key . '_discount_mode'] ?? 'pct') === 'eur' ? $amount : $withVat($amount);
+    };
     $colUnit  = $showTtc ? __('Unit price TTC') : __('Unit price HT');
     $colTotal = $showTtc ? __('Total TTC')      : __('Total HT');
 @endphp
@@ -217,7 +224,7 @@
             <td><span class="qopt-name" style="color:#9ca3af;">{{ __('Boat discount') }}{{ $discSuffix('boat') }}</span></td>
             <td class="qopt-qty"></td>
             <td class="qopt-unit"></td>
-            <td class="qopt-total discount-applied">-{{ number_format($withVat($t['boat_discount_amount'] ?? 0), 2, ',', ' ') }} €</td>
+            <td class="qopt-total discount-applied">-{{ number_format($discShown('boat'), 2, ',', ' ') }} €</td>
         </tr>
     @endif
 

@@ -80,35 +80,6 @@ class QuoteBuilder extends Component
     public $options_discount_amount = 0;
     public $global_discount_amount  = 0;
 
-    // Which basis a euro amount was typed in — set from the display mode at the
-    // moment it is entered, so "500 EUR off" while viewing TTC takes 500 off
-    // what the buyer pays rather than 500 off the excl.-VAT base (which would
-    // hand over 600). Stored rather than re-derived so flipping the display
-    // afterwards can't silently change how much money is being given away.
-    public string $boat_discount_basis    = 'ht'; // ht | ttc
-    public string $options_discount_basis = 'ht';
-    public string $global_discount_basis  = 'ht';
-
-    public function updatedBoatDiscountAmount(): void
-    {
-        $this->boat_discount_basis = $this->displayBasis();
-    }
-
-    public function updatedOptionsDiscountAmount(): void
-    {
-        $this->options_discount_basis = $this->displayBasis();
-    }
-
-    public function updatedGlobalDiscountAmount(): void
-    {
-        $this->global_discount_basis = $this->displayBasis();
-    }
-
-    private function displayBasis(): string
-    {
-        return strcasecmp($this->display_mode, 'TTC') === 0 ? 'ttc' : 'ht';
-    }
-
     // Summary view mode (vendor sees margin, client doesn't)
     public string $view_mode = 'client'; // 'client' | 'vendor'
 
@@ -151,11 +122,6 @@ class QuoteBuilder extends Component
         } else {
             $this->vat_rate     = (float) (auth()->user()->company?->default_vat_rate ?? 20);
             $this->display_mode = auth()->user()->company?->default_display_mode ?? 'TTC';
-            // A fresh quote's euro discounts are read in whatever basis the
-            // dealer is looking at, so the field label matches from the start.
-            $this->boat_discount_basis    = $this->displayBasis();
-            $this->options_discount_basis = $this->displayBasis();
-            $this->global_discount_basis  = $this->displayBasis();
             if ($preselectedClientId) {
                 $this->client_id = $preselectedClientId;
             }
@@ -206,11 +172,6 @@ class QuoteBuilder extends Component
         $this->boat_discount_amount    = (float) ($quote->boat_discount_amount ?? 0);
         $this->options_discount_amount = (float) ($quote->options_discount_amount ?? 0);
         $this->global_discount_amount  = (float) ($quote->global_discount_amount ?? 0);
-        // 'ht' for quotes saved before the basis existed — that was the old
-        // (and only) behaviour, so their figures stay exactly as they were.
-        $this->boat_discount_basis     = $quote->boat_discount_basis    ?? 'ht';
-        $this->options_discount_basis  = $quote->options_discount_basis ?? 'ht';
-        $this->global_discount_basis   = $quote->global_discount_basis  ?? 'ht';
         $this->exchange_rate       = $quote->exchange_rate;
         $this->vat_rate            = (float) ($quote->vat_rate ?? 20);
         $this->per_option_vat      = (bool) ($quote->per_option_vat ?? false);
@@ -631,9 +592,6 @@ class QuoteBuilder extends Component
             'boat_discount_amount'    => (float) ($this->boat_discount_amount ?: 0),
             'options_discount_amount' => (float) ($this->options_discount_amount ?: 0),
             'global_discount_amount'  => (float) ($this->global_discount_amount ?: 0),
-            'boat_discount_basis'     => $this->boat_discount_basis,
-            'options_discount_basis'  => $this->options_discount_basis,
-            'global_discount_basis'   => $this->global_discount_basis,
             'trade_in_value'       => $this->hasTradeIn ? (float) $this->trade_in_value : 0,
             'vat_rate'             => $this->vatRateValue(),
             'per_option_vat'       => $this->per_option_vat,
@@ -728,9 +686,6 @@ class QuoteBuilder extends Component
             'boat_discount_amount'    => (float) ($this->boat_discount_amount ?: 0),
             'options_discount_amount' => (float) ($this->options_discount_amount ?: 0),
             'global_discount_amount'  => (float) ($this->global_discount_amount ?: 0),
-            'boat_discount_basis'     => $this->boat_discount_basis,
-            'options_discount_basis'  => $this->options_discount_basis,
-            'global_discount_basis'   => $this->global_discount_basis,
             'trade_in'            => $this->hasTradeIn && $this->trade_in_value > 0
                 ? ['value' => (float) $this->trade_in_value, 'description' => trim($this->trade_in_label) ?: null]
                 : null,
