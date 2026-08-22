@@ -82,15 +82,32 @@ class QuoteEmailSender
         $replyToName  = $quote->creatorName() ?: $company->salesperson_name;
         $replyToEmail = $quote->creatorEmail() ?: $company->salesperson_email;
 
+        // The client sees the DEALERSHIP as the sender, not Nautiqs — the
+        // platform is white-label from the boat buyer's point of view.
+        //
+        // Only the display NAME can carry the dealership: the envelope address
+        // has to stay on our own authenticated domain, because SPF/DKIM are
+        // published for nautiqs.fr and forging a dealer's address there would
+        // send every quote to spam (or get it rejected outright). Pairing our
+        // address with their name and their Reply-To gives the dealership's
+        // identity in the inbox and lands replies in their mailbox.
+        $fromName    = $company->name ?: config('mail.from.name');
+        $fromAddress = config('mail.from.address');
+
         $sendError = null;
         try {
-            Mail::html($bodyHtml, function ($msg) use ($to, $subject, $pdfBytes, $attachmentFilename, $replyToEmail, $replyToName) {
+            Mail::html($bodyHtml, function ($msg) use ($to, $subject, $pdfBytes, $attachmentFilename, $replyToEmail, $replyToName, $fromName, $fromAddress, $company) {
                 $msg->to($to)
                     ->subject($subject)
+                    ->from($fromAddress, $fromName)
                     ->attachData($pdfBytes, $attachmentFilename, ['mime' => 'application/pdf']);
 
-                if ($replyToEmail) {
-                    $msg->replyTo($replyToEmail, $replyToName);
+                // Without a Reply-To the client's reply goes to our platform
+                // mailbox and the dealer never sees it, so fall back to the
+                // company address before leaving it unset.
+                $reply = $replyToEmail ?: $company->salesperson_email;
+                if ($reply) {
+                    $msg->replyTo($reply, $replyToName ?: $fromName);
                 }
             });
         } catch (\Throwable $e) {

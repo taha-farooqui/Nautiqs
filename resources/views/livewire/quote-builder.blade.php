@@ -6,6 +6,9 @@
     $stepInactive   = 'bg-gray-200 text-gray-500';
     $cardEnabled    = 'bg-white';
     $cardDisabled   = 'bg-gray-50 opacity-60 pointer-events-none select-none';
+    // "(5.6%)" — the percentage a euro discount works out to, trimmed of
+    // trailing zeros. Shown as a hint next to a euro entry.
+    $discRate = fn ($pct) => '(' . rtrim(rtrim(number_format((float) $pct, 1), '0'), '.') . '%)';
 @endphp
 
 <div class="relative grid grid-cols-1 xl:grid-cols-3 gap-6"
@@ -507,6 +510,45 @@
             @endif
         </div>
 
+        {{-- Steps 7 + 8 live behind "More options": the dealer often has the
+             customer sitting next to them, and showing discounts and trade-in
+             before any negotiation gives away ground for free. Collapsed by
+             default, auto-opened when the quote already uses either one so an
+             existing discount can never hide off-screen. --}}
+        @php
+            $negotiationInUse = ((float) ($boat_discount_pct ?: 0) > 0)
+                || ((float) ($options_discount_pct ?: 0) > 0)
+                || ((float) ($global_discount_pct ?: 0) > 0)
+                || ((float) ($boat_discount_amount ?: 0) > 0)
+                || ((float) ($options_discount_amount ?: 0) > 0)
+                || ((float) ($global_discount_amount ?: 0) > 0)
+                || $hasTradeIn;
+        @endphp
+        {{-- Inline rather than @push: a stack pushed from inside a Livewire
+             component isn't re-emitted on subsequent updates, and the bundle
+             carries no hover: variants to use instead. --}}
+        <style>.nq-more-toggle:not(:disabled):hover { background-color: #f9fafb; }</style>
+        <div x-data="{ open: @js($negotiationInUse) }">
+            <button type="button" x-on:click="open = ! open" @disabled(! $hasVariant)
+                {{-- Hover/disabled styling is inline, not hover:/disabled:
+                     utilities: those variants aren't in the compiled bundle,
+                     so they'd render as dead classes. --}}
+                class="nq-more-toggle w-full flex items-center gap-2 rounded-2xl border border-gray-200 px-5 py-3 text-sm font-medium text-gray-700 transition bg-white"
+                @if (! $hasVariant) style="opacity:.6;cursor:not-allowed" @endif>
+                <i class="ri-price-tag-3-line text-gray-400"></i>
+                <span>{{ __('More options') }}</span>
+                <span class="text-xs text-gray-400">{{ __('discounts, trade-in') }}</span>
+                @if ($negotiationInUse)
+                    <span class="text-xs px-2 py-1 rounded bg-amber-50 text-amber-700">{{ __('in use') }}</span>
+                @endif
+                <i class="ri-arrow-down-s-line ml-auto text-gray-400 transition-transform" x-bind:style="open ? 'transform: rotate(180deg)' : ''"></i>
+            </button>
+
+            {{-- x-show, not @if: the inputs must stay in the DOM so Livewire
+                 keeps their state while the panel is closed. Inline
+                 display:none because the bundle has no [x-cloak] rule. --}}
+            <div x-show="open" x-cloak style="display:none" class="space-y-4 mt-4">
+
         {{-- Step 7: Discounts (boat / options / global) --}}
         <div class="rounded-2xl border border-gray-200 p-5 {{ $hasVariant ? $cardEnabled : $cardDisabled }}">
             <h3 class="font-semibold text-gray-900 mb-3 flex items-center gap-2">
@@ -516,34 +558,91 @@
             <div class="space-y-3">
                 <div class="flex items-center gap-3">
                     <label class="flex-1 text-sm text-gray-700">{{ __('Boat discount') }} <span class="text-xs text-gray-400">{{ __('(applies to base price only)') }}</span></label>
-                    <input type="number" min="0" max="100" step="0.5" wire:model.live.debounce.300ms="boat_discount_pct" @disabled(! $hasVariant)
-                        class="w-20 text-right rounded border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800 disabled:bg-gray-100" />
-                    <span class="text-sm text-gray-500 w-3">%</span>
+                    {{-- % / EUR switch: dealers negotiate both ways ("10% off"
+                         vs "5000 EUR off"). Switching mode swaps which input is
+                         live; the calculator converts a euro entry into the
+                         equivalent percentage of whatever it discounts. --}}
+                    <div class="inline-flex rounded overflow-hidden border border-gray-300">
+                        <button type="button" wire:click="$set('boat_discount_mode', 'pct')" @disabled(! $hasVariant)
+                            class="px-2 py-1 text-xs font-semibold {{ $boat_discount_mode === 'pct' ? 'bg-primary-800 text-white' : 'bg-white text-gray-600 hover:bg-gray-100' }}">%</button>
+                        <button type="button" wire:click="$set('boat_discount_mode', 'eur')" @disabled(! $hasVariant)
+                            class="px-2 py-1 text-xs font-semibold {{ $boat_discount_mode === 'eur' ? 'bg-primary-800 text-white' : 'bg-white text-gray-600 hover:bg-gray-100' }}">€</button>
+                    </div>
+                    @if ($boat_discount_mode === 'eur')
+                        <input type="number" min="0" step="50" wire:model.live.debounce.300ms="boat_discount_amount" @disabled(! $hasVariant)
+                            class="w-24 text-right rounded border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800 disabled:bg-gray-100" />
+                        <span class="text-sm text-gray-500 w-3">€</span>
+                    @else
+                        <input type="number" min="0" max="100" step="0.5" wire:model.live.debounce.300ms="boat_discount_pct" @disabled(! $hasVariant)
+                            class="w-24 text-right rounded border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800 disabled:bg-gray-100" />
+                        <span class="text-sm text-gray-500 w-3">%</span>
+                    @endif
                     <span class="text-sm text-red-600 font-medium w-28 text-right">
                         @if ($t && ($t['boat_discount_amount'] ?? 0) > 0)
                             -{{ number_format($t['boat_discount_amount'], 0, ',', ' ') }} €
+                            @if ($boat_discount_mode === 'eur' && ($t['boat_discount_pct'] ?? 0) > 0)
+                                <span class="block text-xs text-gray-400">{{ trim($discRate($t['boat_discount_pct'])) }}</span>
+                            @endif
                         @else — @endif
                     </span>
                 </div>
                 <div class="flex items-center gap-3">
                     <label class="flex-1 text-sm text-gray-700">{{ __('Options discount') }} <span class="text-xs text-gray-400">{{ __('(across all options)') }}</span></label>
-                    <input type="number" min="0" max="100" step="0.5" wire:model.live.debounce.300ms="options_discount_pct" @disabled(! $hasVariant)
-                        class="w-20 text-right rounded border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800 disabled:bg-gray-100" />
-                    <span class="text-sm text-gray-500 w-3">%</span>
+                    {{-- % / EUR switch: dealers negotiate both ways ("10% off"
+                         vs "5000 EUR off"). Switching mode swaps which input is
+                         live; the calculator converts a euro entry into the
+                         equivalent percentage of whatever it discounts. --}}
+                    <div class="inline-flex rounded overflow-hidden border border-gray-300">
+                        <button type="button" wire:click="$set('options_discount_mode', 'pct')" @disabled(! $hasVariant)
+                            class="px-2 py-1 text-xs font-semibold {{ $options_discount_mode === 'pct' ? 'bg-primary-800 text-white' : 'bg-white text-gray-600 hover:bg-gray-100' }}">%</button>
+                        <button type="button" wire:click="$set('options_discount_mode', 'eur')" @disabled(! $hasVariant)
+                            class="px-2 py-1 text-xs font-semibold {{ $options_discount_mode === 'eur' ? 'bg-primary-800 text-white' : 'bg-white text-gray-600 hover:bg-gray-100' }}">€</button>
+                    </div>
+                    @if ($options_discount_mode === 'eur')
+                        <input type="number" min="0" step="50" wire:model.live.debounce.300ms="options_discount_amount" @disabled(! $hasVariant)
+                            class="w-24 text-right rounded border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800 disabled:bg-gray-100" />
+                        <span class="text-sm text-gray-500 w-3">€</span>
+                    @else
+                        <input type="number" min="0" max="100" step="0.5" wire:model.live.debounce.300ms="options_discount_pct" @disabled(! $hasVariant)
+                            class="w-24 text-right rounded border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800 disabled:bg-gray-100" />
+                        <span class="text-sm text-gray-500 w-3">%</span>
+                    @endif
                     <span class="text-sm text-red-600 font-medium w-28 text-right">
                         @if ($t && ($t['options_discount_amount'] ?? 0) > 0)
                             -{{ number_format($t['options_discount_amount'], 0, ',', ' ') }} €
+                            @if ($options_discount_mode === 'eur' && ($t['options_discount_pct'] ?? 0) > 0)
+                                <span class="block text-xs text-gray-400">{{ trim($discRate($t['options_discount_pct'])) }}</span>
+                            @endif
                         @else — @endif
                     </span>
                 </div>
                 <div class="flex items-center gap-3">
                     <label class="flex-1 text-sm text-gray-700">{{ __('Global discount') }} <span class="text-xs text-gray-400">{{ __('(applies to the entire quote)') }}</span></label>
-                    <input type="number" min="0" max="100" step="0.5" wire:model.live.debounce.300ms="global_discount_pct" @disabled(! $hasVariant)
-                        class="w-20 text-right rounded border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800 disabled:bg-gray-100" />
-                    <span class="text-sm text-gray-500 w-3">%</span>
+                    {{-- % / EUR switch: dealers negotiate both ways ("10% off"
+                         vs "5000 EUR off"). Switching mode swaps which input is
+                         live; the calculator converts a euro entry into the
+                         equivalent percentage of whatever it discounts. --}}
+                    <div class="inline-flex rounded overflow-hidden border border-gray-300">
+                        <button type="button" wire:click="$set('global_discount_mode', 'pct')" @disabled(! $hasVariant)
+                            class="px-2 py-1 text-xs font-semibold {{ $global_discount_mode === 'pct' ? 'bg-primary-800 text-white' : 'bg-white text-gray-600 hover:bg-gray-100' }}">%</button>
+                        <button type="button" wire:click="$set('global_discount_mode', 'eur')" @disabled(! $hasVariant)
+                            class="px-2 py-1 text-xs font-semibold {{ $global_discount_mode === 'eur' ? 'bg-primary-800 text-white' : 'bg-white text-gray-600 hover:bg-gray-100' }}">€</button>
+                    </div>
+                    @if ($global_discount_mode === 'eur')
+                        <input type="number" min="0" step="50" wire:model.live.debounce.300ms="global_discount_amount" @disabled(! $hasVariant)
+                            class="w-24 text-right rounded border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800 disabled:bg-gray-100" />
+                        <span class="text-sm text-gray-500 w-3">€</span>
+                    @else
+                        <input type="number" min="0" max="100" step="0.5" wire:model.live.debounce.300ms="global_discount_pct" @disabled(! $hasVariant)
+                            class="w-24 text-right rounded border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800 disabled:bg-gray-100" />
+                        <span class="text-sm text-gray-500 w-3">%</span>
+                    @endif
                     <span class="text-sm text-red-600 font-medium w-28 text-right">
                         @if ($t && ($t['global_discount_amount'] ?? 0) > 0)
                             -{{ number_format($t['global_discount_amount'], 0, ',', ' ') }} €
+                            @if ($global_discount_mode === 'eur' && ($t['global_discount_pct'] ?? 0) > 0)
+                                <span class="block text-xs text-gray-400">{{ trim($discRate($t['global_discount_pct'])) }}</span>
+                            @endif
                         @else — @endif
                     </span>
                 </div>
@@ -578,6 +677,9 @@
                     </div>
                 </div>
             @endif
+        </div>
+
+            </div>
         </div>
 
         {{-- Step 9: Quote settings + internal notes --}}
@@ -688,19 +790,58 @@
                     {{ __('Select a boat variant to see totals.') }}
                 </div>
             @else
+                @php
+                    // The Display mode selector in step 9 drives what this panel
+                    // shows. Previously it only affected the PDF, so flipping it
+                    // changed nothing on screen and read as a dead control — and
+                    // because every figure here was excl. VAT, editing the VAT
+                    // rate appeared to do nothing too. $d() scales an excl.-VAT
+                    // figure by the rate that actually applies to it: a line's
+                    // own rate when per-option VAT is on, the quote rate
+                    // otherwise. In HT mode it is a no-op.
+                    $showTtc = strcasecmp($display_mode, 'TTC') === 0;
+                    $qVat    = (float) ($t['vat_rate'] ?? 0);
+                    $d = function ($amount, $rate = null) use ($showTtc, $qVat) {
+                        if (! $showTtc) {
+                            return (float) $amount;
+                        }
+                        $r = ($rate === null || $rate === '') ? $qVat : (float) $rate;
+                        return (float) $amount * (1 + $r / 100);
+                    };
+                    // Blocks of option/engine rows are summed at each row's own
+                    // rate rather than a blended average, so mixed-VAT quotes
+                    // still add up to the TTC total at the bottom.
+                    $dRows = fn ($rows, $col) => collect($rows)->sum(fn ($r) => $d($r[$col] ?? 0, $r['line_vat_rate'] ?? null));
+                    // Same rule as the PDF: a euro-entered discount shows the
+                    // amount alone, and a percentage one is trimmed — a derived
+                    // rate prints as 5.5555555555556% raw.
+                    $discSuffix = function (string $key) use ($t) {
+                        if (($t[$key . '_discount_mode'] ?? 'pct') === 'eur') {
+                            return '';
+                        }
+                        return ' (' . rtrim(rtrim(number_format((float) ($t[$key . '_discount_pct'] ?? 0), 1), '0'), '.') . '%)';
+                    };
+                @endphp
                 <dl class="p-5 space-y-2 text-sm">
+                    <div class="flex justify-between items-center rounded-lg bg-gray-50 px-2 py-1 text-xs">
+                        <dt class="text-gray-500">{{ __('Figures below') }}</dt>
+                        <dd class="font-semibold text-gray-700">
+                            {{ $showTtc ? __('incl. VAT') : __('excl. VAT') }}
+                            @if ($showTtc)<span class="text-gray-400 font-normal">({{ $t['vat_rate'] }}%)</span>@endif
+                        </dd>
+                    </div>
                     {{-- Boat --}}
                     <div class="flex justify-between">
-                        <dt class="text-gray-600">{{ __('Base price (excl. VAT)') }}</dt>
+                        <dt class="text-gray-600">{{ $showTtc ? __('Base price (incl. VAT)') : __('Base price (excl. VAT)') }}</dt>
                         <dd class="text-right">
-                            <div class="font-medium">{{ number_format($t['base_price_gross'], 2, ',', ' ') }} €</div>
+                            <div class="font-medium">{{ number_format($d($t['base_price_gross']), 2, ',', ' ') }} €</div>
                             @if (! empty($t['base_price_currency']) && $t['base_price_currency'] !== 'EUR' && ! empty($t['base_price_original']))
                                 <div class="text-[11px] text-gray-500">{{ __('was') }} {{ number_format($t['base_price_original'], 2, ',', ' ') }} {{ $t['base_price_currency'] === 'USD' ? '$' : $t['base_price_currency'] }}</div>
                             @endif
                         </dd>
                     </div>
                     @if ($t['boat_discount_amount'] > 0)
-                        <div class="flex justify-between text-red-600 text-xs"><dt>{{ __('Boat discount') }} ({{ $t['boat_discount_pct'] }}%)</dt><dd>-{{ number_format($t['boat_discount_amount'], 2, ',', ' ') }} €</dd></div>
+                        <div class="flex justify-between text-red-600 text-xs"><dt>{{ __('Boat discount') }}{{ $discSuffix('boat') }}</dt><dd>-{{ number_format($d($t['boat_discount_amount']), 2, ',', ' ') }} €</dd></div>
                     @endif
 
                     {{-- Options and engines are both option rows in the maths,
@@ -715,17 +856,17 @@
                         // Show each block GROSS with its own discount underneath —
                         // line_after_cat is already net, so quoting that alone hid
                         // the per-line discounts the dealer had just typed in.
-                        $optGross   = $optionOnly->sum('line_gross');
-                        $optDisc    = $optGross - $optionOnly->sum('line_after_cat');
-                        $engGross   = $engineRows->sum('line_gross');
-                        $engDisc    = $engGross - $engineRows->sum('line_after_cat');
-                        $custGross  = $customRows->sum('amount');
-                        $custDisc   = $custGross - $customRows->sum('line_after_cat');
+                        $optGross   = $dRows($optionOnly, 'line_gross');
+                        $optDisc    = $optGross - $dRows($optionOnly, 'line_after_cat');
+                        $engGross   = $dRows($engineRows, 'line_gross');
+                        $engDisc    = $engGross - $dRows($engineRows, 'line_after_cat');
+                        $custGross  = $d($customRows->sum('amount'));
+                        $custDisc   = $custGross - $d($customRows->sum('line_after_cat'));
 
-                        $totalDiscount = (float) $t['boat_discount_amount']
+                        $totalDiscount = $d($t['boat_discount_amount'])
                             + $optDisc + $engDisc + $custDisc
-                            + (float) $t['options_discount_amount']
-                            + (float) $t['global_discount_amount'];
+                            + $d($t['options_discount_amount'])
+                            + $d($t['global_discount_amount']);
                     @endphp
                     <div class="flex justify-between pt-2 border-t border-gray-100"><dt class="text-gray-600">{{ __('Options') }} ({{ $optionOnly->count() }})</dt><dd class="font-medium">{{ number_format($optGross, 2, ',', ' ') }} €</dd></div>
                     @if ($optDisc > 0.005)
@@ -740,7 +881,7 @@
                     @endif
 
                     @if ($t['options_discount_amount'] > 0)
-                        <div class="flex justify-between text-red-600 text-xs"><dt>{{ __('Options discount') }} ({{ $t['options_discount_pct'] }}%)</dt><dd>-{{ number_format($t['options_discount_amount'], 2, ',', ' ') }} €</dd></div>
+                        <div class="flex justify-between text-red-600 text-xs"><dt>{{ __('Options discount') }}{{ $discSuffix('options') }}</dt><dd>-{{ number_format($d($t['options_discount_amount']), 2, ',', ' ') }} €</dd></div>
                     @endif
 
                     {{-- Custom items --}}
@@ -753,7 +894,7 @@
 
                     {{-- Global discount --}}
                     @if ($t['global_discount_amount'] > 0)
-                        <div class="flex justify-between text-red-600 text-xs pt-2 border-t border-gray-100"><dt>{{ __('Global discount') }} ({{ $t['global_discount_pct'] }}%)</dt><dd>-{{ number_format($t['global_discount_amount'], 2, ',', ' ') }} €</dd></div>
+                        <div class="flex justify-between text-red-600 text-xs pt-2 border-t border-gray-100"><dt>{{ __('Global discount') }}{{ $discSuffix('global') }}</dt><dd>-{{ number_format($d($t['global_discount_amount']), 2, ',', ' ') }} €</dd></div>
                     @endif
 
                     {{-- Everything granted, in one figure, right before the total. --}}

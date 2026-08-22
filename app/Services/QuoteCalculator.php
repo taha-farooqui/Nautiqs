@@ -41,10 +41,29 @@ class QuoteCalculator
         $basePrice         = (float) ($this->toEur($basePriceOriginal, $variantCurrency, $rate) ?? $basePriceOriginal);
         $baseCost          = $this->toEur($input['base_cost'] ?? null, $variantCurrency, $rate);
         $categoryDiscounts  = $input['category_discounts'] ?? [];
-        $boatDiscountPct    = (float) ($input['boat_discount_pct'] ?? 0);
-        $optionsDiscountPct = (float) ($input['options_discount_pct'] ?? 0);
-        $globalDiscountPct  = (float) ($input['global_discount_pct'] ?? 0);
         $tradeIn            = (float) ($input['trade_in_value'] ?? 0);
+
+        // Each of the three quote-level discounts can be entered either as a
+        // percentage or as a flat euro amount ("5000 EUR off" is how a dealer
+        // actually negotiates). The whole cascade below is percentage-based,
+        // so a euro entry is converted to the equivalent percentage of the
+        // base it applies to and everything downstream — including the
+        // per-line VAT scaling — keeps working unchanged.
+        $asPct = function (string $key, float $base) use ($input): float {
+            $mode = $input[$key . '_discount_mode'] ?? 'pct';
+            if ($mode === 'eur') {
+                $amount = (float) ($input[$key . '_discount_amount'] ?? 0);
+                if ($base <= 0) {
+                    return 0.0;
+                }
+                // Never let a euro discount exceed what it is discounting.
+                return min(100.0, max(0.0, $amount / $base * 100));
+            }
+
+            return (float) ($input[$key . '_discount_pct'] ?? 0);
+        };
+
+        $boatDiscountPct = $asPct('boat', $basePrice);
 
         // Hull line (the base boat) — apply boat-level discount
         $hullLine            = $basePrice * (1 - $boatDiscountPct / 100);
@@ -126,12 +145,18 @@ class QuoteCalculator
         }
 
         $optionsBeforeBlock      = array_sum(array_column($optionsRows, 'line_after_cat'));
+        // Resolved here, not at the top: a euro-entered options discount is a
+        // percentage of the options block, which only exists once the rows are
+        // priced.
+        $optionsDiscountPct      = $asPct('options', $optionsBeforeBlock);
         $optionsBlockDiscount    = $optionsBeforeBlock * ($optionsDiscountPct / 100);
         $optionsSubtotal         = $optionsBeforeBlock - $optionsBlockDiscount;
         $customSubtotal          = array_sum(array_column($customRows,  'line_after_cat'));
         $baseSubtotal            = $hullLine;
 
         $subtotalBeforeGlobal = $baseSubtotal + $optionsSubtotal + $customSubtotal;
+        // Likewise: the global discount's base is everything above it.
+        $globalDiscountPct    = $asPct('global', $subtotalBeforeGlobal);
         $globalDiscountAmount = $subtotalBeforeGlobal * ($globalDiscountPct / 100);
         $totalHt              = $subtotalBeforeGlobal - $globalDiscountAmount;
 
@@ -200,6 +225,9 @@ class QuoteCalculator
             'base_price_original'      => $basePriceOriginal,
             'base_price_currency'      => $variantCurrency,
             'fx_rate_used'             => $rate,
+            'boat_discount_mode'       => $input['boat_discount_mode'] ?? 'pct',
+            'options_discount_mode'    => $input['options_discount_mode'] ?? 'pct',
+            'global_discount_mode'     => $input['global_discount_mode'] ?? 'pct',
             'boat_discount_pct'        => $boatDiscountPct,
             'boat_discount_amount'     => round($boatDiscountAmount, 2),
             'base_ht'                  => round($baseSubtotal, 2),

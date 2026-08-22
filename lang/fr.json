@@ -1118,5 +1118,12 @@
     "Saved to your list — you can pick it again for other clients.": "Enregistrée dans votre liste — réutilisable pour vos autres clients.",
     "Unit price TTC": "Prix unitaire TTC",
     "Subtotal before discounts (excl. VAT)": "Sous-total avant remises (HT)",
-    "Sets whether the price columns on the PDF print excl. or incl. VAT. The totals box always shows both.": "Détermine si les colonnes de prix du PDF sont affichées HT ou TTC. Le bloc des totaux affiche toujours les deux."
+    "Sets whether the price columns on the PDF print excl. or incl. VAT. The totals box always shows both.": "Détermine si les montants du devis et du PDF sont affichés HT ou TTC. Le bloc des totaux affiche toujours les deux.",
+    "More options": "Plus d’options",
+    "discounts, trade-in": "remises, reprise",
+    "in use": "utilisé",
+    "Figures below": "Montants ci-dessous",
+    "incl. VAT": "TTC",
+    "excl. VAT": "HT",
+    "Base price (incl. VAT)": "Prix de base (TTC)"
 }

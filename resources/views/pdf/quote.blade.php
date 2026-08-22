@@ -58,6 +58,15 @@
         $r = ($rate === null || $rate === '') ? $quoteVat : (float) $rate;
         return (float) $amount * (1 + $r / 100);
     };
+    // A discount entered as a flat euro amount prints as the amount alone —
+    // appending the percentage it happens to work out to ("5 000 € (5.0%)")
+    // reads as two different discounts to a client.
+    $discSuffix = function (string $key) use ($t) {
+        if (($t[$key . '_discount_mode'] ?? 'pct') === 'eur') {
+            return '';
+        }
+        return ' (' . number_format((float) ($t[$key . '_discount_pct'] ?? 0), 1) . '%)';
+    };
     $colUnit  = $showTtc ? __('Unit price TTC') : __('Unit price HT');
     $colTotal = $showTtc ? __('Total TTC')      : __('Total HT');
 @endphp
@@ -205,7 +214,7 @@
     </tr>
     @if (($t['boat_discount_pct'] ?? 0) > 0)
         <tr class="item-row">
-            <td><span class="qopt-name" style="color:#9ca3af;">{{ __('Boat discount') }} ({{ number_format($t['boat_discount_pct'], 1) }}%)</span></td>
+            <td><span class="qopt-name" style="color:#9ca3af;">{{ __('Boat discount') }}{{ $discSuffix('boat') }}</span></td>
             <td class="qopt-qty"></td>
             <td class="qopt-unit"></td>
             <td class="qopt-total discount-applied">-{{ number_format($withVat($t['boat_discount_amount'] ?? 0), 2, ',', ' ') }} €</td>
@@ -327,7 +336,7 @@
                 </tr>
                 @if ($dBoat > 0)
                     <tr class="row-discount row-white">
-                        <td class="label">{{ __('Boat discount') }} ({{ number_format($t['boat_discount_pct'] ?? 0, 1) }}%)</td>
+                        <td class="label">{{ __('Boat discount') }}{{ $discSuffix('boat') }}</td>
                         <td class="val">-{{ number_format($dBoat, 2, ',', ' ') }} €</td>
                     </tr>
                 @endif
@@ -339,13 +348,13 @@
                 @endif
                 @if ($dOptions > 0)
                     <tr class="row-discount row-white">
-                        <td class="label">{{ __('Options discount') }} ({{ number_format($t['options_discount_pct'] ?? 0, 1) }}%)</td>
+                        <td class="label">{{ __('Options discount') }}{{ $discSuffix('options') }}</td>
                         <td class="val">-{{ number_format($dOptions, 2, ',', ' ') }} €</td>
                     </tr>
                 @endif
                 @if ($dGlobal > 0)
                     <tr class="row-discount row-white">
-                        <td class="label">{{ __('Global discount') }} ({{ number_format($t['global_discount_pct'] ?? 0, 1) }}%)</td>
+                        <td class="label">{{ __('Global discount') }}{{ $discSuffix('global') }}</td>
                         <td class="val">-{{ number_format($dGlobal, 2, ',', ' ') }} €</td>
                     </tr>
                 @endif

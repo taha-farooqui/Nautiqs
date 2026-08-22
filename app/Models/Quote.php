@@ -63,6 +63,16 @@ class Quote extends Model
         'boat_discount_pct',    // discount on hull / base price only
         'options_discount_pct', // discount applied across all options
         'global_discount_pct',  // discount on the entire quote
+        // How each level was entered: 'pct' or 'eur'. A euro entry stores the
+        // amount alongside; the calculator turns it into the equivalent % so
+        // the rest of the cascade is unchanged. Absent on pre-existing quotes,
+        // which were percentage-only.
+        'boat_discount_mode',
+        'options_discount_mode',
+        'global_discount_mode',
+        'boat_discount_amount',
+        'options_discount_amount',
+        'global_discount_amount',
 
         // §10 Trade-in
         'trade_in',          // [brand, model, year, engine, engine_hours, description, value]
@@ -135,6 +145,9 @@ class Quote extends Model
         'boat_discount_pct'    => 'float',
         'options_discount_pct' => 'float',
         'global_discount_pct'  => 'float',
+        'boat_discount_amount'    => 'float',
+        'options_discount_amount' => 'float',
+        'global_discount_amount'  => 'float',
         'vat_rate'           => 'float',
         'per_option_vat'     => 'boolean',
         'exchange_rate'      => 'float',

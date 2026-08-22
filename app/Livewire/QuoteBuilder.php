@@ -69,6 +69,17 @@ class QuoteBuilder extends Component
     public $options_discount_pct = 0;
     public $global_discount_pct = 0;
 
+    // Each level can be entered as a percentage or as a flat euro amount —
+    // dealers negotiate in both ("10% off" vs "5000 EUR off"). The mode picks
+    // which of the two values above/below is live; the calculator converts a
+    // euro entry into the equivalent percentage of whatever it discounts.
+    public string $boat_discount_mode    = 'pct'; // pct | eur
+    public string $options_discount_mode = 'pct';
+    public string $global_discount_mode  = 'pct';
+    public $boat_discount_amount    = 0;
+    public $options_discount_amount = 0;
+    public $global_discount_amount  = 0;
+
     // Summary view mode (vendor sees margin, client doesn't)
     public string $view_mode = 'client'; // 'client' | 'vendor'
 
@@ -153,6 +164,14 @@ class QuoteBuilder extends Component
         $this->boat_discount_pct    = (float) ($quote->boat_discount_pct ?? 0);
         $this->options_discount_pct = (float) ($quote->options_discount_pct ?? 0);
         $this->global_discount_pct = (float) ($quote->global_discount_pct ?? 0);
+        // Quotes saved before euro discounts existed have no mode — they were
+        // all percentages, so 'pct' is the correct default for them.
+        $this->boat_discount_mode      = $quote->boat_discount_mode    ?? 'pct';
+        $this->options_discount_mode   = $quote->options_discount_mode ?? 'pct';
+        $this->global_discount_mode    = $quote->global_discount_mode  ?? 'pct';
+        $this->boat_discount_amount    = (float) ($quote->boat_discount_amount ?? 0);
+        $this->options_discount_amount = (float) ($quote->options_discount_amount ?? 0);
+        $this->global_discount_amount  = (float) ($quote->global_discount_amount ?? 0);
         $this->exchange_rate       = $quote->exchange_rate;
         $this->vat_rate            = (float) ($quote->vat_rate ?? 20);
         $this->per_option_vat      = (bool) ($quote->per_option_vat ?? false);
@@ -567,6 +586,12 @@ class QuoteBuilder extends Component
             'boat_discount_pct'    => $this->boat_discount_pct,
             'options_discount_pct' => $this->options_discount_pct,
             'global_discount_pct'  => $this->global_discount_pct,
+            'boat_discount_mode'      => $this->boat_discount_mode,
+            'options_discount_mode'   => $this->options_discount_mode,
+            'global_discount_mode'    => $this->global_discount_mode,
+            'boat_discount_amount'    => (float) ($this->boat_discount_amount ?: 0),
+            'options_discount_amount' => (float) ($this->options_discount_amount ?: 0),
+            'global_discount_amount'  => (float) ($this->global_discount_amount ?: 0),
             'trade_in_value'       => $this->hasTradeIn ? (float) $this->trade_in_value : 0,
             'vat_rate'             => $this->vatRateValue(),
             'per_option_vat'       => $this->per_option_vat,
@@ -653,6 +678,14 @@ class QuoteBuilder extends Component
             'boat_discount_pct'    => (float) $this->boat_discount_pct,
             'options_discount_pct' => (float) $this->options_discount_pct,
             'global_discount_pct'  => (float) $this->global_discount_pct,
+            // How each level was entered, so reopening the quote shows the
+            // dealer the euro figure they typed rather than a derived %.
+            'boat_discount_mode'      => $this->boat_discount_mode,
+            'options_discount_mode'   => $this->options_discount_mode,
+            'global_discount_mode'    => $this->global_discount_mode,
+            'boat_discount_amount'    => (float) ($this->boat_discount_amount ?: 0),
+            'options_discount_amount' => (float) ($this->options_discount_amount ?: 0),
+            'global_discount_amount'  => (float) ($this->global_discount_amount ?: 0),
             'trade_in'            => $this->hasTradeIn && $this->trade_in_value > 0
                 ? ['value' => (float) $this->trade_in_value, 'description' => trim($this->trade_in_label) ?: null]
                 : null,
