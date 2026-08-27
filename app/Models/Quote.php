@@ -286,13 +286,24 @@ class Quote extends Model
      * removed), then the live User record. Null lets callers fall back to the
      * company address.
      */
+    /**
+     * Where a client's reply should land.
+     *
+     * The live user record wins over the snapshot here, unlike everywhere else
+     * on a quote. A snapshot is right for figures and for a departed teammate's
+     * name, but an address is a way to reach someone now: when a salesperson
+     * changes their email, replies to their older quotes must follow them
+     * rather than bounce to an address they've abandoned. The snapshot stays as
+     * the fallback for a user who no longer exists.
+     */
     public function creatorEmail(): ?string
     {
-        if (! empty($this->created_by_email)) return $this->created_by_email;
         if ($this->created_by_user_id) {
             $u = User::find($this->created_by_user_id);
-            if ($u) return $u->email;
+            if ($u && ! empty($u->email)) return $u->email;
         }
+        if (! empty($this->created_by_email)) return $this->created_by_email;
+
         return null;
     }
 
