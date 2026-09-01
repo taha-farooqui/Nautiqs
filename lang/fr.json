@@ -1120,7 +1120,6 @@
     "Subtotal before discounts (excl. VAT)": "Sous-total avant remises (HT)",
     "Sets whether the price columns on the PDF print excl. or incl. VAT. The totals box always shows both.": "Détermine si les montants du devis et du PDF sont affichés HT ou TTC. Le bloc des totaux affiche toujours les deux.",
     "More options": "Plus d’options",
-    "discounts, trade-in": "remises, reprise",
     "in use": "utilisé",
     "Figures below": "Montants ci-dessous",
     "incl. VAT": "TTC",
@@ -1130,5 +1129,6 @@
     "Engines discount": "Remise moteurs",
     "(across all engines)": "(sur tous les moteurs)",
     "e.g. Propeller model, included accessories, delivery notes.": "ex. Modèle d’hélice, accessoires inclus, notes de livraison.",
-    "Shown to the client under this engine on the quote.": "Affiché au client sous ce moteur sur le devis."
+    "Shown to the client under this engine on the quote.": "Affiché au client sous ce moteur sur le devis.",
+    "discounts": "remises"
 }

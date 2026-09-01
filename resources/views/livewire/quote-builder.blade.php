@@ -536,37 +536,64 @@
             @endif
         </div>
 
-        {{-- Steps 7 + 8 live behind "More options": the dealer often has the
-             customer sitting next to them, and showing discounts and trade-in
-             before any negotiation gives away ground for free. Collapsed by
-             default, auto-opened when the quote already uses either one so an
-             existing discount can never hide off-screen. --}}
+        {{-- Step 7: Trade-in — shown outright; a trade-in is part of the deal
+             being discussed, not a concession held back. --}}
+        <div class="rounded-2xl border border-gray-200 p-5 {{ $hasVariant ? $cardEnabled : $cardDisabled }}">
+            <div class="flex items-center gap-3 mb-3">
+                <span class="w-6 h-6 rounded-full {{ $hasVariant ? $stepActive : $stepInactive }} text-xs font-bold flex items-center justify-center">7</span>
+                <h3 class="font-semibold text-gray-900">{{ __('Trade-in') }} <span class="text-xs text-gray-400 font-normal">{{ __('Optional') }}</span></h3>
+                <label class="ml-auto inline-flex items-center gap-2 text-sm">
+                    <input type="checkbox" wire:model.live="hasTradeIn" @disabled(! $hasVariant) class="rounded text-primary-800 focus:ring-primary-800" />
+                    {{ __('Include a trade-in') }}
+                </label>
+            </div>
+            @if ($hasTradeIn && $hasVariant)
+                <div class="space-y-3">
+                    <div class="flex items-center gap-3">
+                        <label class="text-sm text-gray-700 w-28 shrink-0">{{ __('Trade-in name') }}</label>
+                        <input type="text" placeholder="{{ __('e.g. Quicksilver 605 (2019)') }}"
+                            wire:model.live.debounce.500ms="trade_in_label"
+                            class="flex-1 max-w-md rounded border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <label class="text-sm text-gray-700 w-28 shrink-0">{{ __('Trade-in value') }}</label>
+                        <span class="text-sm text-gray-500">€</span>
+                        <input type="number" step="0.01" min="0" placeholder="0.00"
+                            wire:model.live.debounce.300ms="trade_in_value"
+                            class="flex-1 max-w-xs rounded border-gray-300 text-sm text-right focus:border-primary-800 focus:ring-primary-800" />
+                        <span class="text-xs text-gray-500">{{ __('deducted from total') }}</span>
+                    </div>
+                </div>
+            @endif
+        </div>
+
+        {{-- Discounts sit behind "More options", collapsed by default: the
+             dealer often has the buyer beside them, and showing what can be
+             knocked off before any negotiation gives away ground for free.
+             Auto-opened when the quote already carries a discount so an
+             existing one can never hide off-screen. --}}
         @php
-            $negotiationInUse = ((float) ($boat_discount_pct ?: 0) > 0)
+            $discountsInUse = ((float) ($boat_discount_pct ?: 0) > 0)
                 || ((float) ($options_discount_pct ?: 0) > 0)
                 || ((float) ($global_discount_pct ?: 0) > 0)
+                || ((float) ($engines_discount_pct ?: 0) > 0)
                 || ((float) ($boat_discount_amount ?: 0) > 0)
                 || ((float) ($options_discount_amount ?: 0) > 0)
                 || ((float) ($global_discount_amount ?: 0) > 0)
-                || ((float) ($engines_discount_pct ?: 0) > 0)
-                || ((float) ($engines_discount_amount ?: 0) > 0)
-                || $hasTradeIn;
+                || ((float) ($engines_discount_amount ?: 0) > 0);
         @endphp
         {{-- Inline rather than @push: a stack pushed from inside a Livewire
              component isn't re-emitted on subsequent updates, and the bundle
              carries no hover: variants to use instead. --}}
         <style>.nq-more-toggle:not(:disabled):hover { background-color: #f9fafb; }</style>
-        <div x-data="{ open: @js($negotiationInUse) }">
+        <div x-data="{ open: @js($discountsInUse) }">
             <button type="button" x-on:click="open = ! open" @disabled(! $hasVariant)
-                {{-- Hover/disabled styling is inline, not hover:/disabled:
-                     utilities: those variants aren't in the compiled bundle,
-                     so they'd render as dead classes. --}}
                 class="nq-more-toggle w-full flex items-center gap-2 rounded-2xl border border-gray-200 px-5 py-3 text-sm font-medium text-gray-700 transition bg-white"
                 @if (! $hasVariant) style="opacity:.6;cursor:not-allowed" @endif>
                 <i class="ri-price-tag-3-line text-gray-400"></i>
                 <span>{{ __('More options') }}</span>
-                <span class="text-xs text-gray-400">{{ __('discounts, trade-in') }}</span>
-                @if ($negotiationInUse)
+                <span class="text-xs text-gray-400">{{ __('discounts') }}</span>
+                @if ($discountsInUse)
                     <span class="text-xs px-2 py-1 rounded bg-amber-50 text-amber-700">{{ __('in use') }}</span>
                 @endif
                 <i class="ri-arrow-down-s-line ml-auto text-gray-400 transition-transform" x-bind:style="open ? 'transform: rotate(180deg)' : ''"></i>
@@ -575,12 +602,11 @@
             {{-- x-show, not @if: the inputs must stay in the DOM so Livewire
                  keeps their state while the panel is closed. Inline
                  display:none because the bundle has no [x-cloak] rule. --}}
-            <div x-show="open" x-cloak style="display:none" class="space-y-4 mt-4">
-
-        {{-- Step 7: Discounts (boat / options / global) --}}
+            <div x-show="open" x-cloak style="display:none" class="mt-4">
+        {{-- Step 8: Discounts (boat / options / engines / global) --}}
         <div class="rounded-2xl border border-gray-200 p-5 {{ $hasVariant ? $cardEnabled : $cardDisabled }}">
             <h3 class="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                <span class="w-6 h-6 rounded-full {{ $hasVariant ? $stepActive : $stepInactive }} text-xs font-bold flex items-center justify-center">7</span>
+                <span class="w-6 h-6 rounded-full {{ $hasVariant ? $stepActive : $stepInactive }} text-xs font-bold flex items-center justify-center">8</span>
                 {{ __('Discounts') }}
             </h3>
             <div class="space-y-3">
@@ -706,37 +732,6 @@
                 </div>
             </div>
         </div>
-
-        {{-- Step 8: Trade-in --}}
-        <div class="rounded-2xl border border-gray-200 p-5 {{ $hasVariant ? $cardEnabled : $cardDisabled }}">
-            <div class="flex items-center gap-3 mb-3">
-                <span class="w-6 h-6 rounded-full {{ $hasVariant ? $stepActive : $stepInactive }} text-xs font-bold flex items-center justify-center">8</span>
-                <h3 class="font-semibold text-gray-900">{{ __('Trade-in') }} <span class="text-xs text-gray-400 font-normal">{{ __('Optional') }}</span></h3>
-                <label class="ml-auto inline-flex items-center gap-2 text-sm">
-                    <input type="checkbox" wire:model.live="hasTradeIn" @disabled(! $hasVariant) class="rounded text-primary-800 focus:ring-primary-800" />
-                    {{ __('Include a trade-in') }}
-                </label>
-            </div>
-            @if ($hasTradeIn && $hasVariant)
-                <div class="space-y-3">
-                    <div class="flex items-center gap-3">
-                        <label class="text-sm text-gray-700 w-28 shrink-0">{{ __('Trade-in name') }}</label>
-                        <input type="text" placeholder="{{ __('e.g. Quicksilver 605 (2019)') }}"
-                            wire:model.live.debounce.500ms="trade_in_label"
-                            class="flex-1 max-w-md rounded border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <label class="text-sm text-gray-700 w-28 shrink-0">{{ __('Trade-in value') }}</label>
-                        <span class="text-sm text-gray-500">€</span>
-                        <input type="number" step="0.01" min="0" placeholder="0.00"
-                            wire:model.live.debounce.300ms="trade_in_value"
-                            class="flex-1 max-w-xs rounded border-gray-300 text-sm text-right focus:border-primary-800 focus:ring-primary-800" />
-                        <span class="text-xs text-gray-500">{{ __('deducted from total') }}</span>
-                    </div>
-                </div>
-            @endif
-        </div>
-
             </div>
         </div>
 
