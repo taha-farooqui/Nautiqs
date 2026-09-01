@@ -128,7 +128,7 @@ class EngineController extends Controller
             'code'        => 'nullable|string|max:120',
             'horsepower'  => 'nullable|numeric|min:0',
             'fuel'        => 'nullable|in:petrol,diesel,electric,unknown',
-            'description' => 'nullable|string|max:500',
+            'description' => 'nullable|string',
             'cost'        => 'nullable|numeric|min:0',
             'price'       => 'required|numeric|min:0',
             'vat_rate'    => 'nullable|numeric|min:0|max:100',

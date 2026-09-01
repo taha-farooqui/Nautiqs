@@ -73,6 +73,10 @@ class Quote extends Model
         'boat_discount_amount',
         'options_discount_amount',
         'global_discount_amount',
+        // Engines discount its own block, independent of the options one.
+        'engines_discount_mode',
+        'engines_discount_pct',
+        'engines_discount_amount',
 
         // §10 Trade-in
         'trade_in',          // [brand, model, year, engine, engine_hours, description, value]
@@ -145,6 +149,8 @@ class Quote extends Model
         'boat_discount_pct'    => 'float',
         'options_discount_pct' => 'float',
         'global_discount_pct'  => 'float',
+        'engines_discount_pct'    => 'float',
+        'engines_discount_amount' => 'float',
         'boat_discount_amount'    => 'float',
         'options_discount_amount' => 'float',
         'global_discount_amount'  => 'float',

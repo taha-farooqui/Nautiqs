@@ -368,14 +368,19 @@
             @if ($this->selectedEngineRows->isNotEmpty())
                 <div class="mb-3 space-y-2">
                     @foreach ($this->selectedEngineRows as $row)
-                        <div class="flex items-center gap-3 px-3 py-2 rounded-lg border border-primary-200 bg-primary-50/40" wire:key="eng-{{ $row->id }}">
-                            <i class="ri-settings-3-line text-primary-800 shrink-0"></i>
+                        <div class="flex items-start gap-3 px-3 py-2 rounded-lg border border-primary-200 bg-primary-50/40" wire:key="eng-{{ $row->id }}">
+                            <i class="ri-settings-3-line text-primary-800 shrink-0 mt-1"></i>
                             <div class="flex-1 min-w-0">
                                 <p class="text-sm font-medium text-gray-900 truncate">{{ $row->label }}</p>
                                 <p class="text-xs text-gray-500">
                                     @if ($row->hp) {{ (int) $row->hp }} HP · @endif
                                     {{ number_format($row->price, 0, ',', ' ') }} € {{ __('each') }}
                                 </p>
+                                {{-- What the list price doesn't cover — the propeller,
+                                     typically. Printed on the quote under the engine. --}}
+                                @if (! empty($row->description))
+                                    <p class="text-xs text-gray-500 mt-1">{!! nl2br(e($row->description)) !!}</p>
+                                @endif
                             </div>
                             <div class="flex items-center gap-1.5 shrink-0">
                                 <label class="text-xs text-gray-500">{{ __('Qty') }}</label>
@@ -543,6 +548,8 @@
                 || ((float) ($boat_discount_amount ?: 0) > 0)
                 || ((float) ($options_discount_amount ?: 0) > 0)
                 || ((float) ($global_discount_amount ?: 0) > 0)
+                || ((float) ($engines_discount_pct ?: 0) > 0)
+                || ((float) ($engines_discount_amount ?: 0) > 0)
                 || $hasTradeIn;
         @endphp
         {{-- Inline rather than @push: a stack pushed from inside a Livewire
@@ -633,6 +640,36 @@
                             -{{ number_format($discShown('options'), 0, ',', ' ') }} €
                             @if ($options_discount_mode === 'eur' && ($t['options_discount_pct'] ?? 0) > 0)
                                 <span class="block text-xs text-gray-400">{{ trim($discRate($t['options_discount_pct'])) }}</span>
+                            @endif
+                        @else — @endif
+                    </span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <label class="flex-1 text-sm text-gray-700">{{ __('Engines discount') }} <span class="text-xs text-gray-400">{{ __('(across all engines)') }}</span></label>
+                    {{-- % / EUR switch: dealers negotiate both ways ("10% off"
+                         vs "5000 EUR off"). Switching mode swaps which input is
+                         live; the calculator converts a euro entry into the
+                         equivalent percentage of whatever it discounts. --}}
+                    <div class="inline-flex rounded overflow-hidden border border-gray-300">
+                        <button type="button" wire:click="$set('engines_discount_mode', 'pct')" @disabled(! $hasVariant)
+                            class="px-2 py-1 text-xs font-semibold {{ $engines_discount_mode === 'pct' ? 'bg-primary-800 text-white' : 'bg-white text-gray-600 hover:bg-gray-100' }}">%</button>
+                        <button type="button" wire:click="$set('engines_discount_mode', 'eur')" @disabled(! $hasVariant)
+                            class="px-2 py-1 text-xs font-semibold {{ $engines_discount_mode === 'eur' ? 'bg-primary-800 text-white' : 'bg-white text-gray-600 hover:bg-gray-100' }}">€</button>
+                    </div>
+                    @if ($engines_discount_mode === 'eur')
+                        <input type="number" min="0" step="50" wire:model.live.debounce.300ms="engines_discount_amount" @disabled(! $hasVariant)
+                            class="w-24 text-right rounded border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800 disabled:bg-gray-100" />
+                        <span class="text-sm text-gray-500 w-3">€</span>
+                    @else
+                        <input type="number" min="0" max="100" step="0.5" wire:model.live.debounce.300ms="engines_discount_pct" @disabled(! $hasVariant)
+                            class="w-24 text-right rounded border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800 disabled:bg-gray-100" />
+                        <span class="text-sm text-gray-500 w-3">%</span>
+                    @endif
+                    <span class="text-sm text-red-600 font-medium w-28 text-right">
+                        @if ($t && ($t['engines_discount_amount'] ?? 0) > 0)
+                            -{{ number_format($discShown('engines'), 0, ',', ' ') }} €
+                            @if ($engines_discount_mode === 'eur' && ($t['engines_discount_pct'] ?? 0) > 0)
+                                <span class="block text-xs text-gray-400">{{ trim($discRate($t['engines_discount_pct'])) }}</span>
                             @endif
                         @else — @endif
                     </span>
@@ -879,6 +916,7 @@
                         $totalDiscount = $discShown('boat')
                             + $optDisc + $engDisc + $custDisc
                             + $discShown('options')
+                            + $discShown('engines')
                             + $discShown('global');
                     @endphp
                     <div class="flex justify-between pt-2 border-t border-gray-100"><dt class="text-gray-600">{{ __('Options') }} ({{ $optionOnly->count() }})</dt><dd class="font-medium">{{ number_format($optGross, 2, ',', ' ') }} €</dd></div>
@@ -895,6 +933,9 @@
 
                     @if ($t['options_discount_amount'] > 0)
                         <div class="flex justify-between text-red-600 text-xs"><dt>{{ __('Options discount') }}{{ $discSuffix('options') }}</dt><dd>-{{ number_format($discShown('options'), 2, ',', ' ') }} €</dd></div>
+                    @endif
+                    @if (($t['engines_discount_amount'] ?? 0) > 0)
+                        <div class="flex justify-between text-red-600 text-xs"><dt>{{ __('Engines discount') }}{{ $discSuffix('engines') }}</dt><dd>-{{ number_format($discShown('engines'), 2, ',', ' ') }} €</dd></div>
                     @endif
 
                     {{-- Custom items --}}

@@ -76,9 +76,14 @@ class QuoteBuilder extends Component
     public string $boat_discount_mode    = 'pct'; // pct | eur
     public string $options_discount_mode = 'pct';
     public string $global_discount_mode  = 'pct';
+    // Engines are negotiated separately from equipment options, so they get
+    // their own block discount rather than riding on the options one.
+    public string $engines_discount_mode = 'pct';
     public $boat_discount_amount    = 0;
     public $options_discount_amount = 0;
     public $global_discount_amount  = 0;
+    public $engines_discount_pct    = 0;
+    public $engines_discount_amount = 0;
 
     // Summary view mode (vendor sees margin, client doesn't)
     public string $view_mode = 'client'; // 'client' | 'vendor'
@@ -169,6 +174,9 @@ class QuoteBuilder extends Component
         $this->boat_discount_mode      = $quote->boat_discount_mode    ?? 'pct';
         $this->options_discount_mode   = $quote->options_discount_mode ?? 'pct';
         $this->global_discount_mode    = $quote->global_discount_mode  ?? 'pct';
+        $this->engines_discount_mode   = $quote->engines_discount_mode ?? 'pct';
+        $this->engines_discount_pct    = (float) ($quote->engines_discount_pct ?? 0);
+        $this->engines_discount_amount = (float) ($quote->engines_discount_amount ?? 0);
         $this->boat_discount_amount    = (float) ($quote->boat_discount_amount ?? 0);
         $this->options_discount_amount = (float) ($quote->options_discount_amount ?? 0);
         $this->global_discount_amount  = (float) ($quote->global_discount_amount ?? 0);
@@ -448,6 +456,7 @@ class QuoteBuilder extends Component
                     'id'       => $id,
                     'label'    => trim(($e->brand ?? '') . ' ' . ($e->code ?? '')),
                     'hp'       => $e->horsepower,
+                    'description' => $e->description,
                     'price'    => $price,
                     'quantity' => $quantity,
                     'discount' => $discount,
@@ -559,6 +568,9 @@ class QuoteBuilder extends Component
                 'quantity'     => (int) $qty,
                 'discount_pct' => (float) ($this->engineDiscounts[$engineId] ?? 0),
                 'source'       => 'engine',
+                // e.g. which propeller is included — engine list prices don't
+                // cover one, so the dealer spells it out per engine.
+                'description'  => $eng->description ?: null,
             ];
         }
 
@@ -589,9 +601,12 @@ class QuoteBuilder extends Component
             'boat_discount_mode'      => $this->boat_discount_mode,
             'options_discount_mode'   => $this->options_discount_mode,
             'global_discount_mode'    => $this->global_discount_mode,
+            'engines_discount_mode'   => $this->engines_discount_mode,
             'boat_discount_amount'    => (float) ($this->boat_discount_amount ?: 0),
             'options_discount_amount' => (float) ($this->options_discount_amount ?: 0),
             'global_discount_amount'  => (float) ($this->global_discount_amount ?: 0),
+            'engines_discount_pct'    => $this->engines_discount_pct,
+            'engines_discount_amount' => (float) ($this->engines_discount_amount ?: 0),
             'trade_in_value'       => $this->hasTradeIn ? (float) $this->trade_in_value : 0,
             'vat_rate'             => $this->vatRateValue(),
             'per_option_vat'       => $this->per_option_vat,
@@ -683,9 +698,12 @@ class QuoteBuilder extends Component
             'boat_discount_mode'      => $this->boat_discount_mode,
             'options_discount_mode'   => $this->options_discount_mode,
             'global_discount_mode'    => $this->global_discount_mode,
+            'engines_discount_mode'   => $this->engines_discount_mode,
             'boat_discount_amount'    => (float) ($this->boat_discount_amount ?: 0),
             'options_discount_amount' => (float) ($this->options_discount_amount ?: 0),
             'global_discount_amount'  => (float) ($this->global_discount_amount ?: 0),
+            'engines_discount_pct'    => (float) ($this->engines_discount_pct ?: 0),
+            'engines_discount_amount' => (float) ($this->engines_discount_amount ?: 0),
             'trade_in'            => $this->hasTradeIn && $this->trade_in_value > 0
                 ? ['value' => (float) $this->trade_in_value, 'description' => trim($this->trade_in_label) ?: null]
                 : null,

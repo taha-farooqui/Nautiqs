@@ -81,6 +81,18 @@
             </div>
         </div>
 
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Description') }}</label>
+            {{-- Engine list prices don't include a propeller, so the dealer
+                 names the one that comes with it here. Printed under the engine
+                 on the quote and the PDF. --}}
+            <textarea name="description" rows="3"
+                placeholder="{{ __('e.g. Propeller model, included accessories, delivery notes.') }}"
+                class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800">{{ old('description', $engine->description ?? '') }}</textarea>
+            <p class="text-xs text-gray-500 mt-1">{{ __('Shown to the client under this engine on the quote.') }}</p>
+            <x-input-error :messages="$errors->get('description')" class="mt-1" />
+        </div>
+
         <div class="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
             <a href="{{ route('engines.index') }}" class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">{{ __('Cancel') }}</a>
             <button class="inline-flex items-center gap-1 px-4 py-2 text-sm font-semibold bg-primary-800 hover:bg-primary-900 text-white rounded-lg">

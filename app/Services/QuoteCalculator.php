@@ -64,7 +64,10 @@ class QuoteCalculator
                 return min(100.0, max(0.0, $amount / $base * 100));
             }
 
-            return (float) ($input[$key . '_discount_pct'] ?? 0);
+            // Clamped like the euro path above: max="100" on the input is a
+            // browser hint only, and a percentage typed past it (a dealer
+            // meaning "500 EUR" in the % field) would drive the line negative.
+            return min(100.0, max(0.0, (float) ($input[$key . '_discount_pct'] ?? 0)));
         };
 
         $boatDiscountPct = $asPct('boat', $basePrice);
@@ -148,13 +151,25 @@ class QuoteCalculator
             ];
         }
 
-        $optionsBeforeBlock      = array_sum(array_column($optionsRows, 'line_after_cat'));
-        // Resolved here, not at the top: a euro-entered options discount is a
-        // percentage of the options block, which only exists once the rows are
-        // priced.
-        $optionsDiscountPct      = $asPct('options', $optionsBeforeBlock);
-        $optionsBlockDiscount    = $optionsBeforeBlock * ($optionsDiscountPct / 100);
-        $optionsSubtotal         = $optionsBeforeBlock - $optionsBlockDiscount;
+        // Engines live in $optionsRows for pricing, but the dealer negotiates
+        // them separately from equipment options, so each block carries its own
+        // discount and neither touches the other's rows.
+        $isEngine   = fn (array $r) => ($r['source'] ?? null) === 'engine';
+        $optionOnly = array_filter($optionsRows, fn ($r) => ! $isEngine($r));
+        $engineOnly = array_filter($optionsRows, $isEngine);
+
+        $optionsBeforeBlock = array_sum(array_column($optionOnly, 'line_after_cat'));
+        $enginesBeforeBlock = array_sum(array_column($engineOnly, 'line_after_cat'));
+        // Resolved here, not at the top: a euro-entered block discount is a
+        // percentage of its block, which only exists once the rows are priced.
+        $optionsDiscountPct   = $asPct('options', $optionsBeforeBlock);
+        $enginesDiscountPct   = $asPct('engines', $enginesBeforeBlock);
+        $optionsBlockDiscount = $optionsBeforeBlock * ($optionsDiscountPct / 100);
+        $enginesBlockDiscount = $enginesBeforeBlock * ($enginesDiscountPct / 100);
+        // Downstream (subtotal, margin, VAT) still works on one combined
+        // options figure — only the discounting is split.
+        $optionsSubtotal         = ($optionsBeforeBlock - $optionsBlockDiscount)
+                                 + ($enginesBeforeBlock - $enginesBlockDiscount);
         $customSubtotal          = array_sum(array_column($customRows,  'line_after_cat'));
         $baseSubtotal            = $hullLine;
 
@@ -169,7 +184,10 @@ class QuoteCalculator
         // also absorb their share of the options-block + global discount
         // before being taxed, hence the two scale factors below. Lines
         // without their own rate (base price, custom items) use $vatRate.
-        $optionsBlockScale = $optionsBeforeBlock > 0 ? $optionsSubtotal / $optionsBeforeBlock : 1.0;
+        $optionsBlockScale = $optionsBeforeBlock > 0
+            ? ($optionsBeforeBlock - $optionsBlockDiscount) / $optionsBeforeBlock : 1.0;
+        $enginesBlockScale = $enginesBeforeBlock > 0
+            ? ($enginesBeforeBlock - $enginesBlockDiscount) / $enginesBeforeBlock : 1.0;
         $globalScale       = $subtotalBeforeGlobal > 0 ? $totalHt / $subtotalBeforeGlobal : 1.0;
         $vatAmount         = 0.0;
         $vatBreakdown      = [];   // [rate => taxable_amount]
@@ -180,7 +198,8 @@ class QuoteCalculator
         };
         $addVat($baseSubtotal * $globalScale, $vatRate);
         foreach ($optionsRows as $r) {
-            $addVat($r['line_after_cat'] * $optionsBlockScale * $globalScale, $r['line_vat_rate']);
+            $blockScale = $isEngine($r) ? $enginesBlockScale : $optionsBlockScale;
+            $addVat($r['line_after_cat'] * $blockScale * $globalScale, $r['line_vat_rate']);
         }
         foreach ($customRows as $r) {
             $addVat($r['line_after_cat'] * $globalScale, $vatRate);
@@ -232,6 +251,7 @@ class QuoteCalculator
             'boat_discount_mode'       => $input['boat_discount_mode'] ?? 'pct',
             'options_discount_mode'    => $input['options_discount_mode'] ?? 'pct',
             'global_discount_mode'     => $input['global_discount_mode'] ?? 'pct',
+            'engines_discount_mode'    => $input['engines_discount_mode'] ?? 'pct',
             'boat_discount_pct'        => $boatDiscountPct,
             'boat_discount_amount'     => round($boatDiscountAmount, 2),
             'base_ht'                  => round($baseSubtotal, 2),
@@ -240,6 +260,10 @@ class QuoteCalculator
             'options_discount_pct'    => $optionsDiscountPct,
             'options_discount_amount' => round($optionsBlockDiscount, 2),
             'options_ht'              => round($optionsSubtotal, 2),
+
+            'engines_gross'           => round($enginesBeforeBlock, 2),
+            'engines_discount_pct'    => $enginesDiscountPct,
+            'engines_discount_amount' => round($enginesBlockDiscount, 2),
 
             'custom_items_ht'         => round($customSubtotal, 2),
             'subtotal_ht'             => round($subtotalBeforeGlobal, 2),
