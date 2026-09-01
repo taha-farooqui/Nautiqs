@@ -318,13 +318,17 @@
                 // discounts stay visible in the items table too.
                 $dBoat    = (float) ($t['boat_discount_amount'] ?? 0);
                 $dOptions = (float) ($t['options_discount_amount'] ?? 0);
+                // Engines carry their own block discount, separate from options.
+                // Leaving it out here made an engines-only discount reduce the
+                // total with nothing on the page to account for it.
+                $dEngines = (float) ($t['engines_discount_amount'] ?? 0);
                 $dGlobal  = (float) ($t['global_discount_amount'] ?? 0);
                 // Item/category-level savings, summed off the rows.
                 $dItems = collect($t['options_rows'] ?? [])
                     ->sum(fn ($r) => (float) ($r['line_gross'] ?? 0) - (float) ($r['line_after_cat'] ?? 0));
                 $dCustom = collect($t['custom_items_rows'] ?? [])
                     ->sum(fn ($r) => (float) ($r['amount'] ?? 0) - (float) ($r['line_after_cat'] ?? 0));
-                $dTotal = $dBoat + $dItems + $dOptions + $dCustom + $dGlobal;
+                $dTotal = $dBoat + $dItems + $dOptions + $dEngines + $dCustom + $dGlobal;
 
                 // The stored subtotal is already NET of the boat/option
                 // discounts, so listing deductions under it would show the same
@@ -357,6 +361,12 @@
                     <tr class="row-discount row-white">
                         <td class="label">{{ __('Options discount') }}{{ $discSuffix('options') }}</td>
                         <td class="val">-{{ number_format($dOptions, 2, ',', ' ') }} €</td>
+                    </tr>
+                @endif
+                @if ($dEngines > 0)
+                    <tr class="row-discount row-white">
+                        <td class="label">{{ __('Engines discount') }}{{ $discSuffix('engines') }}</td>
+                        <td class="val">-{{ number_format($dEngines, 2, ',', ' ') }} €</td>
                     </tr>
                 @endif
                 @if ($dGlobal > 0)

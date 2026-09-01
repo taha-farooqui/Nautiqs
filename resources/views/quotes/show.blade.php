@@ -401,19 +401,29 @@
                         $engGross = $engineRows->sum('line_gross');
                         $engDisc  = $engGross - $engineRows->sum('line_after_cat');
                         $custDisc = $customRows->sum('amount') - $customRows->sum('line_after_cat');
+                        // Block-level discounts, each shown as its own row below so
+                        // the rows add up to the savings figure.
+                        $dOptionsBlock = (float) ($t['options_discount_amount'] ?? 0);
+                        $dEnginesBlock = (float) ($t['engines_discount_amount'] ?? 0);
                         $totalDiscount = (float) ($t['boat_discount_amount'] ?? 0)
                             + $optDisc + $engDisc + $custDisc
-                            + (float) ($t['options_discount_amount'] ?? 0)
+                            + $dOptionsBlock + $dEnginesBlock
                             + (float) ($t['global_discount_amount'] ?? 0);
                     @endphp
                     <div class="flex justify-between"><dt class="text-gray-600">{{ __('Options') }} ({{ $optionOnly->count() }})</dt><dd class="font-medium">{{ number_format($optGross, 2, ',', ' ') }} €</dd></div>
                     @if ($optDisc > 0.005)
                         <div class="flex justify-between text-red-600 text-xs"><dt class="ml-4">{{ __('Discounts on options') }}</dt><dd>-{{ number_format($optDisc, 2, ',', ' ') }} €</dd></div>
                     @endif
+                    @if ($dOptionsBlock > 0.005)
+                        <div class="flex justify-between text-red-600 text-xs"><dt class="ml-4">{{ __('Options discount') }}</dt><dd>-{{ number_format($dOptionsBlock, 2, ',', ' ') }} €</dd></div>
+                    @endif
                     @if ($engineRows->isNotEmpty())
                         <div class="flex justify-between"><dt class="text-gray-600">{{ __('Engines') }} ({{ (int) $engineRows->sum('quantity') }})</dt><dd class="font-medium">{{ number_format($engGross, 2, ',', ' ') }} €</dd></div>
                         @if ($engDisc > 0.005)
                             <div class="flex justify-between text-red-600 text-xs"><dt class="ml-4">{{ __('Discounts on engines') }}</dt><dd>-{{ number_format($engDisc, 2, ',', ' ') }} €</dd></div>
+                        @endif
+                        @if ($dEnginesBlock > 0.005)
+                            <div class="flex justify-between text-red-600 text-xs"><dt class="ml-4">{{ __('Engines discount') }}</dt><dd>-{{ number_format($dEnginesBlock, 2, ',', ' ') }} €</dd></div>
                         @endif
                     @endif
                     <div class="flex justify-between"><dt class="text-gray-600">{{ __('Custom (HT)') }}</dt><dd class="font-medium">{{ number_format($t['custom_items_ht'] ?? 0, 2, ',', ' ') }} €</dd></div>
