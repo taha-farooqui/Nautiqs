@@ -14,6 +14,8 @@ use Illuminate\Support\Str;
  *   PA HT     (optional) — purchase price excl. VAT, for margin display
  *   PV HT     (required) — selling price excl. VAT
  *   TVA       (optional) — VAT rate, defaults to 20. Accepts 20 or 0.2.
+ *   Description (optional) — free text shown under the engine on the quote,
+ *                 e.g. the propeller that goes with it. Line breaks are kept.
  *
  * No currency column — engines are EUR-only per the latest scope call.
  * Upsert key is (company_id, brand, code) so re-uploading the same file
@@ -55,6 +57,18 @@ class EngineImporter
         'vat'         => 'vat_rate',
         'vat rate'    => 'vat_rate',
         'taux tva'    => 'vat_rate',
+        // Description
+        'description' => 'description',
+        'désignation' => 'description',
+        'designation' => 'description',
+        'détail'      => 'description',
+        'detail'      => 'description',
+        'commentaire' => 'description',
+        'commentaires'=> 'description',
+        'notes'       => 'description',
+        'note'        => 'description',
+        'remarque'    => 'description',
+        'remarques'   => 'description',
     ];
 
     private const REQUIRED  = ['brand', 'code', 'price'];
@@ -97,6 +111,8 @@ class EngineImporter
             ]]);
         }
 
+        $hasDescription = in_array('description', $headerMap, true);
+
         $created = 0; $updated = 0; $skipped = 0; $errors = [];
 
         foreach ($rows as $i => $rawRow) {
@@ -133,6 +149,13 @@ class EngineImporter
                 'currency'    => 'EUR',
                 'is_archived' => false,
             ];
+
+            // Only written when the file carries the column. A dealer
+            // re-importing a plain price list would otherwise blank every
+            // description they had typed by hand.
+            if ($hasDescription) {
+                $payload['description'] = $data['description'] !== '' ? $data['description'] : null;
+            }
 
             if ($existing) {
                 $existing->update($payload);
@@ -252,11 +275,12 @@ class EngineImporter
     private function extract(array $rawRow, array $headerMap): array
     {
         $out = [
-            'brand'    => '',
-            'code'     => '',
-            'cost'     => 0.0,
-            'price'    => 0.0,
-            'vat_rate' => 20.0,
+            'brand'       => '',
+            'code'        => '',
+            'cost'        => 0.0,
+            'price'       => 0.0,
+            'vat_rate'    => 20.0,
+            'description' => '',
         ];
         foreach ($headerMap as $col => $field) {
             $raw = trim((string) ($rawRow[$col] ?? ''));
@@ -264,6 +288,13 @@ class EngineImporter
                 case 'brand':
                 case 'code':
                     $out[$field] = $raw;
+                    break;
+                case 'description':
+                    // Deliberately not trimmed of inner newlines: a dealer
+                    // listing the propeller on its own line wants that kept
+                    // (the quote and PDF render descriptions with nl2br).
+                    $out['description'] = trim((string) ($rawRow[$col] ?? ''), " 	
+");
                     break;
                 case 'cost':
                 case 'price':

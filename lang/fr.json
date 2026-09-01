@@ -1130,5 +1130,7 @@
     "(across all engines)": "(sur tous les moteurs)",
     "e.g. Propeller model, included accessories, delivery notes.": "ex. Modèle d’hélice, accessoires inclus, notes de livraison.",
     "Shown to the client under this engine on the quote.": "Affiché au client sous ce moteur sur le devis.",
-    "discounts": "remises"
+    "discounts": "remises",
+    "optional, shown under the engine on the quote": "facultatif, affiché sous le moteur sur le devis",
+    "Leave the Description column out entirely to keep the descriptions already saved.": "Omettez complètement la colonne Description pour conserver les descriptions déjà enregistrées."
 }

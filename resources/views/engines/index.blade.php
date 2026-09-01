@@ -99,7 +99,9 @@
                                 <li><span class="font-mono">PV HT</span> — {{ __('required, selling price HT') }}</li>
                                 <li><span class="font-mono">PA HT</span> — {{ __('optional, purchase cost') }}</li>
                                 <li><span class="font-mono">TVA</span> — {{ __('optional, defaults to 20') }}</li>
+                                <li><span class="font-mono">Description</span> — {{ __('optional, shown under the engine on the quote') }}</li>
                             </ul>
+                            <p class="text-gray-500 mt-2">{{ __('Leave the Description column out entirely to keep the descriptions already saved.') }}</p>
                             <p class="text-gray-500 mt-2">{{ __('Rows matching an existing Brand + Model will be updated; the rest will be created.') }}</p>
                         </div>
 
