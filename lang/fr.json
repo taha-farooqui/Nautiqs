@@ -1135,5 +1135,6 @@
     "Leave the Description column out entirely to keep the descriptions already saved.": "Omettez complètement la colonne Description pour conserver les descriptions déjà enregistrées.",
     "Shown to clients as your contact number on the quotes you create.": "Affiché aux clients comme votre numéro de contact sur les devis que vous créez.",
     "optional; omit the column to keep existing descriptions": "facultatif ; omettez la colonne pour conserver les descriptions existantes",
-    "No phone number set": "Aucun numéro renseigné"
+    "No phone number set": "Aucun numéro renseigné",
+    "Add your phone number": "Ajouter votre numéro de téléphone"
 }

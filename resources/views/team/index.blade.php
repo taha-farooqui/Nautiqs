@@ -50,12 +50,19 @@
                                 <p class="text-xs text-gray-500 truncate">{{ $m->email }}</p>
                                 {{-- Each member sets their own number in their profile;
                                      it prints as the contact on quotes they write. Shown
-                                     here so an admin can see who still hasn't. --}}
+                                     here so an admin can see who still hasn't — and, on
+                                     your own row, linked straight to the page that sets
+                                     it, so the line isn't a dead end. --}}
                                 <p class="text-xs text-gray-400 truncate">
-                                    @if ($m->phone)
-                                        <i class="ri-phone-line"></i> {{ $m->phone }}
+                                    <i class="ri-phone-line"></i>
+                                    @if ($isSelf)
+                                        <a href="{{ route('profile.edit') }}" class="text-primary-800 hover:underline">
+                                            {{ $m->phone ?: __('Add your phone number') }}
+                                        </a>
+                                    @elseif ($m->phone)
+                                        {{ $m->phone }}
                                     @else
-                                        <i class="ri-phone-line"></i> {{ __('No phone number set') }}
+                                        {{ __('No phone number set') }}
                                     @endif
                                 </p>
                             </div>
