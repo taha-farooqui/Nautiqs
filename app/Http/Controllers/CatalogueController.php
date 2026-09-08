@@ -1338,13 +1338,15 @@ class CatalogueController extends Controller
             ], 422);
         }
 
-        // Only the fields the create-mode repeater captures (category, label,
-        // price, cost — all already in EUR).
+        // The fields the create-mode repeater captures (all prices already in
+        // EUR). Description rides along so importing while adding a boat keeps
+        // it, the same as importing into a saved one.
         $rows = array_map(fn ($r) => [
-            'category' => $r['category'],
-            'label'    => $r['label'],
-            'price'    => $r['price'],
-            'cost'     => $r['cost'],
+            'category'    => $r['category'],
+            'label'       => $r['label'],
+            'description' => $r['description'] ?? '',
+            'price'       => $r['price'],
+            'cost'        => $r['cost'],
         ], $parsed['rows']);
 
         return response()->json([
@@ -1387,7 +1389,9 @@ class CatalogueController extends Controller
             ->orderBy('position')
             ->get();
 
-        $headers = ['CODE', 'FAMILLE', 'DESIGNATION', 'PA HT', 'PA CURRENCY', 'PV HT', 'PV CURRENCY', 'TVA'];
+        // DESCRIPTION is exported so the export → edit prices → re-import loop
+        // doesn't cost the dealer every description they typed by hand.
+        $headers = ['CODE', 'FAMILLE', 'DESIGNATION', 'DESCRIPTION', 'PA HT', 'PA CURRENCY', 'PV HT', 'PV CURRENCY', 'TVA'];
         $rows = [];
         foreach ($options as $o) {
             // Guarantee a stable code on every row so the round-trip matches on
@@ -1402,6 +1406,7 @@ class CatalogueController extends Controller
                 $code,
                 (string) $o->category,
                 (string) $o->label,
+                (string) ($o->description ?? ''),
                 (float) ($o->cost ?? 0),
                 'EUR',
                 (float) $o->price,
@@ -1410,7 +1415,7 @@ class CatalogueController extends Controller
             ];
         }
 
-        $widths = [22, 18, 40, 12, 14, 12, 14, 8];
+        $widths = [22, 18, 40, 50, 12, 14, 12, 14, 8];
         $path = $this->buildOptionsXlsx($headers, $rows, $widths);
         $safeName = preg_replace('/[^A-Za-z0-9_-]+/', '-', $boat->name);
         return response()->download($path, "nautiqs-options-{$safeName}.xlsx", [
@@ -1429,20 +1434,22 @@ class CatalogueController extends Controller
      */
     private function buildOptionsTemplateXlsx(?string $boatName = null): string
     {
-        // Seven columns. PA / PV Currency default to EUR; if the dealer
-        // writes USD, the import converts to EUR using a live FX rate.
-        // TVA accepts 20 or 0.2. Code is auto-generated from (category,
-        // label) on the server so re-imports update in place.
-        $headers = ['FAMILLE', 'DESIGNATION', 'PA HT', 'PA CURRENCY', 'PV HT', 'PV CURRENCY', 'TVA'];
+        // PA / PV Currency default to EUR; if the dealer writes USD, the import
+        // converts to EUR using a live FX rate. TVA accepts 20 or 0.2. Code is
+        // auto-generated from (category, label) on the server so re-imports
+        // update in place. DESCRIPTION is optional — leaving the column out
+        // keeps whatever descriptions are already saved.
+        $headers = ['FAMILLE', 'DESIGNATION', 'DESCRIPTION', 'PA HT', 'PA CURRENCY', 'PV HT', 'PV CURRENCY', 'TVA'];
         $samples = [
-            ['Transport',    'Bandol → Marseille',        3400, 'EUR', 4858.60, 'EUR', 20],
-            ['Électronique', 'Garmin GPSMAP 1243xsv',     2100, 'EUR', 3200,    'EUR', 20],
-            ['Confort',      'Plancher teck cockpit',     2800, 'EUR', 4500,    'EUR', 20],
-            ['Confort',      'Bimini + rideaux',           950, 'EUR', 1800,    'EUR', 20],
-            ['Électronique', 'Raymarine Axiom 12 (US)',   3200, 'USD', 4500,    'USD', 20],
+            ['Transport',    'Bandol → Marseille',      '',                                  3400, 'EUR', 4858.60, 'EUR', 20],
+            ['Électronique', 'Garmin GPSMAP 1243xsv',   "Écran 12\"
+Sondeur intégré",       2100, 'EUR', 3200,    'EUR', 20],
+            ['Confort',      'Plancher teck cockpit',   '',                                  2800, 'EUR', 4500,    'EUR', 20],
+            ['Confort',      'Bimini + rideaux',        '',                                   950, 'EUR', 1800,    'EUR', 20],
+            ['Électronique', 'Raymarine Axiom 12 (US)', '',                                  3200, 'USD', 4500,    'USD', 20],
         ];
 
-        $widths = [18, 40, 12, 14, 12, 14, 8];
+        $widths = [18, 40, 50, 12, 14, 12, 14, 8];
 
         return $this->buildOptionsXlsx($headers, $samples, $widths);
     }

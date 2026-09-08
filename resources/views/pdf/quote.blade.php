@@ -28,6 +28,8 @@
     // registered the dealership and would otherwise pair B's name with A's
     // address). Company address remains the fallback.
     $spEmail = $quote->creatorEmail() ?: ($company->salesperson_email ?? '');
+    // Same rule for the number: the author's own, then the dealership's.
+    $spPhone = $quote->creatorPhone() ?: ($company->salesperson_phone ?? '');
     $logoSrc = $company->logoDataUri();
 
     // Snapshot first; falls back to the version's current kit when the
@@ -128,7 +130,7 @@
             <div class="qmeta-label">{{ __('Your contact') }}</div>
             <div class="qmeta-name">{{ $spName ?: $company->name }}</div>
             <div class="qmeta-detail">
-                @if ($company->salesperson_phone) {{ $company->salesperson_phone }}<br>@endif
+                @if ($spPhone) {{ $spPhone }}<br>@endif
                 @if ($spEmail) {{ $spEmail }} @endif
             </div>
         </td>

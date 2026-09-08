@@ -1132,5 +1132,8 @@
     "Shown to the client under this engine on the quote.": "Affiché au client sous ce moteur sur le devis.",
     "discounts": "remises",
     "optional, shown under the engine on the quote": "facultatif, affiché sous le moteur sur le devis",
-    "Leave the Description column out entirely to keep the descriptions already saved.": "Omettez complètement la colonne Description pour conserver les descriptions déjà enregistrées."
+    "Leave the Description column out entirely to keep the descriptions already saved.": "Omettez complètement la colonne Description pour conserver les descriptions déjà enregistrées.",
+    "Shown to clients as your contact number on the quotes you create.": "Affiché aux clients comme votre numéro de contact sur les devis que vous créez.",
+    "optional; omit the column to keep existing descriptions": "facultatif ; omettez la colonne pour conserver les descriptions existantes",
+    "No phone number set": "Aucun numéro renseigné"
 }

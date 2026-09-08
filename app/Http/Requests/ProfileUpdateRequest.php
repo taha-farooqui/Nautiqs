@@ -18,6 +18,9 @@ class ProfileUpdateRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
+            // Free-form: dealers write these in several formats
+            // (06 28 92 21 93, +33 6 28..., etc.).
+            'phone' => ['nullable', 'string', 'max:30'],
             'email' => [
                 'required',
                 'string',

@@ -111,6 +111,20 @@ class OptionImporter
         'reference'      => 'code',
         'référence'      => 'code',
         'ref'            => 'code',
+
+        // Description — free text printed under the option on the quote.
+        // Careful: "designation" is the LABEL above, not this.
+        'description'    => 'description',
+        'detail'         => 'description',
+        'détail'         => 'description',
+        'details'        => 'description',
+        'détails'        => 'description',
+        'commentaire'    => 'description',
+        'commentaires'   => 'description',
+        'note'           => 'description',
+        'notes'          => 'description',
+        'remarque'       => 'description',
+        'remarques'      => 'description',
     ];
 
     private const REQUIRED = ['category', 'label', 'price'];
@@ -125,6 +139,7 @@ class OptionImporter
     public function import(UploadedFile $file, string $companyId, string $fixedBoatId): array
     {
         $parsed = $this->parse($file);
+        $hasDescription = (bool) ($parsed['hasDescription'] ?? false);
         if ($parsed['fatal'] !== null) {
             return $this->result(errors: [['row' => 1, 'message' => $parsed['fatal']]]);
         }
@@ -174,6 +189,13 @@ class OptionImporter
                 'is_archived'             => false,
             ];
 
+            // Only written when the uploaded file actually has the column. A
+            // dealer re-importing a price-only sheet would otherwise wipe every
+            // description they had typed.
+            if ($hasDescription) {
+                $payload['description'] = $row['description'] !== '' ? $row['description'] : null;
+            }
+
             if ($existing) {
                 $existing->update($payload);
                 $updated++;
@@ -210,13 +232,13 @@ class OptionImporter
     {
         $rows = $this->readFile($file);
         if (empty($rows)) {
-            return ['fatal' => 'File is empty.', 'rows' => [], 'errors' => [], 'skipped' => 0];
+            return ['fatal' => 'File is empty.', 'rows' => [], 'errors' => [], 'skipped' => 0, 'hasDescription' => false];
         }
 
         $headerRow = array_shift($rows);
         $headerMap = $this->mapHeaders($headerRow);
         if (empty($headerMap)) {
-            return ['fatal' => 'Could not detect any known column. Expected at least FAMILLE, DESIGNATION, PV HT.', 'rows' => [], 'errors' => [], 'skipped' => 0];
+            return ['fatal' => 'Could not detect any known column. Expected at least FAMILLE, DESIGNATION, PV HT.', 'rows' => [], 'errors' => [], 'skipped' => 0, 'hasDescription' => false];
         }
 
         $missing = array_diff(self::REQUIRED, array_values($headerMap));
@@ -227,11 +249,11 @@ class OptionImporter
                 'price'    => 'PV HT',
                 default    => $m,
             }, $missing);
-            return ['fatal' => 'Missing required column(s): ' . implode(', ', $human), 'rows' => [], 'errors' => [], 'skipped' => 0];
+            return ['fatal' => 'Missing required column(s): ' . implode(', ', $human), 'rows' => [], 'errors' => [], 'skipped' => 0, 'hasDescription' => false];
         }
 
         if (count($rows) > self::MAX_ROWS) {
-            return ['fatal' => 'Too many rows. Split into batches of ' . self::MAX_ROWS . ' or fewer.', 'rows' => [], 'errors' => [], 'skipped' => 0];
+            return ['fatal' => 'Too many rows. Split into batches of ' . self::MAX_ROWS . ' or fewer.', 'rows' => [], 'errors' => [], 'skipped' => 0, 'hasDescription' => false];
         }
 
         $out = []; $skipped = 0; $errors = [];
@@ -281,6 +303,7 @@ class OptionImporter
                 'code'                    => $data['code'],
                 'category'                => $data['category'],
                 'label'                   => $data['label'],
+                'description'             => $data['description'],
                 'price'                   => $priceEur,
                 'cost'                    => $costEur,
                 'vat_rate'                => $data['vat_rate'],
@@ -292,7 +315,10 @@ class OptionImporter
             ];
         }
 
-        return ['fatal' => null, 'rows' => $out, 'errors' => $errors, 'skipped' => $skipped];
+        return [
+            'fatal' => null, 'rows' => $out, 'errors' => $errors, 'skipped' => $skipped,
+            'hasDescription' => in_array('description', $headerMap, true),
+        ];
     }
 
     /* ---------------------------------------------------- File readers */
@@ -415,6 +441,7 @@ class OptionImporter
             'code'           => '',
             'category'       => '',
             'label'          => '',
+            'description'    => '',
             'cost'           => 0.0,
             'cost_currency'  => 'EUR',
             'price'          => 0.0,
@@ -429,6 +456,13 @@ class OptionImporter
                 case 'category':
                 case 'label':
                     $out[$field] = $raw;
+                    break;
+                case 'description':
+                    // Newlines inside the cell are kept — the quote and PDF
+                    // render descriptions with nl2br.
+                    $out['description'] = trim((string) ($rawRow[$col] ?? ''), " 	
+
+");
                     break;
                 case 'cost':
                 case 'price':

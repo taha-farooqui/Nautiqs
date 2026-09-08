@@ -306,7 +306,7 @@
                         <div class="p-5 space-y-4">
                             <p class="text-sm text-gray-600">
                                 {{ __('Expected columns:') }}
-                                <span class="font-mono text-xs">FAMILLE, DESIGNATION, PA HT, PA CURRENCY, PV HT, PV CURRENCY, TVA</span>.
+                                <span class="font-mono text-xs">FAMILLE, DESIGNATION, DESCRIPTION, PA HT, PA CURRENCY, PV HT, PV CURRENCY, TVA</span>.
                                 {{ __('Prices in USD are converted to EUR automatically.') }}
                             </p>
                             <a href="{{ route('catalogue.options.template') }}"
@@ -655,6 +655,7 @@
                                             <ul class="space-y-0.5 text-white/90">
                                                 <li><span class="font-mono text-primary-200">FAMILLE</span> — {{ __('required, category') }}</li>
                                                 <li><span class="font-mono text-primary-200">DESIGNATION</span> — {{ __('required, option name') }}</li>
+                                                <li><span class="font-mono text-primary-200">DESCRIPTION</span> — {{ __('optional; omit the column to keep existing descriptions') }}</li>
                                                 <li><span class="font-mono text-primary-200">PA HT</span> — {{ __('optional, purchase cost') }}</li>
                                                 <li><span class="font-mono text-primary-200">PA CURRENCY</span> — {{ __('optional, EUR or USD (defaults EUR)') }}</li>
                                                 <li><span class="font-mono text-primary-200">PV HT</span> — {{ __('required, selling price HT') }}</li>
@@ -972,10 +973,11 @@
                             return;
                         }
                         (data.rows || []).forEach(r => this.newOptions.push({
-                            category: r.category ?? '',
-                            label:    r.label ?? '',
-                            price:    r.price ?? '',
-                            cost:     r.cost ?? '',
+                            category:    r.category ?? '',
+                            label:       r.label ?? '',
+                            description: r.description ?? '',
+                            price:       r.price ?? '',
+                            cost:        r.cost ?? '',
                         }));
                         // Keep the good rows; surface any per-row problems.
                         this.importErrors = (data.errors || []).map(e => `{{ __('Row') }} ${e.row}: ${e.message}`);

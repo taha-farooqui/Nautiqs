@@ -11,7 +11,10 @@
         <div class="xl:col-span-2 space-y-6">
 
             {{-- Active members --}}
-            <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+            {{-- No overflow-hidden here on purpose: the per-row "..." menu is
+                 absolutely positioned, and a clipping ancestor cuts it off at
+                 the card edge whatever z-index it carries. --}}
+            <div class="bg-white rounded-2xl border border-gray-200">
                 <div class="px-5 py-4 border-b border-gray-100">
                     <h3 class="font-semibold text-gray-900">{{ __('Members') }}</h3>
                     <p class="text-xs text-gray-500">{{ __('People with access to this workspace.') }}</p>
@@ -45,15 +48,30 @@
                                     @endif
                                 </div>
                                 <p class="text-xs text-gray-500 truncate">{{ $m->email }}</p>
+                                {{-- Each member sets their own number in their profile;
+                                     it prints as the contact on quotes they write. Shown
+                                     here so an admin can see who still hasn't. --}}
+                                <p class="text-xs text-gray-400 truncate">
+                                    @if ($m->phone)
+                                        <i class="ri-phone-line"></i> {{ $m->phone }}
+                                    @else
+                                        <i class="ri-phone-line"></i> {{ __('No phone number set') }}
+                                    @endif
+                                </p>
                             </div>
                             @if (! $isSelf)
-                                <div x-data="{ open: false }" class="relative">
-                                    <button type="button" @click="open = !open" @click.outside="open = false"
+                                <div x-data="{ open: false, up: false }" class="relative">
+                                    <button type="button" @click.stop="up = ($el.getBoundingClientRect().bottom + 260 > window.innerHeight); open = !open" @click.outside="open = false"
                                         class="w-8 h-8 inline-flex items-center justify-center text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg">
                                         <i class="ri-more-2-fill"></i>
                                     </button>
+                                    {{-- Opens upward when there isn't room below, so the
+                                         last row's menu doesn't run off the viewport.
+                                         Positioned with inline styles because top-full /
+                                         bottom-full aren't in the compiled CSS bundle. --}}
                                     <div x-show="open" x-cloak x-transition.opacity
-                                        class="absolute right-0 top-full mt-1 w-56 z-20 bg-white rounded-lg border border-gray-200 shadow-lg py-1">
+                                        x-bind:style="up ? 'bottom:100%;margin-bottom:.25rem' : 'top:100%;margin-top:.25rem'"
+                                        class="absolute right-0 w-56 z-40 bg-white rounded-lg border border-gray-200 shadow-lg py-1">
                                         {{-- Role change --}}
                                         @if ($m->role === \App\Models\User::ROLE_TENANT_ADMIN)
                                             <form method="POST" action="{{ route('team.role', $m->_id) }}">

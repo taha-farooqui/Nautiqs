@@ -30,6 +30,8 @@
     $spName = $quote->creatorName() ?: ($company->salesperson_name ?? '');
     // Contact email = the teammate who wrote it (see pdf/quote.blade.php).
     $spEmail = $quote->creatorEmail() ?: ($company->salesperson_email ?? '');
+    // Same rule for the number: the author's own, then the dealership's.
+    $spPhone = $quote->creatorPhone() ?: ($company->salesperson_phone ?? '');
     $logoSrc = $company->logoDataUri();
 
     // Display mode (HT | TTC) — same rule as pdf/quote.blade.php: it swaps the
@@ -93,7 +95,7 @@
             <div class="qmeta-label">{{ __('Your contact') }}</div>
             <div class="qmeta-name">{{ $spName ?: $company->name }}</div>
             <div class="qmeta-detail">
-                @if ($company->salesperson_phone) {{ $company->salesperson_phone }}<br>@endif
+                @if ($spPhone) {{ $spPhone }}<br>@endif
                 @if ($spEmail) {{ $spEmail }} @endif
             </div>
         </td>

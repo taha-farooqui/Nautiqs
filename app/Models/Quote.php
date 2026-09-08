@@ -293,6 +293,24 @@ class Quote extends Model
      * company address.
      */
     /**
+     * The phone number printed as "your contact" on this quote.
+     *
+     * Read live from the user for the same reason as creatorEmail(): it is a
+     * way to reach a person now. Falls back to the dealership's own number for
+     * guest quotes and for anyone who hasn't filled theirs in, so the contact
+     * block is never left without a number.
+     */
+    public function creatorPhone(): ?string
+    {
+        if ($this->created_by_user_id) {
+            $u = User::find($this->created_by_user_id);
+            if ($u && ! empty($u->phone)) return $u->phone;
+        }
+
+        return null;
+    }
+
+    /**
      * Where a client's reply should land.
      *
      * The live user record wins over the snapshot here, unlike everywhere else

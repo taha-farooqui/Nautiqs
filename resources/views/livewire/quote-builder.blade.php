@@ -216,7 +216,7 @@
                             <div class="text-right">
                                 <div class="font-semibold text-gray-900">{{ number_format($vEur, 0, ',', ' ') }} €</div>
                                 @if ($vIsFx)
-                                    <div class="text-[11px] text-gray-500">{{ __('was') }} {{ number_format($v->base_price, 0, ',', ' ') }} {{ $vSym }}</div>
+                                    <div class="text-[11px] text-gray-500">({{ number_format($v->base_price, 0, ',', ' ') }} {{ $vSym }})</div>
                                 @endif
                             </div>
                         </label>
@@ -331,7 +331,7 @@
                                         <div class="text-sm font-medium text-gray-900">{{ number_format($opt->price, 0, ',', ' ') }} €</div>
                                         @if ($optWasFx)
                                             <div class="text-[10px] text-gray-500">
-                                                {{ __('was') }} {{ number_format($opt->original_price, 0, ',', ' ') }} {{ $opt->original_price_currency === 'USD' ? '$' : $opt->original_price_currency }}
+                                                ({{ number_format($opt->original_price, 0, ',', ' ') }} {{ $opt->original_price_currency === 'USD' ? '$' : $opt->original_price_currency }})
                                             </div>
                                         @endif
                                     </div>
@@ -881,7 +881,7 @@
                         <dd class="text-right">
                             <div class="font-medium">{{ number_format($d($t['base_price_gross']), 2, ',', ' ') }} €</div>
                             @if (! empty($t['base_price_currency']) && $t['base_price_currency'] !== 'EUR' && ! empty($t['base_price_original']))
-                                <div class="text-[11px] text-gray-500">{{ __('was') }} {{ number_format($t['base_price_original'], 2, ',', ' ') }} {{ $t['base_price_currency'] === 'USD' ? '$' : $t['base_price_currency'] }}</div>
+                                <div class="text-[11px] text-gray-500">({{ number_format($t['base_price_original'], 2, ',', ' ') }} {{ $t['base_price_currency'] === 'USD' ? '$' : $t['base_price_currency'] }})</div>
                             @endif
                         </dd>
                     </div>
