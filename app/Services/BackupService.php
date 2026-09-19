@@ -130,9 +130,14 @@ class BackupService
      * keep_minimum rules hold in every case, which is what stops any sequence
      * of clicks or flags from emptying the server.
      *
+     * $respectGrace is set by the nightly run: it additionally requires that
+     * the download happened a couple of days ago, so a cancelled or truncated
+     * download cannot quietly cost the server its copy. Pressing the button on
+     * the Backups page is a deliberate act and skips the wait.
+     *
      * @return array{deleted:int, freed_bytes:int, kept:int}
      */
-    public function prune(bool $force = false, ?string $actorEmail = null): array
+    public function prune(bool $force = false, ?string $actorEmail = null, bool $respectGrace = false): array
     {
         $available = $this->availableRuns();
         $protected = $available->take((int) config('backup.keep_minimum'))
@@ -153,6 +158,11 @@ class BackupService
                 continue;
             }
             if (! $force && $run->downloaded_at === null) {
+                $kept++;
+                continue;
+            }
+            if ($respectGrace && $run->downloaded_at !== null
+                && $run->downloaded_at->diffInDays(now()) < (int) config('backup.prune_grace_days')) {
                 $kept++;
                 continue;
             }

@@ -33,7 +33,9 @@ class BackupPruneCommand extends Command
             return self::FAILURE;
         }
 
-        $result = $backups->prune($force);
+        // Scheduled runs wait out the grace period; the admin page's button
+        // goes through the controller and does not.
+        $result = $backups->prune($force, respectGrace: true);
 
         $this->info(sprintf(
             '%d archive(s) deleted, %s freed, %d kept.',

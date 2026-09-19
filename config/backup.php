@@ -34,6 +34,18 @@ return [
     'keep_minimum'   => (int) env('BACKUP_KEEP_MINIMUM', 4),
 
     /*
+    | Days between an archive being downloaded and the scheduled prune being
+    | willing to delete it.
+    |
+    | Serving a file is not proof it arrived: a download can be cancelled or
+    | truncated, and the archive is marked downloaded either way. Without a
+    | grace period the next nightly prune would remove the server's copy of a
+    | file the operator never actually got. The button on the Backups page is
+    | an explicit human decision and ignores this.
+    */
+    'prune_grace_days' => (int) env('BACKUP_PRUNE_GRACE_DAYS', 2),
+
+    /*
     |--------------------------------------------------------------------------
     | What goes in
     |--------------------------------------------------------------------------

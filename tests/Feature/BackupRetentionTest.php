@@ -48,8 +48,12 @@ class BackupRetentionTest extends TestCase
     }
 
     /** Create a fake archive on disk plus the row describing it. */
-    private function archive(int $ageDays, bool $downloaded = false, string $status = BackupRun::STATUS_OK): BackupRun
-    {
+    private function archive(
+        int $ageDays,
+        bool $downloaded = false,
+        string $status = BackupRun::STATUS_OK,
+        ?int $downloadedDaysAgo = null,
+    ): BackupRun {
         $when = now()->subDays($ageDays);
         $name = 'nautiqs-' . $when->format('Ymd-His') . '-' . uniqid() . '.tar.gz';
 
@@ -62,7 +66,9 @@ class BackupRetentionTest extends TestCase
             'size_bytes'    => 1024,
             'started_at'    => $when,
             'finished_at'   => $when,
-            'downloaded_at' => $downloaded ? $when->copy()->addDay() : null,
+            'downloaded_at' => $downloaded
+                ? ($downloadedDaysAgo !== null ? now()->subDays($downloadedDaysAgo) : $when->copy()->addDay())
+                : null,
         ]);
     }
 
@@ -222,6 +228,29 @@ class BackupRetentionTest extends TestCase
 
         $this->expectException(BackupException::class);
         $this->service->bundle(collect([$gone]));
+    }
+
+    public function test_the_nightly_prune_waits_out_the_grace_period(): void
+    {
+        config(['backup.prune_grace_days' => 2]);
+
+        for ($i = 1; $i <= 2; $i++) {
+            $this->archive(ageDays: $i);                                   // keep_minimum
+        }
+        $justDownloaded = $this->archive(ageDays: 40, downloaded: true, downloadedDaysAgo: 0);
+        $settled        = $this->archive(ageDays: 41, downloaded: true, downloadedDaysAgo: 5);
+
+        // A download that may have failed minutes ago must not cost the server
+        // its copy on the next nightly run.
+        $nightly = $this->service->prune(respectGrace: true);
+        $this->assertSame(1, $nightly['deleted']);
+        $this->assertTrue($justDownloaded->refresh()->isAvailable(), 'A fresh download is still within the grace period.');
+        $this->assertFalse($settled->refresh()->isAvailable());
+
+        // The button on the page is a deliberate act and does not wait.
+        $manual = $this->service->prune();
+        $this->assertSame(1, $manual['deleted']);
+        $this->assertFalse($justDownloaded->refresh()->isAvailable());
     }
 
     public function test_marking_downloaded_is_what_unlocks_pruning(): void
