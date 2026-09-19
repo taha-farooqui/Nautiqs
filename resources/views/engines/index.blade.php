@@ -151,56 +151,60 @@
             </div>
 
             <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-                <table class="w-full text-sm">
-                    <thead class="bg-gray-50 text-left text-xs uppercase text-gray-500 tracking-wide">
-                        <tr>
-                            <th class="px-5 py-3 w-10">
-                                <input type="checkbox" title="{{ __('Select all') }}"
-                                    @change="selected = $event.target.checked ? [...allIds] : []"
-                                    :checked="allIds.length > 0 && selected.length === allIds.length"
-                                    class="rounded border-gray-300 text-primary-800 focus:ring-primary-800" />
-                            </th>
-                            <th class="px-5 py-3 font-semibold">{{ __('Brand') }}</th>
-                            <th class="px-5 py-3 font-semibold">{{ __('Model') }}</th>
-                            <th class="px-5 py-3 font-semibold text-right">{{ __('Public HT') }}</th>
-                            <th class="px-5 py-3 font-semibold text-right">{{ __('VAT') }}</th>
-                            <th class="px-5 py-3 font-semibold text-right">{{ __('TTC') }}</th>
-                            <th class="px-5 py-3 font-semibold"></th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-100">
-                        @foreach ($engines as $engine)
-                            <tr class="hover:bg-gray-50" :class="selected.includes('{{ $engine->id }}') ? 'bg-primary-50/40' : ''">
-                                <td class="px-5 py-3">
-                                    <input type="checkbox" x-model="selected" value="{{ $engine->id }}"
+                {{-- Horizontal scroll rather than a squeezed table: the columns
+                     stay readable and the page itself never scrolls sideways. --}}
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-50 text-left text-xs uppercase text-gray-500 tracking-wide">
+                            <tr>
+                                <th class="px-5 py-3 w-10">
+                                    <input type="checkbox" title="{{ __('Select all') }}"
+                                        @change="selected = $event.target.checked ? [...allIds] : []"
+                                        :checked="allIds.length > 0 && selected.length === allIds.length"
                                         class="rounded border-gray-300 text-primary-800 focus:ring-primary-800" />
-                                </td>
-                                <td class="px-5 py-3 font-medium text-gray-900">{{ $engine->brand }}</td>
-                                <td class="px-5 py-3 text-gray-700">{{ $engine->code }}</td>
-                                <td class="px-5 py-3 text-right font-semibold text-gray-900">{{ number_format($engine->price, 2, ',', ' ') }} €</td>
-                                <td class="px-5 py-3 text-right text-gray-700">{{ number_format($engine->vat_rate, 2) }}%</td>
-                                <td class="px-5 py-3 text-right font-semibold text-gray-900">{{ number_format($engine->ttc, 2, ',', ' ') }} €</td>
-                                <td class="px-5 py-3">
-                                    <div class="flex items-center justify-end gap-1">
-                                        <a href="{{ route('engines.edit', $engine->id) }}"
-                                            class="inline-flex items-center justify-center w-8 h-8 text-gray-500 hover:text-primary-800 hover:bg-gray-100 rounded-lg" title="{{ __('Edit') }}">
-                                            <i class="ri-pencil-line"></i>
-                                        </a>
-                                        <form method="POST" action="{{ route('engines.destroy', $engine->id) }}"
-                                            data-confirm="{{ __('Delete this engine?') }}"
-                                            data-confirm-danger="1"
-                                            class="inline">
-                                            @csrf @method('DELETE')
-                                            <button class="inline-flex items-center justify-center w-8 h-8 text-red-600 hover:bg-red-50 rounded-lg" title="{{ __('Delete') }}">
-                                                <i class="ri-delete-bin-line"></i>
-                                            </button>
-                                        </form>
-                                    </div>
-                                </td>
+                                </th>
+                                <th class="px-5 py-3 font-semibold">{{ __('Brand') }}</th>
+                                <th class="px-5 py-3 font-semibold">{{ __('Model') }}</th>
+                                <th class="px-5 py-3 font-semibold text-right">{{ __('Public HT') }}</th>
+                                <th class="px-5 py-3 font-semibold text-right">{{ __('VAT') }}</th>
+                                <th class="px-5 py-3 font-semibold text-right">{{ __('TTC') }}</th>
+                                <th class="px-5 py-3 font-semibold"></th>
                             </tr>
-                        @endforeach
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            @foreach ($engines as $engine)
+                                <tr class="hover:bg-gray-50" :class="selected.includes('{{ $engine->id }}') ? 'bg-primary-50/40' : ''">
+                                    <td class="px-5 py-3">
+                                        <input type="checkbox" x-model="selected" value="{{ $engine->id }}"
+                                            class="rounded border-gray-300 text-primary-800 focus:ring-primary-800" />
+                                    </td>
+                                    <td class="px-5 py-3 font-medium text-gray-900">{{ $engine->brand }}</td>
+                                    <td class="px-5 py-3 text-gray-700">{{ $engine->code }}</td>
+                                    <td class="px-5 py-3 text-right font-semibold text-gray-900">{{ number_format($engine->price, 2, ',', ' ') }} €</td>
+                                    <td class="px-5 py-3 text-right text-gray-700">{{ number_format($engine->vat_rate, 2) }}%</td>
+                                    <td class="px-5 py-3 text-right font-semibold text-gray-900">{{ number_format($engine->ttc, 2, ',', ' ') }} €</td>
+                                    <td class="px-5 py-3">
+                                        <div class="flex items-center justify-end gap-1">
+                                            <a href="{{ route('engines.edit', $engine->id) }}"
+                                                class="inline-flex items-center justify-center w-8 h-8 text-gray-500 hover:text-primary-800 hover:bg-gray-100 rounded-lg" title="{{ __('Edit') }}">
+                                                <i class="ri-pencil-line"></i>
+                                            </a>
+                                            <form method="POST" action="{{ route('engines.destroy', $engine->id) }}"
+                                                data-confirm="{{ __('Delete this engine?') }}"
+                                                data-confirm-danger="1"
+                                                class="inline">
+                                                @csrf @method('DELETE')
+                                                <button class="inline-flex items-center justify-center w-8 h-8 text-red-600 hover:bg-red-50 rounded-lg" title="{{ __('Delete') }}">
+                                                    <i class="ri-delete-bin-line"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
             </div>
             <div class="mt-4">{{ $engines->links() }}</div>
         </div>

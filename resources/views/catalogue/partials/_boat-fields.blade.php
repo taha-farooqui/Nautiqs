@@ -122,41 +122,45 @@
 <div class="pt-3 border-t border-gray-100">
     <h3 class="text-sm font-semibold text-gray-700 mb-3">Capacity</h3>
     @php $cap = old('capacity', $model->capacity ?? []); @endphp
-    <table class="w-full max-w-xl text-sm">
-        <thead>
-            <tr class="text-xs text-gray-500">
-                <th class="text-left font-medium pb-1"></th>
-                <th class="font-medium pb-1">A</th>
-                <th class="font-medium pb-1">B</th>
-                <th class="font-medium pb-1">C</th>
-                <th class="font-medium pb-1">D</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td class="text-gray-700 pr-3"><i class="ri-user-line"></i> Passengers</td>
-                @foreach (['a','b','c','d'] as $col)
-                    <td class="pr-2">
-                        <input type="number" min="0" step="1"
-                            name="capacity[passengers][{{ $col }}]"
-                            value="{{ $cap['passengers'][$col] ?? '' }}"
-                            class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
-                    </td>
-                @endforeach
-            </tr>
-            <tr>
-                <td class="text-gray-700 pr-3"><i class="ri-suitcase-line"></i> + Luggage</td>
-                @foreach (['a','b','c','d'] as $col)
-                    <td class="pr-2 pt-2">
-                        <input type="number" min="0" step="1"
-                            name="capacity[passengers_luggage][{{ $col }}]"
-                            value="{{ $cap['passengers_luggage'][$col] ?? '' }}"
-                            class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
-                    </td>
-                @endforeach
-            </tr>
-        </tbody>
-    </table>
+    {{-- Scrolls sideways on a narrow screen instead of squeezing the
+         columns, so the page itself never scrolls. --}}
+    <div class="overflow-x-auto">
+        <table class="w-full max-w-xl text-sm">
+            <thead>
+                <tr class="text-xs text-gray-500">
+                    <th class="text-left font-medium pb-1"></th>
+                    <th class="font-medium pb-1">A</th>
+                    <th class="font-medium pb-1">B</th>
+                    <th class="font-medium pb-1">C</th>
+                    <th class="font-medium pb-1">D</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="text-gray-700 pr-3"><i class="ri-user-line"></i> Passengers</td>
+                    @foreach (['a','b','c','d'] as $col)
+                        <td class="pr-2">
+                            <input type="number" min="0" step="1"
+                                name="capacity[passengers][{{ $col }}]"
+                                value="{{ $cap['passengers'][$col] ?? '' }}"
+                                class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
+                        </td>
+                    @endforeach
+                </tr>
+                <tr>
+                    <td class="text-gray-700 pr-3"><i class="ri-suitcase-line"></i> + Luggage</td>
+                    @foreach (['a','b','c','d'] as $col)
+                        <td class="pr-2 pt-2">
+                            <input type="number" min="0" step="1"
+                                name="capacity[passengers_luggage][{{ $col }}]"
+                                value="{{ $cap['passengers_luggage'][$col] ?? '' }}"
+                                class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
+                        </td>
+                    @endforeach
+                </tr>
+            </tbody>
+        </table>
+    </div>
 </div>
 
 <div>

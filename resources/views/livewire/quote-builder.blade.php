@@ -47,8 +47,9 @@
         {{ __('Updating…') }}
     </div>
 
-    {{-- LEFT: configuration steps (always visible) --}}
-    <div class="xl:col-span-2 space-y-4">
+    {{-- LEFT: configuration steps (always visible).
+         Bottom padding clears the pinned summary bar below xl. --}}
+    <div class="xl:col-span-2 space-y-4 pb-20 xl:pb-0">
 
         {{-- Step 1: Client (existing or guest) --}}
         <div class="rounded-2xl border border-gray-200 p-5 {{ $cardEnabled }}">
@@ -508,7 +509,9 @@
             @elseif (empty($custom_items))
                 <p class="text-sm text-gray-500 text-center py-3">{{ __('Add transport, preparation, admin fees, etc.') }}</p>
             @else
-                <div class="grid grid-cols-12 gap-2 text-xs text-gray-500 px-1 mb-1">
+                {{-- Column captions only once the row is laid out in columns;
+                     below sm the inputs stack and carry their own placeholders. --}}
+                <div class="hidden sm:grid grid-cols-12 gap-2 text-xs text-gray-500 px-1 mb-1">
                     <div class="col-span-5">{{ __('Description') }}</div>
                     <div class="col-span-3 text-right">{{ __('Amount HT') }}</div>
                     <div class="col-span-2 text-right">{{ __('Disc %') }}</div>
@@ -517,17 +520,17 @@
                 </div>
                 <div class="space-y-2">
                     @foreach ($custom_items as $i => $ci)
-                        <div class="grid grid-cols-12 gap-2 items-start" wire:key="ci-{{ $i }}">
+                        <div class="grid grid-cols-2 sm:grid-cols-12 gap-2 items-start" wire:key="ci-{{ $i }}">
                             <input type="text" placeholder="{{ __('Transport & preparation') }}" wire:model.live.debounce.500ms="custom_items.{{ $i }}.label"
-                                class="col-span-5 rounded border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
+                                class="col-span-2 sm:col-span-5 rounded border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
                             <input type="number" step="0.01" placeholder="0.00" wire:model.live.debounce.300ms="custom_items.{{ $i }}.amount"
-                                class="col-span-3 rounded border-gray-300 text-sm text-right focus:border-primary-800 focus:ring-primary-800" />
+                                class="col-span-1 sm:col-span-3 rounded border-gray-300 text-sm text-right focus:border-primary-800 focus:ring-primary-800" />
                             <input type="number" min="0" max="100" step="0.5" placeholder="0" wire:model.live.debounce.300ms="custom_items.{{ $i }}.discount_pct"
-                                class="col-span-2 rounded border-gray-300 text-sm text-right focus:border-primary-800 focus:ring-primary-800" />
+                                class="col-span-1 sm:col-span-2 rounded border-gray-300 text-sm text-right focus:border-primary-800 focus:ring-primary-800" />
                             <input type="number" step="0.01" placeholder="—" wire:model.live.debounce.300ms="custom_items.{{ $i }}.cost"
-                                class="col-span-1 rounded border-gray-300 text-sm text-right focus:border-primary-800 focus:ring-primary-800" />
+                                class="col-span-1 sm:col-span-1 rounded border-gray-300 text-sm text-right focus:border-primary-800 focus:ring-primary-800" />
                             <button type="button" wire:click="removeCustomItem({{ $i }})"
-                                class="col-span-1 text-red-500 hover:text-red-700 text-center">
+                                class="col-span-1 sm:col-span-1 text-red-500 hover:text-red-700 text-center">
                                 <i class="ri-delete-bin-line"></i>
                             </button>
                         </div>
@@ -814,9 +817,34 @@
         </div>
     </div>
 
-    {{-- RIGHT: live financial summary (§8.3) --}}
-    <div class="xl:col-span-1">
-        <div class="sticky top-20 bg-white rounded-2xl border border-gray-200 overflow-hidden">
+    {{-- RIGHT: live financial summary (§8.3)
+
+         Below xl the page is a single column, so this panel would sit under
+         nine cards of inputs — the running total would be off-screen for the
+         whole time it is being changed, which is the one thing the builder
+         exists to show. On a tablet and phone it becomes a bar pinned to the
+         bottom of the viewport showing net payable, tapped to open the full
+         panel. From xl it is the sticky side column it has always been. --}}
+    <div class="xl:col-span-1" x-data="{ open: false }">
+        <div class="fixed inset-x-0 bottom-0 z-20 xl:static xl:z-auto">
+
+            {{-- Collapsed bar — below xl only. --}}
+            <button type="button" x-on:click="open = ! open"
+                class="xl:hidden w-full flex items-center justify-between gap-3 bg-primary-900 text-white px-4 py-3 border-t border-primary-800 shadow-lg">
+                <span class="text-xs uppercase tracking-wide text-white/70">{{ __('Net payable') }}</span>
+                <span class="flex items-center gap-2">
+                    <span class="text-lg font-bold">
+                        {{ $t ? number_format($t['net_payable'], 2, ',', ' ') . ' €' : '—' }}
+                    </span>
+                    <i class="ri-arrow-up-s-line transition-transform" x-bind:class="open && 'rotate-180'"></i>
+                </span>
+            </button>
+
+            {{-- The panel itself. Scrolls within the sheet on small screens so
+                 a long summary can never push its own total out of reach. --}}
+            <div x-bind:class="open ? 'block' : 'hidden xl:block'"
+                class="bg-white border border-gray-200 max-h-[75vh] overflow-y-auto
+                       xl:sticky xl:top-20 xl:max-h-none xl:overflow-hidden xl:rounded-2xl">
             <div class="px-5 py-4 bg-primary-900 text-white">
                 <div class="flex items-center justify-between">
                     <div>
@@ -1012,6 +1040,7 @@
                     </button>
                 </div>
             @endif
+            </div>
         </div>
     </div>
 

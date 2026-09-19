@@ -301,32 +301,36 @@
             @if (! empty($quote->options))
                 <div class="bg-white rounded-2xl border border-gray-200 p-6">
                     <h4 class="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3">{{ __('Selected options') }}</h4>
-                    <table class="w-full text-sm">
-                        <thead class="text-xs text-gray-500">
-                            <tr>
-                                <th class="text-left py-2">{{ __('Item') }}</th>
-                                <th class="text-right py-2">{{ __('Qty') }}</th>
-                                <th class="text-right py-2">{{ __('Unit') }}</th>
-                                <th class="text-right py-2">{{ __('Total HT') }}</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-100">
-                            @foreach ($quote->options as $opt)
+                    {{-- Scrolls sideways on a narrow screen instead of squeezing the
+                         columns, so the page itself never scrolls. --}}
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead class="text-xs text-gray-500">
                                 <tr>
-                                    <td class="py-2">
-                                        <div class="font-medium text-gray-900">{{ $opt['label'] ?? '' }}</div>
-                                        @if (! empty($opt['description']))
-                                            <div class="text-xs text-gray-600">{!! nl2br(e($opt['description'])) !!}</div>
-                                        @endif
-                                        <div class="text-xs text-gray-500">{{ $opt['category'] ?? '' }}</div>
-                                    </td>
-                                    <td class="py-2 text-right">{{ $opt['quantity'] ?? 1 }}</td>
-                                    <td class="py-2 text-right">{{ number_format($opt['unit_price'] ?? 0, 2, ',', ' ') }} €</td>
-                                    <td class="py-2 text-right font-medium">{{ number_format($opt['line_after_cat'] ?? 0, 2, ',', ' ') }} €</td>
+                                    <th class="text-left py-2">{{ __('Item') }}</th>
+                                    <th class="text-right py-2">{{ __('Qty') }}</th>
+                                    <th class="text-right py-2">{{ __('Unit') }}</th>
+                                    <th class="text-right py-2">{{ __('Total HT') }}</th>
                                 </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                @foreach ($quote->options as $opt)
+                                    <tr>
+                                        <td class="py-2">
+                                            <div class="font-medium text-gray-900">{{ $opt['label'] ?? '' }}</div>
+                                            @if (! empty($opt['description']))
+                                                <div class="text-xs text-gray-600">{!! nl2br(e($opt['description'])) !!}</div>
+                                            @endif
+                                            <div class="text-xs text-gray-500">{{ $opt['category'] ?? '' }}</div>
+                                        </td>
+                                        <td class="py-2 text-right">{{ $opt['quantity'] ?? 1 }}</td>
+                                        <td class="py-2 text-right">{{ number_format($opt['unit_price'] ?? 0, 2, ',', ' ') }} €</td>
+                                        <td class="py-2 text-right font-medium">{{ number_format($opt['line_after_cat'] ?? 0, 2, ',', ' ') }} €</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             @endif
 
@@ -334,16 +338,20 @@
             @if (! empty($quote->custom_items))
                 <div class="bg-white rounded-2xl border border-gray-200 p-6">
                     <h4 class="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3">{{ __('Custom items') }}</h4>
-                    <table class="w-full text-sm">
-                        <tbody class="divide-y divide-gray-100">
-                            @foreach ($quote->custom_items as $ci)
-                                <tr>
-                                    <td class="py-2 font-medium text-gray-900">{{ $ci['label'] ?? '' }}</td>
-                                    <td class="py-2 text-right font-medium">{{ number_format($ci['line_after_cat'] ?? $ci['amount'] ?? 0, 2, ',', ' ') }} €</td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
+                    {{-- Scrolls sideways on a narrow screen instead of squeezing the
+                         columns, so the page itself never scrolls. --}}
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <tbody class="divide-y divide-gray-100">
+                                @foreach ($quote->custom_items as $ci)
+                                    <tr>
+                                        <td class="py-2 font-medium text-gray-900">{{ $ci['label'] ?? '' }}</td>
+                                        <td class="py-2 text-right font-medium">{{ number_format($ci['line_after_cat'] ?? $ci['amount'] ?? 0, 2, ',', ' ') }} €</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             @endif
 
@@ -534,8 +542,9 @@
         @keydown.escape.window="previewOpen = false">
         <div class="bg-white rounded-2xl w-full max-w-5xl max-h-[92vh] flex flex-col overflow-hidden shadow-2xl"
             @click.outside="previewOpen = false">
-            {{-- Modal header --}}
-            <div class="flex items-center gap-3 px-5 py-4 border-b border-gray-100">
+            {{-- Modal header. Wraps below sm so the two actions drop to their
+                 own line instead of crushing the quote reference. --}}
+            <div class="flex flex-wrap items-center gap-3 px-5 py-4 border-b border-gray-100">
                 <div class="w-10 h-10 rounded-lg bg-primary-50 text-primary-800 flex items-center justify-center shrink-0">
                     <i class="ri-file-pdf-line text-xl"></i>
                 </div>

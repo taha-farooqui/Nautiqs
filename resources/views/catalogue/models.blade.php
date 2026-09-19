@@ -62,68 +62,72 @@
             size="lg" />
     @else
         <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-            <table class="w-full text-sm">
-                <thead class="bg-gray-50 text-left text-xs uppercase text-gray-500 tracking-wide">
-                    <tr>
-                        <th class="px-5 py-3 font-semibold">{{ __('Brand') }}</th>
-                        <th class="px-5 py-3 font-semibold">{{ __('Model') }}</th>
-                        <th class="px-5 py-3 font-semibold">{{ __('Status') }}</th>
-                        <th class="px-5 py-3 font-semibold text-right">{{ __('From TTC') }}</th>
-                        <th class="px-5 py-3 font-semibold">{{ __('Updated') }}</th>
-                        <th class="px-5 py-3"></th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100">
-                    @foreach ($rows as $r)
-                        @php
-                            $m = $r['model']; $b = $r['brand'];
-                            $count = $r['variant_count']; $ttc = $r['min_ttc'];
-                        @endphp
-                        <tr class="hover:bg-gray-50 cursor-pointer"
-                            data-href="{{ route('catalogue.models.edit', $m?->_id) }}"
-                            onclick="if (!event.target.closest('a, button, form, input')) window.location = this.dataset.href">
-                            <td class="px-5 py-3 font-medium text-gray-900">{{ $b?->name ?? '—' }}</td>
-                            <td class="px-5 py-3">
-                                <p class="font-medium text-gray-900">{{ $m?->name ?? '—' }}{{ $m?->complement ? ' ' . $m->complement : '' }}</p>
-                                @if ($count > 0)
-                                    <p class="text-xs text-gray-500">{{ $count }} {{ __('version(s)') }}</p>
-                                @else
-                                    <p class="text-xs text-amber-600 italic">{{ __('No versions yet') }}</p>
-                                @endif
-                            </td>
-                            <td class="px-5 py-3">
-                                @if ($count > 0)
-                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[11px] font-semibold">
-                                        <i class="ri-checkbox-circle-fill"></i> {{ __('Active') }}
-                                    </span>
-                                @else
-                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-[11px] font-semibold">
-                                        <i class="ri-draft-line"></i> {{ __('Draft') }}
-                                    </span>
-                                @endif
-                            </td>
-                            <td class="px-5 py-3 text-right font-semibold text-gray-900">{{ $ttc !== null ? number_format($ttc, 0, ',', ' ') . ' €' : '—' }}</td>
-                            <td class="px-5 py-3 text-xs text-gray-500">{{ $m?->updated_at?->diffForHumans() ?? '—' }}</td>
-                            <td class="px-5 py-3 text-right whitespace-nowrap">
-                                <a href="{{ route('catalogue.models.edit', $m?->_id) }}"
-                                    class="inline-flex items-center justify-center w-8 h-8 text-gray-500 hover:text-primary-800 hover:bg-gray-100 rounded-lg" title="{{ __('Edit') }}">
-                                    <i class="ri-pencil-line"></i>
-                                </a>
-                                @if ($m && $m->source === 'private')
-                                    <form method="POST" action="{{ route('catalogue.models.destroy', $m->_id) }}" class="inline"
-                                        data-confirm="{{ __('Permanently delete «:name» and all its versions and options? This cannot be undone.', ['name' => $m->name]) }}"
-                                        data-confirm-danger="1">
-                                        @csrf @method('DELETE')
-                                        <button type="submit" class="inline-flex items-center justify-center w-8 h-8 text-red-600 hover:bg-red-50 rounded-lg" title="{{ __('Delete') }}">
-                                            <i class="ri-delete-bin-line"></i>
-                                        </button>
-                                    </form>
-                                @endif
-                            </td>
+            {{-- Horizontal scroll rather than a squeezed table: the columns
+                 stay readable and the page itself never scrolls sideways. --}}
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50 text-left text-xs uppercase text-gray-500 tracking-wide">
+                        <tr>
+                            <th class="px-5 py-3 font-semibold">{{ __('Brand') }}</th>
+                            <th class="px-5 py-3 font-semibold">{{ __('Model') }}</th>
+                            <th class="px-5 py-3 font-semibold">{{ __('Status') }}</th>
+                            <th class="px-5 py-3 font-semibold text-right">{{ __('From TTC') }}</th>
+                            <th class="px-5 py-3 font-semibold">{{ __('Updated') }}</th>
+                            <th class="px-5 py-3"></th>
                         </tr>
-                    @endforeach
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        @foreach ($rows as $r)
+                            @php
+                                $m = $r['model']; $b = $r['brand'];
+                                $count = $r['variant_count']; $ttc = $r['min_ttc'];
+                            @endphp
+                            <tr class="hover:bg-gray-50 cursor-pointer"
+                                data-href="{{ route('catalogue.models.edit', $m?->_id) }}"
+                                onclick="if (!event.target.closest('a, button, form, input')) window.location = this.dataset.href">
+                                <td class="px-5 py-3 font-medium text-gray-900">{{ $b?->name ?? '—' }}</td>
+                                <td class="px-5 py-3">
+                                    <p class="font-medium text-gray-900">{{ $m?->name ?? '—' }}{{ $m?->complement ? ' ' . $m->complement : '' }}</p>
+                                    @if ($count > 0)
+                                        <p class="text-xs text-gray-500">{{ $count }} {{ __('version(s)') }}</p>
+                                    @else
+                                        <p class="text-xs text-amber-600 italic">{{ __('No versions yet') }}</p>
+                                    @endif
+                                </td>
+                                <td class="px-5 py-3">
+                                    @if ($count > 0)
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[11px] font-semibold">
+                                            <i class="ri-checkbox-circle-fill"></i> {{ __('Active') }}
+                                        </span>
+                                    @else
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-[11px] font-semibold">
+                                            <i class="ri-draft-line"></i> {{ __('Draft') }}
+                                        </span>
+                                    @endif
+                                </td>
+                                <td class="px-5 py-3 text-right font-semibold text-gray-900">{{ $ttc !== null ? number_format($ttc, 0, ',', ' ') . ' €' : '—' }}</td>
+                                <td class="px-5 py-3 text-xs text-gray-500">{{ $m?->updated_at?->diffForHumans() ?? '—' }}</td>
+                                <td class="px-5 py-3 text-right whitespace-nowrap">
+                                    <a href="{{ route('catalogue.models.edit', $m?->_id) }}"
+                                        class="inline-flex items-center justify-center w-8 h-8 text-gray-500 hover:text-primary-800 hover:bg-gray-100 rounded-lg" title="{{ __('Edit') }}">
+                                        <i class="ri-pencil-line"></i>
+                                    </a>
+                                    @if ($m && $m->source === 'private')
+                                        <form method="POST" action="{{ route('catalogue.models.destroy', $m->_id) }}" class="inline"
+                                            data-confirm="{{ __('Permanently delete «:name» and all its versions and options? This cannot be undone.', ['name' => $m->name]) }}"
+                                            data-confirm-danger="1">
+                                            @csrf @method('DELETE')
+                                            <button type="submit" class="inline-flex items-center justify-center w-8 h-8 text-red-600 hover:bg-red-50 rounded-lg" title="{{ __('Delete') }}">
+                                                <i class="ri-delete-bin-line"></i>
+                                            </button>
+                                        </form>
+                                    @endif
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
         </div>
     @endif
 </x-app-layout>
