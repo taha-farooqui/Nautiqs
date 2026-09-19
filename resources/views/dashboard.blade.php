@@ -9,7 +9,7 @@
 @endphp
 
 {{-- Header date reads "day date month year" (jeudi 30 juillet 2026). --}}
-<x-app-layout :title="__('Dashboard')" :header="__('Dashboard') . ' — ' . now()->translatedFormat('l j F Y')">
+<x-app-layout :title="__('Dashboard')" :header="__('Dashboard')">
 
     {{-- Catalogue update banner (only when there are pending updates) --}}
     @if ($pendingUpdatesCount > 0)
