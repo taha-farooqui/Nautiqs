@@ -583,7 +583,7 @@
                     <i class="ri-file-pdf-line text-xl"></i>
                 </div>
                 <div class="flex-1 min-w-0">
-                    <h3 class="font-semibold text-gray-900">{{ __('Quote') }} {{ $quote->number }}</h3>
+                    <h3 class="font-semibold text-gray-900 truncate">{{ __('Quote') }} {{ $quote->number }}</h3>
                     <p class="text-xs text-gray-500 truncate">{{ $quote->client_snapshot['first_name'] ?? '' }} {{ $quote->client_snapshot['last_name'] ?? '' }} · {{ $quote->boatLabel() }}</p>
                 </div>
                 <a href="{{ route('quotes.pdf', $quote->_id) }}?inline=1" target="_blank" rel="noopener"
