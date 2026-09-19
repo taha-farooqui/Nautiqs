@@ -257,7 +257,7 @@
                                             </div>
                                         </div>
                                     </td>
-                                    <td class="px-5 py-3">
+                                    <td class="px-5 py-3 whitespace-nowrap">
                                         <a href="{{ route('quotes.show', $q->_id) }}"
                                             class="font-mono text-xs px-2 py-1 rounded bg-gray-100 text-gray-700 hover:bg-primary-50 hover:text-primary-800">
                                             {{ $q->number }}
@@ -267,7 +267,7 @@
                                         <div class="text-gray-900">{{ $q->boatLabel() ?: '—' }}</div>
                                         <div class="text-xs text-gray-500">{{ $q->model_snapshot['brand'] ?? '' }}</div>
                                     </td>
-                                    <td class="px-5 py-3 text-right">
+                                    <td class="px-5 py-3 text-right whitespace-nowrap">
                                         <div class="font-semibold text-gray-900">
                                             {{ number_format($q->totals['total_ht'] ?? 0, 0, ',', ' ') }} €
                                         </div>
