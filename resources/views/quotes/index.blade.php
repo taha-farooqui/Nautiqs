@@ -173,7 +173,7 @@
                                 </td>
 
                                 {{-- Ref --}}
-                                <td class="px-4 py-3">
+                                <td class="px-4 py-3 whitespace-nowrap">
                                     <a href="{{ route('quotes.show', $quote->_id) }}"
                                         class="font-mono text-xs px-2 py-1 rounded bg-gray-100 text-gray-700 hover:bg-primary-50 hover:text-primary-800">
                                         {{ $quote->number }}
@@ -187,7 +187,7 @@
                                 </td>
 
                                 {{-- Amount --}}
-                                <td class="px-4 py-3 text-right">
+                                <td class="px-4 py-3 text-right whitespace-nowrap">
                                     <div class="font-semibold text-gray-900">
                                         {{ number_format($quote->totals['total_ht'] ?? 0, 0, ',', ' ') }} €
                                     </div>
