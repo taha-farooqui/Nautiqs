@@ -96,16 +96,28 @@ class BackupRun extends Model
 
     public function humanSize(): string
     {
-        $bytes = (int) $this->size_bytes;
+        return (int) $this->size_bytes > 0 ? self::formatBytes((int) $this->size_bytes) : '—';
+    }
+
+    /**
+     * Shared by the model and BackupService so a size reads the same wherever
+     * it is shown.
+     */
+    public static function formatBytes(int $bytes): string
+    {
         if ($bytes <= 0) {
-            return '—';
-        }
-        foreach (['B', 'KB', 'MB', 'GB'] as $i => $unit) {
-            if ($bytes < 1024 || $unit === 'GB') {
-                return round($bytes / (1024 ** $i), $i === 0 ? 0 : 1) . ' ' . $unit;
-            }
+            return '0 B';
         }
 
-        return $bytes . ' B';
+        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+        $i = 0;
+        $value = (float) $bytes;
+
+        while ($value >= 1024 && $i < count($units) - 1) {
+            $value /= 1024;
+            $i++;
+        }
+
+        return round($value, $i === 0 ? 0 : 1) . ' ' . $units[$i];
     }
 }

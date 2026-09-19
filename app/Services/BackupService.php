@@ -73,6 +73,7 @@ class BackupService
             $target   = $this->archivePath($filename);
 
             $this->compress($work, $target);
+            @chmod($target, 0600);
             $this->verify($target);
 
             $run->update([
@@ -334,12 +335,20 @@ class BackupService
         File::put($work . '/manifest.json', json_encode([
             'created_at'  => now()->toIso8601String(),
             'database'    => config('database.connections.mongodb.database'),
-            'app_version' => trim((string) @exec('git -C ' . escapeshellarg(base_path()) . ' rev-parse --short HEAD')) ?: null,
+            'app_version' => $this->appVersion(),
             'contents'    => $contents,
             'restore'     => 'mongorestore --uri="<target>" --gzip --archive=db.archive.gz --drop',
         ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
 
         return $contents;
+    }
+
+    /** Short commit of the deployed code, for the manifest. Best-effort. */
+    private function appVersion(): ?string
+    {
+        $out = @exec('git -C ' . escapeshellarg(base_path()) . ' rev-parse --short HEAD 2>/dev/null');
+
+        return trim((string) $out) ?: null;
     }
 
     /**
@@ -506,15 +515,6 @@ class BackupService
 
     public function humanBytes(int $bytes): string
     {
-        if ($bytes <= 0) {
-            return '0 B';
-        }
-        foreach (['B', 'KB', 'MB', 'GB', 'TB'] as $i => $unit) {
-            if ($bytes < 1024 || $unit === 'TB') {
-                return round($bytes / (1024 ** $i), $i === 0 ? 0 : 1) . ' ' . $unit;
-            }
-        }
-
-        return $bytes . ' B';
+        return BackupRun::formatBytes($bytes);
     }
 }
