@@ -27,7 +27,18 @@
         previewOpen: {{ request()->boolean('preview') ? 'true' : 'false' }},
         emailOpen: false,
         previewLoading: true
-    }">
+    }"
+    {{-- Freeze the page while a modal is open. Without this the document
+         behind keeps scrolling, so dragging on the PDF moves the page
+         underneath the overlay instead — which reads as "the preview won't
+         scroll" when the viewer is working perfectly. The padding replaces the
+         width the scrollbar gave up, so nothing jumps sideways. --}}
+    x-effect="
+        const open = previewOpen || emailOpen;
+        const bar = window.innerWidth - document.documentElement.clientWidth;
+        document.body.style.paddingRight = open ? bar + 'px' : '';
+        document.body.style.overflow = open ? 'hidden' : '';
+    ">
 
     @if (session('status'))
         <div class="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-800 px-4 py-3 text-sm">{{ session('status') }}</div>
@@ -552,6 +563,10 @@
                     <h3 class="font-semibold text-gray-900">{{ __('Quote') }} {{ $quote->number }}</h3>
                     <p class="text-xs text-gray-500 truncate">{{ $quote->client_snapshot['first_name'] ?? '' }} {{ $quote->client_snapshot['last_name'] ?? '' }} · {{ $quote->boatLabel() }}</p>
                 </div>
+                <a href="{{ route('quotes.pdf', $quote->_id) }}?inline=1" target="_blank" rel="noopener"
+                    class="inline-flex items-center gap-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-800 font-medium px-4 py-2 rounded-lg text-sm transition">
+                    <i class="ri-external-link-line"></i> {{ __('Open full screen') }}
+                </a>
                 <a href="{{ route('quotes.pdf', $quote->_id) }}"
                     class="inline-flex items-center gap-2 bg-primary-800 hover:bg-primary-900 text-white font-semibold px-4 py-2 rounded-lg text-sm transition">
                     <i class="ri-download-line"></i> {{ __('Download') }}
@@ -571,7 +586,7 @@
                  *after* the user clicks Preview. Eagerly setting src on
                  page-load made the spinner stay forever because the iframe
                  had already loaded before previewLoading was ever reset. --}}
-            <div class="flex-1 relative bg-gray-100 min-h-[60vh]">
+            <div class="flex-1 relative bg-gray-100 min-h-[60vh] overscroll-contain">
                 <div x-show="previewLoading" x-transition.opacity
                     class="absolute inset-0 flex flex-col items-center justify-center text-gray-500 z-10 bg-gray-100">
                     <svg class="animate-spin w-10 h-10 text-primary-800 mb-3" viewBox="0 0 24 24" fill="none">

@@ -1190,5 +1190,6 @@
     "A backup is already running. Try again in a moment.": "Une sauvegarde est déjà en cours. Réessayez dans un instant.",
     "The zip PHP extension is required to download several backups at once.": "L’extension PHP zip est requise pour télécharger plusieurs sauvegardes à la fois.",
     "Could not create the download bundle.": "Impossible de créer l’archive de téléchargement.",
-    "None of those backups are still on the server.": "Aucune de ces sauvegardes n’est encore sur le serveur."
+    "None of those backups are still on the server.": "Aucune de ces sauvegardes n’est encore sur le serveur.",
+    "Open full screen": "Ouvrir en plein écran"
 }
