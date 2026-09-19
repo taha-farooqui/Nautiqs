@@ -9,9 +9,9 @@ acceptance section passing against real data.
 
 | # | Feature | Client's words | What it actually is |
 |---|---|---|---|
-| 1 | Backups | "2 per day, 12:30 and midnight" | Scheduled encrypted dumps of DB + files + keys, kept locally **and** offsite, with restore drills and failure alerts |
+| 1 | Backups | "2 per day, 12:30 and midnight" | **DONE 19 Sep.** Scheduled dumps of DB + files + keys with a superadmin page; retention is download-then-free rather than offsite (client's own design). Restore drill executed |
 | 2 | Client data protection | "Personal data hashed" | Application-level **encryption at rest** of client PII (hashing would make the data unusable — see §2.1) |
-| 3 | iPad / mobile | "Improve responsiveness" | Fix the deploy pipeline that freezes CSS, then adapt the ~10 pages a dealer uses on a tablet at a boat show |
+| 3 | iPad / mobile | "Improve responsiveness" | **DONE 19 Sep** for the tenant pages. deploy.sh now rebuilds assets; quote builder keeps its total on screen; 0 overflows across 44 page/viewport captures |
 | 4 | Boat import/export | "Import/export for boats" | Flat XLSX/CSV round-trip for brands → models → versions, upsert-only, with a preview step |
 
 Order of work and estimates are in §6. A risk register is in §7. Bugs in §8.
@@ -50,6 +50,9 @@ inflate that number, but it includes real utilities I hit four times this
 summer: `hover:bg-gray-50`, `disabled:opacity-50`, `col-span-12`, `text-[11px]`).
 Responsive variants **are** compiled (sm 27, md 12, lg 15, xl 4) — small counts
 because the app was designed desktop-first, not because the build is broken.
+*(Corrected 19 Sep: `hover:` and `disabled:` variants were in the bundle all
+along; my earlier greps escaped the backslash wrongly. The frozen-bundle problem
+was real — a rebuild added 21 classes — but that particular list was not.)*
 The layout shell is already responsive (off-canvas sidebar below `lg`,
 hamburger, overlay). The pain is inside the pages.
 
