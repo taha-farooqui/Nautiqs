@@ -369,7 +369,7 @@
             @if ($this->selectedEngineRows->isNotEmpty())
                 <div class="mb-3 space-y-2">
                     @foreach ($this->selectedEngineRows as $row)
-                        <div class="flex items-start gap-3 px-3 py-2 rounded-lg border border-primary-200 bg-primary-50/40" wire:key="eng-{{ $row->id }}">
+                        <div class="flex flex-wrap items-start gap-3 px-3 py-2 rounded-lg border border-primary-200 bg-primary-50/40" wire:key="eng-{{ $row->id }}">
                             <i class="ri-settings-3-line text-primary-800 shrink-0 mt-1"></i>
                             <div class="flex-1 min-w-0">
                                 <p class="text-sm font-medium text-gray-900 truncate">{{ $row->label }}</p>
@@ -383,6 +383,10 @@
                                     <p class="text-xs text-gray-500 mt-1">{!! nl2br(e($row->description)) !!}</p>
                                 @endif
                             </div>
+                            {{-- Quantity, discount, line total and remove move as one
+                                 block, so on a narrow screen they drop to their own
+                                 line together instead of each shrinking. --}}
+                            <div class="flex w-full sm:w-auto items-center justify-end gap-3">
                             <div class="flex items-center gap-1.5 shrink-0">
                                 <label class="text-xs text-gray-500">{{ __('Qty') }}</label>
                                 <input type="number" min="1" max="99" value="{{ $row->quantity }}"
@@ -407,6 +411,7 @@
                                 class="text-gray-400 hover:text-red-600 shrink-0" title="{{ __('Remove') }}">
                                 <i class="ri-close-line"></i>
                             </button>
+                            </div>
                         </div>
                     @endforeach
                 </div>
