@@ -32,17 +32,17 @@
         </button>
 
         {{-- Title --}}
-        <div class="min-w-0">
+        <div class="min-w-0 flex-1 md:flex-none">
             <h1 class="text-lg font-semibold text-gray-900 truncate">{{ $title }}</h1>
         </div>
 
         {{-- Search trigger (Cmd/Ctrl+K) --}}
-        <div class="hidden md:flex flex-1 max-w-md mx-auto">
+        <div class="hidden md:flex flex-1 min-w-0 max-w-md mx-auto">
             <button type="button"
                 @click="$dispatch('open-search')"
                 class="group relative w-full text-left">
                 <i class="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                <div class="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-500 hover:bg-white hover:border-primary-800 transition">
+                <div class="w-full truncate pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-500 hover:bg-white hover:border-primary-800 transition">
                     {{ __('Search quotes, clients, models…') }}
                 </div>
                 <kbd class="hidden lg:inline-flex absolute right-2 top-1/2 -translate-y-1/2 px-1.5 py-0.5 text-[10px] font-semibold text-gray-500 bg-white border border-gray-200 rounded">⌘K</kbd>

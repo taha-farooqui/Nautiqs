@@ -30,15 +30,15 @@
 
     {{-- Top bar: filter + add boat --}}
     <div class="mb-6 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-        <form method="GET" action="{{ route('catalogue.models') }}" class="flex items-center gap-2">
-            <div class="relative">
+        <form method="GET" action="{{ route('catalogue.models') }}" class="flex flex-wrap items-center gap-2">
+            <div class="relative w-full sm:w-auto">
                 <i class="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
                 <input type="text" name="q" value="{{ request('q', '') }}"
                     placeholder="{{ __('Search by brand, model, or variant…') }}"
-                    class="pl-9 pr-3 py-2 rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800 min-w-[280px]" />
+                    class="w-full sm:w-auto sm:min-w-[280px] pl-9 pr-3 py-2 rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
             </div>
             <select name="brand" onchange="this.form.submit()"
-                class="rounded-lg border-gray-200 text-sm focus:border-primary-800 focus:ring-primary-800">
+                class="w-full sm:w-auto rounded-lg border-gray-200 text-sm focus:border-primary-800 focus:ring-primary-800">
                 <option value="">{{ __('All brands') }}</option>
                 @foreach ($brands as $b)
                     <option value="{{ $b->_id }}" @selected($brandFilter === (string) $b->_id)>{{ $b->name }}</option>
