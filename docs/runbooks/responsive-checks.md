@@ -56,3 +56,33 @@ Deploys build the CSS (`deploy.sh`), so any Tailwind class is available. That
 was not true before 19 Sep 2026: the bundle was frozen at 19 June and classes
 added after that silently did nothing. If a style mysteriously has no effect,
 check the deployed bundle contains the class before rewriting the markup.
+
+## The PDF preview
+
+Two things looked like "the preview won't scroll" and only one of them was the
+preview.
+
+**The page behind was taking the gesture.** Nothing locked the document while
+the modal was open, so dragging on the PDF scrolled the page underneath the
+overlay while the PDF sat still. The body is now pinned at a negative offset
+while either modal is open — `overflow: hidden` alone is not enough, because it
+drops the page back to the top and closing the modal loses your place. The
+scrollbar's width is replaced as padding so nothing jumps sideways.
+
+**Safari on iPad will not scroll a PDF inside an iframe at all.** It renders the
+first page and ignores the gesture. No amount of CSS fixes that, so the modal
+has an **Open full screen** button that hands the same inline URL to the
+device's own viewer, where scrolling and pinch-zoom work. Chromium — including
+DevTools' iPad emulation — does scroll the embedded viewer, so the emulator
+cannot tell you whether a real iPad is happy. Test that button on a real device.
+
+### Checking it
+
+```
+node pdfscroll.mjs    # does the embedded viewer turn pages (wheel + touch drag)
+node lock.mjs         # is the page behind held still, and restored on close
+```
+
+`pdfscroll.mjs` compares screenshots of the iframe region, so it is mildly
+flaky: if the PDF is still rendering when the first frame is taken it reports a
+false negative. Run it twice before believing a NO.
