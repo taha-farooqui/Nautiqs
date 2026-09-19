@@ -1191,5 +1191,6 @@
     "The zip PHP extension is required to download several backups at once.": "L’extension PHP zip est requise pour télécharger plusieurs sauvegardes à la fois.",
     "Could not create the download bundle.": "Impossible de créer l’archive de téléchargement.",
     "None of those backups are still on the server.": "Aucune de ces sauvegardes n’est encore sur le serveur.",
-    "Open full screen": "Ouvrir en plein écran"
+    "Open full screen": "Ouvrir en plein écran",
+    "On a tablet the quote opens in its own PDF viewer, where you can scroll and zoom properly.": "Sur tablette, le devis s’ouvre dans le lecteur PDF de l’appareil, où vous pouvez faire défiler et zoomer correctement."
 }

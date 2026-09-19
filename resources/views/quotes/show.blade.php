@@ -27,6 +27,24 @@
         previewOpen: {{ request()->boolean('preview') ? 'true' : 'false' }},
         emailOpen: false,
         previewLoading: true,
+        isTouch: window.matchMedia('(pointer: coarse)').matches,
+
+        openPdf() {
+            // A PDF inside an iframe is not reliably scrollable with a finger.
+            // Safari on iPad renders the first page and ignores the gesture
+            // entirely, and Chrome's device emulation will not pass a wheel or
+            // a drag through to the plugin either — so on a tablet the embedded
+            // viewer shows page one and nothing else. Hand the file to the
+            // device's own viewer instead, where scrolling, pinch-zoom, sharing
+            // and printing all work. A mouse keeps the in-page modal, which is
+            // more convenient there and has never had the problem.
+            if (window.matchMedia('(pointer: coarse)').matches) {
+                window.open('{{ route('quotes.pdf', $quote->_id) }}?inline=1', '_blank', 'noopener');
+                return;
+            }
+            this.previewOpen = true;
+            this.previewLoading = true;
+        },
 
         _lockY: 0,
         lockPage(on) {
@@ -201,7 +219,7 @@
 
     {{-- ===================== ACTION BAR ===================== --}}
     <div class="mb-6 flex flex-wrap items-center justify-end gap-2">
-        <button type="button" @click="previewOpen = true; previewLoading = true"
+        <button type="button" @click="openPdf()"
             class="inline-flex items-center gap-2 bg-primary-800 hover:bg-primary-900 text-white font-semibold px-4 py-2 rounded-lg text-sm transition">
             <i class="ri-file-pdf-line"></i> {{ __('Preview PDF') }}
         </button>
@@ -610,7 +628,20 @@
                  page-load made the spinner stay forever because the iframe
                  had already loaded before previewLoading was ever reset. --}}
             <div class="flex-1 relative bg-gray-100 min-h-[60vh] overscroll-contain">
-                <div x-show="previewLoading" x-transition.opacity
+                <template x-if="isTouch">
+                    <div class="absolute inset-0 flex flex-col items-center justify-center gap-4 px-6 text-center">
+                        <i class="ri-file-pdf-line text-5xl text-gray-300"></i>
+                        <p class="text-sm text-gray-600 max-w-sm">
+                            {{ __('On a tablet the quote opens in its own PDF viewer, where you can scroll and zoom properly.') }}
+                        </p>
+                        <a href="{{ route('quotes.pdf', $quote->_id) }}?inline=1" target="_blank" rel="noopener"
+                            class="inline-flex items-center gap-2 bg-primary-800 hover:bg-primary-900 text-white font-semibold px-5 py-2.5 rounded-lg text-sm">
+                            <i class="ri-external-link-line"></i> {{ __('Open full screen') }}
+                        </a>
+                    </div>
+                </template>
+
+                <div x-show="previewLoading && ! isTouch" x-transition.opacity
                     class="absolute inset-0 flex flex-col items-center justify-center text-gray-500 z-10 bg-gray-100">
                     <svg class="animate-spin w-10 h-10 text-primary-800 mb-3" viewBox="0 0 24 24" fill="none">
                         <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-opacity="0.25"></circle>
@@ -618,8 +649,9 @@
                     </svg>
                     <p class="text-sm font-medium">{{ __('Generating PDF…') }}</p>
                 </div>
-                <iframe
-                    x-bind:src="previewOpen ? '{{ route('quotes.pdf', $quote->_id) }}?inline=1' : ''"
+                {{-- Only ever rendered for a mouse: see openPdf(). --}}
+                <iframe x-show="! isTouch"
+                    x-bind:src="(previewOpen && ! isTouch) ? '{{ route('quotes.pdf', $quote->_id) }}?inline=1' : ''"
                     @load="if (previewOpen) previewLoading = false"
                     class="absolute inset-0 w-full h-full"
                     title="{{ __('Quote') }} {{ $quote->number }}"></iframe>
