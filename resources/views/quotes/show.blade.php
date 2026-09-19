@@ -26,19 +26,42 @@
 <div x-data="{
         previewOpen: {{ request()->boolean('preview') ? 'true' : 'false' }},
         emailOpen: false,
-        previewLoading: true
+        previewLoading: true,
+
+        _lockY: 0,
+        lockPage(on) {
+            const body = document.body;
+            const locked = body.style.position === 'fixed';
+            if (on === locked) return;
+
+            if (on) {
+                this._lockY = window.scrollY;
+                body.style.paddingRight = (window.innerWidth - document.documentElement.clientWidth) + 'px';
+                body.style.position = 'fixed';
+                body.style.top = `-${this._lockY}px`;
+                body.style.left = '0';
+                body.style.right = '0';
+            } else {
+                body.style.position = '';
+                body.style.top = '';
+                body.style.left = '';
+                body.style.right = '';
+                body.style.paddingRight = '';
+                window.scrollTo(0, this._lockY);
+            }
+        }
     }"
-    {{-- Freeze the page while a modal is open. Without this the document
-         behind keeps scrolling, so dragging on the PDF moves the page
-         underneath the overlay instead — which reads as "the preview won't
-         scroll" when the viewer is working perfectly. The padding replaces the
-         width the scrollbar gave up, so nothing jumps sideways. --}}
-    x-effect="
-        const open = previewOpen || emailOpen;
-        const bar = window.innerWidth - document.documentElement.clientWidth;
-        document.body.style.paddingRight = open ? bar + 'px' : '';
-        document.body.style.overflow = open ? 'hidden' : '';
-    ">
+    {{-- Freeze the page while a modal is open. Without this the document behind
+         keeps scrolling, so dragging on the PDF moves the page underneath the
+         overlay instead — which reads as "the preview won't scroll" when the
+         viewer is working perfectly.
+
+         overflow:hidden alone is not enough: it drops the page back to the top,
+         so closing the modal loses your place. Pinning the body at a negative
+         offset holds the view still and restores the exact position on close.
+         The padding replaces the width the scrollbar gave up, so nothing jumps
+         sideways either. --}}
+    x-effect="lockPage(previewOpen || emailOpen)">
 
     @if (session('status'))
         <div class="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-800 px-4 py-3 text-sm">{{ session('status') }}</div>
