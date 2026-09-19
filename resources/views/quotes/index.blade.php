@@ -144,9 +144,9 @@
                             <th class="px-4 py-3 text-left font-semibold">{{ __('Boat') }}</th>
                             <th class="px-4 py-3 text-right font-semibold">{{ __('Amount excl. VAT') }}</th>
                             <th class="px-4 py-3 text-left font-semibold">{{ __('Status') }}</th>
-                            <th class="px-4 py-3 text-left font-semibold hidden lg:table-cell">{{ __('Created by') }}</th>
+                            <th class="px-4 py-3 text-left font-semibold hidden xl:table-cell">{{ __('Created by') }}</th>
                             <th class="px-4 py-3 text-left font-semibold">{{ __('Date') }}</th>
-                            <th class="px-4 py-3 text-left font-semibold hidden lg:table-cell">{{ __('Opens') }}</th>
+                            <th class="px-4 py-3 text-left font-semibold hidden xl:table-cell">{{ __('Opens') }}</th>
                             <th class="px-4 py-3"></th>
                         </tr>
                     </thead>
@@ -200,7 +200,7 @@
                                 <td class="px-4 py-3"><x-app.status-pill :status="$quote->status" /></td>
 
                                 {{-- Created by --}}
-                                <td class="px-4 py-3 text-xs text-gray-600 hidden lg:table-cell">
+                                <td class="px-4 py-3 text-xs text-gray-600 hidden xl:table-cell">
                                     {{ $quote->creatorName() ?? '—' }}
                                 </td>
 
@@ -211,7 +211,7 @@
                                 </td>
 
                                 {{-- Opens (email tracking) --}}
-                                <td class="px-4 py-3 hidden lg:table-cell">
+                                <td class="px-4 py-3 hidden xl:table-cell">
                                     @php $opens = $quote->openCount(); $lastOpen = $quote->lastOpenedAt(); @endphp
                                     @if ($opens === 0)
                                         <span class="text-xs text-gray-400 italic">{{ __('Never opened') }}</span>
