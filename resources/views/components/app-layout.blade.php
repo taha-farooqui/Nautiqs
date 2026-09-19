@@ -34,10 +34,10 @@
                 x-show="sidebarOpen"
                 x-transition.opacity
                 @click="sidebarOpen = false"
-                class="fixed inset-0 bg-gray-900/40 z-30 lg:hidden"
+                class="fixed inset-0 bg-gray-900/40 z-30 xl:hidden"
                 style="display: none;"></div>
 
-            <div class="flex-1 flex flex-col min-w-0 lg:ml-72">
+            <div class="flex-1 flex flex-col min-w-0 xl:ml-72">
                 <x-app.header :title="$header ?? ($title ?? __('Dashboard'))" />
 
                 <main class="flex-1 px-4 sm:px-6 lg:px-8 py-6">

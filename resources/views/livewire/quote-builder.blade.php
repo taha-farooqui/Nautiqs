@@ -831,7 +831,7 @@
          bottom of the viewport showing net payable, tapped to open the full
          panel. From xl it is the sticky side column it has always been. --}}
     <div class="xl:col-span-1" x-data="{ open: false }">
-        <div class="fixed bottom-0 right-0 left-0 lg:left-72 z-20 xl:static xl:z-auto">
+        <div class="fixed bottom-0 right-0 left-0 z-20 xl:static xl:z-auto">
 
             {{-- Collapsed bar — below xl only. --}}
             <button type="button" x-on:click="open = ! open"

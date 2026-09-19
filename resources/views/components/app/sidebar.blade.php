@@ -102,8 +102,8 @@
 @endphp
 
 <aside
-    class="fixed inset-y-0 left-0 z-40 w-72 bg-primary-900 text-white flex flex-col transition-transform duration-200 ease-out lg:translate-x-0"
-    :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'">
+    class="fixed inset-y-0 left-0 z-40 w-72 bg-primary-900 text-white flex flex-col transition-transform duration-200 ease-out xl:translate-x-0"
+    :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full xl:translate-x-0'">
 
     {{-- Brand --}}
     <div class="h-16 flex items-center gap-3 px-5 border-b border-white/10">
@@ -114,7 +114,7 @@
                 {{ $isSuperadmin ? __('Superadmin') : __('Dealership') }}
             </div>
         </div>
-        <button @click="sidebarOpen = false" class="ml-auto lg:hidden text-white/70 hover:text-white">
+        <button @click="sidebarOpen = false" class="ml-auto xl:hidden text-white/70 hover:text-white">
             <i class="ri-close-line text-2xl"></i>
         </button>
     </div>

@@ -43,14 +43,14 @@
                 x-show="sidebarOpen"
                 x-transition.opacity
                 @click="sidebarOpen = false"
-                class="fixed inset-0 bg-gray-900/40 z-30 lg:hidden"
+                class="fixed inset-0 bg-gray-900/40 z-30 xl:hidden"
                 style="display: none;"></div>
 
-            <div class="flex-1 flex flex-col min-w-0 lg:ml-72">
+            <div class="flex-1 flex flex-col min-w-0 xl:ml-72">
                 {{-- Slate top bar — visually unmistakable from the white tenant header. --}}
                 <header class="sticky top-0 z-20 bg-slate-900 text-white border-b border-slate-800">
                     <div class="h-16 px-4 sm:px-6 lg:px-8 flex items-center gap-4">
-                        <button @click="sidebarOpen = true" class="lg:hidden text-white/80 hover:text-white">
+                        <button @click="sidebarOpen = true" class="xl:hidden text-white/80 hover:text-white">
                             <i class="ri-menu-line text-2xl"></i>
                         </button>
 

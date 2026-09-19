@@ -27,7 +27,7 @@
     <div class="h-16 px-4 sm:px-6 lg:px-8 flex items-center gap-4">
         {{-- Mobile sidebar toggle --}}
         <button @click="sidebarOpen = true"
-            class="lg:hidden text-gray-600 hover:text-gray-900">
+            class="xl:hidden text-gray-600 hover:text-gray-900">
             <i class="ri-menu-line text-2xl"></i>
         </button>
 
