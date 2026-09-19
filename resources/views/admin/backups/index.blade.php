@@ -272,18 +272,4 @@
         @endif
     </div>
 
-    {{-- How a restore actually works. Written on the page because the moment
-         it is needed is the moment nobody wants to go looking for it. --}}
-    <div class="mt-6 bg-white rounded-2xl border border-gray-200 p-5">
-        <h3 class="font-semibold text-gray-900 mb-2">{{ __('Restoring from an archive') }}</h3>
-        <p class="text-xs text-gray-500 mb-3">
-            {{ __('Each archive is a standard .tar.gz. Restoring needs only MongoDB\'s own tools — it does not depend on Nautiqs running.') }}
-        </p>
-        <pre class="text-xs bg-gray-50 border border-gray-200 rounded-lg p-4 overflow-x-auto text-gray-700">tar -xzf nautiqs-YYYYMMDD-HHMMSS.tar.gz
-mongorestore --uri="&lt;target cluster&gt;" --gzip --archive=db.archive.gz --drop</pre>
-        <p class="text-xs text-gray-500 mt-3">
-            {{ __('The archive also contains the uploaded logos (storage/) and the server configuration (.env). Keep downloaded archives somewhere private: they hold client data and live credentials.') }}
-        </p>
-    </div>
-
 </x-admin-layout>
