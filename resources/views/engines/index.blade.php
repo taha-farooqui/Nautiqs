@@ -154,7 +154,7 @@
                 {{-- Horizontal scroll rather than a squeezed table: the columns
                      stay readable and the page itself never scrolls sideways. --}}
                 <div class="overflow-x-auto">
-                    <table class="w-full text-sm">
+                    <table class="w-full min-w-[720px] text-sm">
                         <thead class="bg-gray-50 text-left text-xs uppercase text-gray-500 tracking-wide">
                             <tr>
                                 <th class="px-5 py-3 w-10">
