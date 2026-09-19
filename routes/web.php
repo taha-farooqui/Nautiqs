@@ -273,6 +273,17 @@ Route::middleware(['auth', 'verified', 'maintenance'])->group(function () {
         // Activity log (audit trail of superadmin actions).
         Route::get('/audit',                [\App\Http\Controllers\Admin\AuditController::class, 'index'])->name('audit.index');
 
+        // Backups. Superadmin-only by virtue of this group's middleware —
+        // archives hold every tenant's data plus .env, so they must never be
+        // reachable from a dealership session or straight off the filesystem.
+        $b = \App\Http\Controllers\Admin\BackupController::class;
+        Route::get('/backups',                    [$b, 'index'])->name('backups.index');
+        Route::post('/backups',                   [$b, 'store'])->name('backups.store');
+        Route::get('/backups/archive/download',   [$b, 'downloadArchivable'])->name('backups.download-archivable');
+        Route::post('/backups/archive/prune',     [$b, 'pruneDownloaded'])->name('backups.prune');
+        Route::get('/backups/{id}/download',      [$b, 'download'])->name('backups.download');
+        Route::delete('/backups/{id}',            [$b, 'destroy'])->name('backups.destroy');
+
         // Global catalogue CRUD — spec §4.1. All CRUD pages live on
         // Admin\CatalogueController so the audit-log call sites stay consistent.
         $c = \App\Http\Controllers\Admin\CatalogueController::class;

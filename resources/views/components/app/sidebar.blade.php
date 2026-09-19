@@ -92,7 +92,8 @@
         [
             'section' => 'Activity',
             'items' => [
-                ['label' => 'Activity log',    'icon' => 'ri-shield-check-line',    'route' => 'admin.audit.index', 'active' => 'admin.audit.*'],
+                ['label' => 'Activity log',    'icon' => 'ri-shield-check-line',    'route' => 'admin.audit.index',   'active' => 'admin.audit.*'],
+                ['label' => 'Backups',         'icon' => 'ri-database-2-line',      'route' => 'admin.backups.index', 'active' => 'admin.backups.*'],
             ],
         ],
     ];
