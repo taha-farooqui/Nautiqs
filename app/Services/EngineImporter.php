@@ -293,14 +293,17 @@ class EngineImporter
                     // Deliberately not trimmed of inner newlines: a dealer
                     // listing the propeller on its own line wants that kept
                     // (the quote and PDF render descriptions with nl2br).
-                    $out['description'] = trim((string) ($rawRow[$col] ?? ''), " 	
+                    $out['description'] = trim((string) ($rawRow[$col] ?? ''), " 	
+
 ");
                     break;
                 case 'cost':
                 case 'price':
                     if ($raw !== '') {
                         $clean = preg_replace('/[€$\s]/u', '', $raw);
-                        $out[$field] = (float) str_replace(',', '.', $clean);
+                        // Cents, for the same reason as OptionImporter: a cell
+                        // displayed as "18 500 €" can hold 18499.999999999996.
+                        $out[$field] = round((float) str_replace(',', '.', $clean), 2);
                     }
                     break;
                 case 'vat_rate':

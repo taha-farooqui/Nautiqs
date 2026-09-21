@@ -458,7 +458,7 @@ class CatalogueController extends Controller
 
             'new_options'                  => 'nullable|array',
             'new_options.*.category'       => 'required_with:new_options|string|max:100',
-            'new_options.*.label'          => 'required_with:new_options|string|max:200',
+            'new_options.*.label'          => 'required_with:new_options|string',
             'new_options.*.price'          => 'required_with:new_options|numeric|min:0',
             'new_options.*.cost'           => 'nullable|numeric|min:0',
 
@@ -507,8 +507,8 @@ class CatalogueController extends Controller
                 'global_variant_id'  => null,
                 'source'             => 'private',
                 'name'               => $v['name'],
-                'base_price'         => (float) $v['base_price'],
-                'cost'               => (float) ($v['cost'] ?? 0),
+                'base_price'         => round((float) $v['base_price'], 2),
+                'cost'               => round((float) ($v['cost'] ?? 0), 2),
                 'currency'           => $v['currency'] ?? 'EUR',
                 'included_equipment' => $this->normaliseEquipmentList($v['equipment'] ?? []),
                 'is_active'          => true,
@@ -525,8 +525,8 @@ class CatalogueController extends Controller
                 'source'            => 'private',
                 'category'          => $o['category'],
                 'label'             => $o['label'],
-                'price'             => (float) $o['price'],
-                'cost'              => (float) ($o['cost'] ?? 0),
+                'price'             => round((float) $o['price'], 2),
+                'cost'              => round((float) ($o['cost'] ?? 0), 2),
                 'currency'          => $o['currency'] ?? 'EUR',
                 'position'          => 0,
                 'is_archived'       => false,
@@ -688,8 +688,8 @@ class CatalogueController extends Controller
             'global_variant_id'  => null,
             'source'             => 'private',
             'name'               => $data['name'],
-            'base_price'         => (float) $data['base_price'],
-            'cost'               => (float) ($data['cost'] ?? 0),
+            'base_price'         => round((float) $data['base_price'], 2),
+            'cost'               => round((float) ($data['cost'] ?? 0), 2),
             'currency'           => $data['currency'] ?? 'EUR',
             'included_equipment' => $equipment,
             'is_active'          => true,
@@ -717,8 +717,8 @@ class CatalogueController extends Controller
             'global_variant_id'  => null,
             'source'             => 'private',
             'name'               => $data['name'],
-            'base_price'         => (float) $data['base_price'],
-            'cost'               => (float) ($data['cost'] ?? 0),
+            'base_price'         => round((float) $data['base_price'], 2),
+            'cost'               => round((float) ($data['cost'] ?? 0), 2),
             'currency'           => $data['currency'] ?? 'EUR',
             'included_equipment' => $this->normaliseEquipmentList($data['equipment'] ?? []),
             'is_active'          => true,
@@ -740,8 +740,8 @@ class CatalogueController extends Controller
         ]);
         $variant->update([
             'name'               => $data['name'],
-            'base_price'         => (float) $data['base_price'],
-            'cost'               => (float) ($data['cost'] ?? $variant->cost),
+            'base_price'         => round((float) $data['base_price'], 2),
+            'cost'               => round((float) ($data['cost'] ?? $variant->cost), 2),
             'currency'           => $data['currency'] ?? $variant->currency,
             'included_equipment' => $this->normaliseEquipmentList($data['equipment'] ?? []),
         ]);
@@ -788,8 +788,8 @@ class CatalogueController extends Controller
         foreach ($rows as $row) {
             $payload = [
                 'name'               => $row['name'],
-                'base_price'         => (float) $row['base_price'],
-                'cost'               => (float) ($row['cost'] ?? 0),
+                'base_price'         => round((float) $row['base_price'], 2),
+                'cost'               => round((float) ($row['cost'] ?? 0), 2),
                 'currency'           => $row['currency'] ?? 'EUR',
                 'included_equipment' => $this->normaliseEquipmentList($row['equipment'] ?? []),
             ];
@@ -836,7 +836,7 @@ class CatalogueController extends Controller
             'options'            => 'nullable|array',
             'options.*.id'       => 'nullable|string',
             'options.*.category' => 'required|string|max:100',
-            'options.*.label'    => 'required|string|max:200',
+            'options.*.label'    => 'required|string',
             'options.*.price'    => 'required|numeric|min:0',
             'options.*.cost'     => 'nullable|numeric|min:0',
             'options.*.currency' => 'nullable|in:EUR,USD',
@@ -859,8 +859,8 @@ class CatalogueController extends Controller
         $keptIds   = [];
 
         foreach ($rows as $i => $row) {
-            $priceIn = (float) $row['price'];
-            $costIn  = (float) ($row['cost'] ?? 0);
+            $priceIn = round((float) $row['price'], 2);
+            $costIn  = round((float) ($row['cost'] ?? 0), 2);
             $ccy     = $row['currency'] ?? 'EUR';
 
             $priceEur = $priceIn;
@@ -946,7 +946,7 @@ class CatalogueController extends Controller
             'options'                => 'nullable|array',
             'options.*.id'           => 'nullable|string',
             'options.*.category'     => 'required|string|max:100',
-            'options.*.label'        => 'required|string|max:200',
+            'options.*.label'        => 'required|string',
             // No length cap: dealers paste full pack contents in here.
             'options.*.description'  => 'nullable|string',
             'options.*.price'        => 'required|numeric|min:0',
@@ -1114,8 +1114,8 @@ class CatalogueController extends Controller
             'source'            => 'private',
             'category'          => $data['category'],
             'label'             => $data['label'],
-            'price'             => (float) $data['price'],
-            'cost'              => (float) ($data['cost'] ?? 0),
+            'price'             => round((float) $data['price'], 2),
+            'cost'              => round((float) ($data['cost'] ?? 0), 2),
             'currency'          => $data['currency'] ?? 'EUR',
             'position'          => (int) ($data['position'] ?? 0),
             'is_archived'       => false,
@@ -1139,8 +1139,8 @@ class CatalogueController extends Controller
             'position'       => 'nullable|integer',
         ]);
 
-        $priceIn = (float) $data['price'];
-        $costIn  = $data['cost'] !== null && $data['cost'] !== '' ? (float) $data['cost'] : (float) $option->cost;
+        $priceIn = round((float) $data['price'], 2);
+        $costIn  = round($data['cost'] !== null && $data['cost'] !== '' ? (float) $data['cost'] : (float) $option->cost, 2);
         $priceCcy = $data['price_currency'] ?? $data['currency'] ?? 'EUR';
         $costCcy  = $data['cost_currency']  ?? $data['currency'] ?? 'EUR';
 

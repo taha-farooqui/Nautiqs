@@ -469,7 +469,12 @@ class OptionImporter
                     if ($raw !== '') {
                         // Strip currency symbols + thousand spaces; accept FR comma decimals.
                         $clean = preg_replace('/[€$\s]/u', '', $raw);
-                        $out[$field] = (float) str_replace(',', '.', $clean);
+                        // Rounded to cents here, not just after an FX
+                        // conversion. A spreadsheet cell formatted as "658 €"
+                        // can hold 658.3333333333334 — Excel shows the rounded
+                        // figure, the file carries the full float — and that is
+                        // what was landing in the price fields.
+                        $out[$field] = round((float) str_replace(',', '.', $clean), 2);
                     }
                     break;
                 case 'cost_currency':
@@ -497,7 +502,6 @@ class OptionImporter
         if ($data['category'] === '') return 'FAMILLE is required.';
         if (mb_strlen($data['category']) > 80) return 'FAMILLE must be 80 characters or fewer.';
         if ($data['label']    === '') return 'DESIGNATION is required.';
-        if (mb_strlen($data['label']) > 255) return 'DESIGNATION must be 255 characters or fewer.';
         if ($data['price'] < 0)         return 'PV HT must be zero or positive.';
         if ($data['price'] > 1_000_000) return 'PV HT is implausibly high (> €1M).';
         if ($data['cost']  < 0)         return 'PA HT must be zero or positive.';
