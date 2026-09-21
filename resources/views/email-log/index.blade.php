@@ -90,7 +90,12 @@
                             <td class="px-5 py-3">
                                 <p class="text-gray-900 truncate max-w-md" title="{{ $log->subject }}">{{ $log->subject }}</p>
                                 @if ($log->attachment_filename)
-                                    <p class="text-xs text-gray-500 mt-0.5"><i class="ri-attachment-2"></i> {{ $log->attachment_filename }}</p>
+                                    <p class="text-xs text-gray-500 mt-0.5">
+                                        <i class="ri-attachment-2"></i> {{ $log->attachment_filename }}
+                                        @if (is_array($log->attachments) && count($log->attachments))
+                                            + {{ trans_choice('{1}:count file|[2,*]:count files', count($log->attachments), ['count' => count($log->attachments)]) }}
+                                        @endif
+                                    </p>
                                 @endif
                             </td>
                             <td class="px-5 py-3">

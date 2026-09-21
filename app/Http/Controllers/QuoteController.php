@@ -377,13 +377,39 @@ class QuoteController extends Controller
             'message'    => ['nullable', 'string', 'max:50000'],
             'first_name' => [$isGuest ? 'required' : 'nullable', 'string', 'max:100'],
             'last_name'  => [$isGuest ? 'required' : 'nullable', 'string', 'max:100'],
+
+            // Files the dealer adds by hand: photos of the boat, a brochure,
+            // a spec sheet. The PDF is generated separately and always sent.
+            'attachments'   => ['nullable', 'array', 'max:' . \App\Services\QuoteEmailSender::ATTACH_MAX_COUNT],
+            'attachments.*' => [
+                'file',
+                'max:' . (int) (\App\Services\QuoteEmailSender::ATTACH_MAX_BYTES / 1024),
+                'mimes:' . implode(',', \App\Services\QuoteEmailSender::ATTACH_EXTENSIONS),
+            ],
         ];
 
         $request->validate($rules, [
             'email.required'      => 'Recipient email is required.',
             'first_name.required' => "Please enter the recipient's first name.",
             'last_name.required'  => "Please enter the recipient's last name.",
+            'attachments.max'     => __('You can attach up to :count files.', ['count' => \App\Services\QuoteEmailSender::ATTACH_MAX_COUNT]),
+            'attachments.*.max'   => __('Each file must be :size MB or smaller.', ['size' => (int) (\App\Services\QuoteEmailSender::ATTACH_MAX_BYTES / 1024 / 1024)]),
+            'attachments.*.mimes' => __('That file type cannot be attached.'),
         ]);
+
+        // Per-file size is not enough on its own: ten files just under the
+        // limit would still build a message the mail server refuses.
+        $attachments = array_filter((array) $request->file('attachments'));
+        $totalBytes  = array_sum(array_map(fn ($f) => $f->getSize(), $attachments));
+        if ($totalBytes > \App\Services\QuoteEmailSender::ATTACH_TOTAL_BYTES) {
+            return back()->withErrors(['attachments' => __(
+                'Attachments come to :total MB. The limit for one email is :max MB.',
+                [
+                    'total' => round($totalBytes / 1024 / 1024, 1),
+                    'max'   => (int) (\App\Services\QuoteEmailSender::ATTACH_TOTAL_BYTES / 1024 / 1024),
+                ],
+            )])->withInput();
+        }
 
         $to = $request->input('email');
 
@@ -419,7 +445,8 @@ class QuoteController extends Controller
         $log = $sender->send($quote, $type, $to, auth()->user(), [
             'subject' => $request->input('subject'),
             'body'    => $request->input('message'),
-            'to_name' => $toName,
+            'to_name'     => $toName,
+            'attachments' => $attachments,
         ]);
 
         if ($log->status === EmailLog::STATUS_FAILED) {

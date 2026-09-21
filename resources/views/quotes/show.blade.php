@@ -665,6 +665,7 @@
         x-cloak
         @keydown.escape.window="emailOpen = false">
         <form method="POST" action="{{ route('quotes.send-email', $quote->_id) }}"
+            enctype="multipart/form-data"
             class="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl"
             x-data
             @click.outside="emailOpen = false"
@@ -746,6 +747,71 @@
                     <p class="text-xs text-gray-500 mt-1">
                         {{ __('Edit visually — formatting and the logo are preserved. Variables already substituted from the saved template.') }}
                     </p>
+                </div>
+
+                {{-- Attachments. The quote PDF is generated and attached on its
+                     own; these are the extras a dealer adds by hand — photos of
+                     the boat, a brochure, a spec sheet.
+
+                     The running total is shown because the limit that bites is
+                     the mail server's, and finding out at send time after
+                     picking six photos is a poor way to learn it. --}}
+                <div x-data="{
+                        files: [],
+                        max: {{ \App\Services\QuoteEmailSender::ATTACH_TOTAL_BYTES }},
+                        pick(e) {
+                            this.files = Array.from(e.target.files).map(f => ({ name: f.name, size: f.size }));
+                        },
+                        get total() { return this.files.reduce((n, f) => n + f.size, 0); },
+                        get tooBig() { return this.total > this.max; },
+                        human(b) {
+                            if (b < 1024) return b + ' B';
+                            if (b < 1048576) return Math.round(b / 1024) + ' KB';
+                            return (b / 1048576).toFixed(1) + ' MB';
+                        },
+                        clear() { this.files = []; $refs.picker.value = ''; },
+                    }">
+                    <label class="block text-xs font-medium text-gray-700 mb-1">
+                        {{ __('Attachments') }}
+                        <span class="text-gray-400 font-normal">{{ __('(optional)') }}</span>
+                    </label>
+
+                    <input type="file" name="attachments[]" multiple
+                        x-ref="picker" x-on:change="pick($event)"
+                        accept="{{ collect(\App\Services\QuoteEmailSender::ATTACH_EXTENSIONS)->map(fn ($e) => '.' . $e)->implode(',') }}"
+                        class="block w-full text-sm text-gray-700 file:mr-3 file:rounded-lg file:border-0 file:bg-gray-100 file:px-3 file:py-2 file:text-sm file:font-medium file:text-gray-700" />
+
+                    <template x-if="files.length">
+                        <div class="mt-2 space-y-1">
+                            <template x-for="f in files" :key="f.name + f.size">
+                                <div class="flex items-center justify-between gap-2 text-xs text-gray-600">
+                                    <span class="truncate"><i class="ri-attachment-2"></i> <span x-text="f.name"></span></span>
+                                    <span class="shrink-0 text-gray-400" x-text="human(f.size)"></span>
+                                </div>
+                            </template>
+                            <div class="flex items-center justify-between gap-2 pt-1 border-t border-gray-100 text-xs">
+                                <button type="button" x-on:click="clear()" class="text-gray-500 hover:text-red-600">
+                                    {{ __('Remove all') }}
+                                </button>
+                                <span :class="tooBig ? 'text-red-600 font-semibold' : 'text-gray-500'">
+                                    <span x-text="human(total)"></span>
+                                    <span x-text="' / ' + human(max)"></span>
+                                </span>
+                            </div>
+                            <p x-show="tooBig" x-cloak class="text-xs text-red-600">
+                                {{ __('Too large to send. Remove a file or send it separately.') }}
+                            </p>
+                        </div>
+                    </template>
+
+                    <p class="text-xs text-gray-500 mt-1">
+                        {{ __('Images and documents, :count files max, :size MB each.', [
+                            'count' => \App\Services\QuoteEmailSender::ATTACH_MAX_COUNT,
+                            'size'  => (int) (\App\Services\QuoteEmailSender::ATTACH_MAX_BYTES / 1024 / 1024),
+                        ]) }}
+                    </p>
+                    <x-input-error :messages="$errors->get('attachments')" class="mt-1" />
+                    <x-input-error :messages="$errors->get('attachments.0')" class="mt-1" />
                 </div>
             </div>
 

@@ -39,6 +39,7 @@ class EmailLog extends Model
         'subject',
         'body_html',          // exactly what was sent — letting us show "what did the client see?"
         'attachment_filename',// e.g. Q-2026-001.pdf — we don't store the bytes
+        'attachments',        // extra files the dealer attached: [{name, size}]
         'status',             // sent | failed
         'error_message',      // null on success
         'sent_by_user_id',

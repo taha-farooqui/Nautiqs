@@ -8,6 +8,7 @@ use App\Models\Quote;
 use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
 
 /**
@@ -19,6 +20,27 @@ use Illuminate\Support\Str;
  */
 class QuoteEmailSender
 {
+    /**
+     * Limits for files the dealer attaches by hand, alongside the generated
+     * PDF. The ceiling that matters is the mail server's, not ours: SMTP
+     * providers commonly refuse a message over 25 MB, and base64 inflates
+     * attachments by about a third on the way out. 12 MB of files therefore
+     * arrives as roughly 16 MB — comfortably under, with the quote PDF and
+     * the message body still to add.
+     *
+     * PHP's own upload_max_filesize / post_max_size must be at least this
+     * large or the files never reach the application at all.
+     */
+    public const ATTACH_MAX_BYTES   = 10 * 1024 * 1024;   // one file
+    public const ATTACH_TOTAL_BYTES = 12 * 1024 * 1024;   // all of them together
+    public const ATTACH_MAX_COUNT   = 10;
+
+    /** What a dealer actually sends a buyer: photos, brochures, spec sheets. */
+    public const ATTACH_EXTENSIONS = [
+        'pdf', 'jpg', 'jpeg', 'png', 'webp', 'gif', 'heic', 'heif',
+        'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'csv', 'txt', 'zip',
+    ];
+
     public function __construct(private EmailTemplateService $templates)
     {
     }
@@ -30,7 +52,8 @@ class QuoteEmailSender
      * @param string    $type      EmailLog::TYPE_* constant
      * @param string    $to        recipient email
      * @param User|null $actor     the human sending it; null = automated (scheduler)
-     * @param array     $overrides ['subject' => ?, 'body' => ?, 'to_name' => ?]
+     * @param array     $overrides ['subject' => ?, 'body' => ?, 'to_name' => ?,
+     *                             'attachments' => UploadedFile[]]
      */
     public function send(Quote $quote, string $type, string $to, ?User $actor = null, array $overrides = []): EmailLog
     {
@@ -94,13 +117,33 @@ class QuoteEmailSender
         $fromName    = $company->name ?: config('mail.from.name');
         $fromAddress = config('mail.from.address');
 
+        // Files the dealer picked in the send dialogue. Read into memory here
+        // rather than attached by path: an uploaded temp file is removed when
+        // the request ends, and the callback below can run after that.
+        $extras = [];
+        foreach (($overrides['attachments'] ?? []) as $file) {
+            if (! $file instanceof UploadedFile || ! $file->isValid()) {
+                continue;
+            }
+            $extras[] = [
+                'name'  => $file->getClientOriginalName(),
+                'mime'  => $file->getMimeType() ?: 'application/octet-stream',
+                'size'  => $file->getSize(),
+                'bytes' => file_get_contents($file->getRealPath()),
+            ];
+        }
+
         $sendError = null;
         try {
-            Mail::html($bodyHtml, function ($msg) use ($to, $subject, $pdfBytes, $attachmentFilename, $replyToEmail, $replyToName, $fromName, $fromAddress, $company) {
+            Mail::html($bodyHtml, function ($msg) use ($to, $subject, $pdfBytes, $attachmentFilename, $replyToEmail, $replyToName, $fromName, $fromAddress, $company, $extras) {
                 $msg->to($to)
                     ->subject($subject)
                     ->from($fromAddress, $fromName)
                     ->attachData($pdfBytes, $attachmentFilename, ['mime' => 'application/pdf']);
+
+                foreach ($extras as $extra) {
+                    $msg->attachData($extra['bytes'], $extra['name'], ['mime' => $extra['mime']]);
+                }
 
                 // Without a Reply-To the client's reply goes to our platform
                 // mailbox and the dealer never sees it, so fall back to the
@@ -130,6 +173,13 @@ class QuoteEmailSender
             'subject'             => $subject,
             'body_html'           => $bodyHtml,
             'attachment_filename' => $attachmentFilename,
+            // Name and size only. The bytes are not kept, for the same reason
+            // the quote PDF isn't: the log records what was sent, it is not a
+            // second copy of it.
+            'attachments'         => array_map(
+                fn ($e) => ['name' => $e['name'], 'size' => $e['size']],
+                $extras,
+            ),
             'status'              => $sendError ? EmailLog::STATUS_FAILED : EmailLog::STATUS_SENT,
             'error_message'       => $sendError,
             'sent_by_user_id'     => $actor ? (string) $actor->_id : null,

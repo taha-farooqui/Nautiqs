@@ -58,7 +58,22 @@
             </div>
             <div>
                 <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">{{ __('Attachment') }}</dt>
-                <dd class="text-gray-900">{{ $log->attachment_filename ?? '—' }}</dd>
+                <dd class="text-gray-900">
+                    {{ $log->attachment_filename ?? '—' }}
+                    @if (is_array($log->attachments) && count($log->attachments))
+                        {{-- Names and sizes only: the bytes were never stored. --}}
+                        <ul class="mt-1 space-y-0.5">
+                            @foreach ($log->attachments as $a)
+                                <li class="text-xs text-gray-600">
+                                    <i class="ri-attachment-2"></i> {{ $a['name'] ?? '?' }}
+                                    <span class="text-gray-400">
+                                        ({{ isset($a['size']) ? round($a['size'] / 1024) . ' KB' : '—' }})
+                                    </span>
+                                </li>
+                            @endforeach
+                        </ul>
+                    @endif
+                </dd>
             </div>
             <div>
                 <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">{{ __('Sent by') }}</dt>

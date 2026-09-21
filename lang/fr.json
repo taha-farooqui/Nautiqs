@@ -1192,5 +1192,15 @@
     "Could not create the download bundle.": "Impossible de créer l’archive de téléchargement.",
     "None of those backups are still on the server.": "Aucune de ces sauvegardes n’est encore sur le serveur.",
     "Open full screen": "Ouvrir en plein écran",
-    "On a tablet the quote opens in its own PDF viewer, where you can scroll and zoom properly.": "Sur tablette, le devis s’ouvre dans le lecteur PDF de l’appareil, où vous pouvez faire défiler et zoomer correctement."
+    "On a tablet the quote opens in its own PDF viewer, where you can scroll and zoom properly.": "Sur tablette, le devis s’ouvre dans le lecteur PDF de l’appareil, où vous pouvez faire défiler et zoomer correctement.",
+    "Attachments": "Pièces jointes",
+    "(optional)": "(facultatif)",
+    "Remove all": "Tout retirer",
+    "Too large to send. Remove a file or send it separately.": "Trop volumineux pour l’envoi. Retirez un fichier ou envoyez-le séparément.",
+    "Images and documents, :count files max, :size MB each.": "Images et documents, :count fichiers maximum, :size Mo chacun.",
+    "You can attach up to :count files.": "Vous pouvez joindre jusqu’à :count fichiers.",
+    "Each file must be :size MB or smaller.": "Chaque fichier doit faire :size Mo ou moins.",
+    "That file type cannot be attached.": "Ce type de fichier ne peut pas être joint.",
+    "Attachments come to :total MB. The limit for one email is :max MB.": "Les pièces jointes totalisent :total Mo. La limite pour un e-mail est de :max Mo.",
+    "{1}:count file|[2,*]:count files": "{1}:count fichier|[2,*]:count fichiers"
 }
