@@ -18,7 +18,9 @@
         default => [
             'button' => __('Send by email'),
             'icon'   => 'ri-mail-send-line',
-            'title'  => __('Send quote') . ' ' . $quote->number,
+            // No number here: the heading appends the right reference for the
+            // send type, and having it in both printed it twice.
+            'title'  => __('Send quote'),
             'note'   => __('PDF is attached automatically.'),
         ],
     };
