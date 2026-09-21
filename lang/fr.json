@@ -1202,5 +1202,11 @@
     "Each file must be :size MB or smaller.": "Chaque fichier doit faire :size Mo ou moins.",
     "That file type cannot be attached.": "Ce type de fichier ne peut pas être joint.",
     "Attachments come to :total MB. The limit for one email is :max MB.": "Les pièces jointes totalisent :total Mo. La limite pour un e-mail est de :max Mo.",
-    "{1}:count file|[2,*]:count files": "{1}:count fichier|[2,*]:count fichiers"
+    "{1}:count file|[2,*]:count files": "{1}:count fichier|[2,*]:count fichiers",
+    "file": "fichier",
+    "Choose files": "Choisir des fichiers",
+    "or drop them here": "ou déposez-les ici",
+    "too large": "trop volumineux",
+    "unsupported type": "type non pris en charge",
+    "no room left": "nombre maximum de fichiers atteint"
 }

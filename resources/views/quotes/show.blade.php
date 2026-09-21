@@ -755,63 +755,175 @@
                      own; these are the extras a dealer adds by hand — photos of
                      the boat, a brochure, a spec sheet.
 
+                     The picked files live in Alpine and the input's FileList is
+                     rebuilt from them through a DataTransfer. That is what makes
+                     "add some more" and "drop just that one" possible at all: a
+                     native file input replaces its whole selection on every pick
+                     and offers no way to remove a single entry.
+
                      The running total is shown because the limit that bites is
                      the mail server's, and finding out at send time after
                      picking six photos is a poor way to learn it. --}}
                 <div x-data="{
-                        files: [],
-                        max: {{ \App\Services\QuoteEmailSender::ATTACH_TOTAL_BYTES }},
-                        pick(e) {
-                            this.files = Array.from(e.target.files).map(f => ({ name: f.name, size: f.size }));
+                        items: [],
+                        maxTotal: {{ \App\Services\QuoteEmailSender::ATTACH_TOTAL_BYTES }},
+                        maxFile: {{ \App\Services\QuoteEmailSender::ATTACH_MAX_BYTES }},
+                        maxCount: {{ \App\Services\QuoteEmailSender::ATTACH_MAX_COUNT }},
+                        allowed: @js(\App\Services\QuoteEmailSender::ATTACH_EXTENSIONS),
+                        dragging: false,
+                        notice: '',
+
+                        add(fileList) {
+                            const rejected = [];
+
+                            for (const file of Array.from(fileList || [])) {
+                                if (this.items.length >= this.maxCount) {
+                                    rejected.push(@js(__('no room left')));
+                                    break;
+                                }
+                                const ext = file.name.split('.').pop().toLowerCase();
+                                if (! this.allowed.includes(ext)) {
+                                    rejected.push(file.name + ' — ' + @js(__('unsupported type')));
+                                    continue;
+                                }
+                                if (file.size > this.maxFile) {
+                                    rejected.push(file.name + ' — ' + @js(__('too large')));
+                                    continue;
+                                }
+                                // The same file picked twice is a slip, not an intent.
+                                if (this.items.some(i => i.file.name === file.name && i.file.size === file.size)) {
+                                    continue;
+                                }
+                                this.items.push({
+                                    file: file,
+                                    url: file.type.indexOf('image/') === 0 ? URL.createObjectURL(file) : null,
+                                });
+                            }
+
+                            this.notice = rejected.join(' · ');
+                            this.sync();
                         },
-                        get total() { return this.files.reduce((n, f) => n + f.size, 0); },
-                        get tooBig() { return this.total > this.max; },
+
+                        remove(index) {
+                            const gone = this.items.splice(index, 1)[0];
+                            if (gone && gone.url) URL.revokeObjectURL(gone.url);
+                            this.notice = '';
+                            this.sync();
+                        },
+
+                        clear() {
+                            this.items.forEach(i => { if (i.url) URL.revokeObjectURL(i.url); });
+                            this.items = [];
+                            this.notice = '';
+                            this.sync();
+                        },
+
+                        // Push the list back onto the real input, so the form posts
+                        // exactly what is listed here — no more, no less.
+                        sync() {
+                            const dt = new DataTransfer();
+                            this.items.forEach(i => dt.items.add(i.file));
+                            this.$refs.picker.files = dt.files;
+                        },
+
+                        get total() { return this.items.reduce((n, i) => n + i.file.size, 0); },
+                        get tooBig() { return this.total > this.maxTotal; },
+
                         human(b) {
                             if (b < 1024) return b + ' B';
                             if (b < 1048576) return Math.round(b / 1024) + ' KB';
                             return (b / 1048576).toFixed(1) + ' MB';
                         },
-                        clear() { this.files = []; $refs.picker.value = ''; },
+                        icon(name) {
+                            const n = name.toLowerCase();
+                            if (n.endsWith('.pdf')) return 'ri-file-pdf-2-line';
+                            if (/[.](docx?|odt|txt)$/.test(n)) return 'ri-file-text-line';
+                            if (/[.](xlsx?|csv|ods)$/.test(n)) return 'ri-file-excel-2-line';
+                            if (/[.](pptx?|odp)$/.test(n)) return 'ri-file-ppt-2-line';
+                            if (/[.](zip|rar|7z)$/.test(n)) return 'ri-folder-zip-line';
+                            return 'ri-file-3-line';
+                        },
                     }">
-                    <label class="block text-xs font-medium text-gray-700 mb-1">
-                        {{ __('Attachments') }}
-                        <span class="text-gray-400 font-normal">{{ __('(optional)') }}</span>
-                    </label>
+                    <div class="flex items-center justify-between gap-2 mb-1">
+                        <label class="block text-xs font-medium text-gray-700">
+                            {{ __('Attachments') }}
+                            <span class="text-gray-400 font-normal">{{ __('(optional)') }}</span>
+                        </label>
+                        <button type="button" x-show="items.length > 1" x-cloak x-on:click="clear()"
+                            class="text-xs text-gray-500 hover:text-red-600">
+                            {{ __('Remove all') }}
+                        </button>
+                    </div>
 
-                    <input type="file" name="attachments[]" multiple
-                        x-ref="picker" x-on:change="pick($event)"
+                    {{-- The real input stays in the form so the files post natively,
+                         but it is never the thing the dealer clicks. --}}
+                    <input type="file" name="attachments[]" multiple class="hidden" x-ref="picker"
                         accept="{{ collect(\App\Services\QuoteEmailSender::ATTACH_EXTENSIONS)->map(fn ($e) => '.' . $e)->implode(',') }}"
-                        class="block w-full text-sm text-gray-700 file:mr-3 file:rounded-lg file:border-0 file:bg-gray-100 file:px-3 file:py-2 file:text-sm file:font-medium file:text-gray-700" />
+                        x-on:change="add($event.target.files)" />
 
-                    <template x-if="files.length">
-                        <div class="mt-2 space-y-1">
-                            <template x-for="f in files" :key="f.name + f.size">
-                                <div class="flex items-center justify-between gap-2 text-xs text-gray-600">
-                                    <span class="truncate"><i class="ri-attachment-2"></i> <span x-text="f.name"></span></span>
-                                    <span class="shrink-0 text-gray-400" x-text="human(f.size)"></span>
+                    <div x-on:click="$refs.picker.click()"
+                        x-on:dragover.prevent="dragging = true"
+                        x-on:dragleave.prevent="dragging = false"
+                        x-on:drop.prevent="dragging = false; add($event.dataTransfer.files)"
+                        :class="dragging
+                            ? 'border-primary-800 bg-primary-50'
+                            : 'border-gray-300 bg-gray-50 hover:border-primary-800 hover:bg-primary-50'"
+                        class="cursor-pointer rounded-lg border border-dashed px-4 py-4 text-center transition-colors">
+                        <i class="ri-attachment-2 text-xl text-gray-400 pointer-events-none"></i>
+                        <p class="text-sm text-gray-600 mt-1 pointer-events-none">
+                            <span class="font-medium text-primary-800">{{ __('Choose files') }}</span>
+                            <span class="hidden sm:inline">{{ __('or drop them here') }}</span>
+                        </p>
+                        <p class="text-xs text-gray-400 mt-0.5 pointer-events-none">
+                            {{ __('Images and documents, :count files max, :size MB each.', [
+                                'count' => \App\Services\QuoteEmailSender::ATTACH_MAX_COUNT,
+                                'size'  => (int) (\App\Services\QuoteEmailSender::ATTACH_MAX_BYTES / 1024 / 1024),
+                            ]) }}
+                        </p>
+                    </div>
+
+                    <p x-show="notice" x-cloak x-text="notice" class="text-xs text-red-600 mt-1.5"></p>
+
+                    <template x-if="items.length">
+                        <div class="mt-2 space-y-1.5">
+                            <template x-for="(item, i) in items" :key="item.file.name + '|' + item.file.size">
+                                <div class="flex items-center gap-2.5 rounded-lg border border-gray-200 bg-white px-2.5 py-2">
+                                    <template x-if="item.url">
+                                        <img :src="item.url" alt=""
+                                            class="shrink-0 w-9 h-9 rounded object-cover border border-gray-200" />
+                                    </template>
+                                    <template x-if="! item.url">
+                                        <span class="shrink-0 w-9 h-9 rounded bg-gray-100 text-gray-500 flex items-center justify-center">
+                                            <i :class="icon(item.file.name)"></i>
+                                        </span>
+                                    </template>
+
+                                    <span class="min-w-0 flex-1">
+                                        <span class="block text-xs font-medium text-gray-900 truncate" x-text="item.file.name"></span>
+                                        <span class="block text-xs text-gray-400" x-text="human(item.file.size)"></span>
+                                    </span>
+
+                                    <button type="button" x-on:click="remove(i)"
+                                        :aria-label="@js(__('Remove')) + ' ' + item.file.name"
+                                        class="shrink-0 w-7 h-7 inline-flex items-center justify-center rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50">
+                                        <i class="ri-close-line"></i>
+                                    </button>
                                 </div>
                             </template>
-                            <div class="flex items-center justify-between gap-2 pt-1 border-t border-gray-100 text-xs">
-                                <button type="button" x-on:click="clear()" class="text-gray-500 hover:text-red-600">
-                                    {{ __('Remove all') }}
-                                </button>
-                                <span :class="tooBig ? 'text-red-600 font-semibold' : 'text-gray-500'">
-                                    <span x-text="human(total)"></span>
-                                    <span x-text="' / ' + human(max)"></span>
-                                </span>
+
+                            <div class="flex items-center justify-between gap-2 pt-1 text-xs">
+                                <span class="text-gray-500"
+                                    x-text="items.length + ' / ' + maxCount + ' ' + (items.length === 1 ? @js(__('file')) : @js(__('files')))"></span>
+                                <span :class="tooBig ? 'text-red-600 font-semibold' : 'text-gray-500'"
+                                    x-text="human(total) + ' / ' + human(maxTotal)"></span>
                             </div>
+
                             <p x-show="tooBig" x-cloak class="text-xs text-red-600">
                                 {{ __('Too large to send. Remove a file or send it separately.') }}
                             </p>
                         </div>
                     </template>
 
-                    <p class="text-xs text-gray-500 mt-1">
-                        {{ __('Images and documents, :count files max, :size MB each.', [
-                            'count' => \App\Services\QuoteEmailSender::ATTACH_MAX_COUNT,
-                            'size'  => (int) (\App\Services\QuoteEmailSender::ATTACH_MAX_BYTES / 1024 / 1024),
-                        ]) }}
-                    </p>
                     <x-input-error :messages="$errors->get('attachments')" class="mt-1" />
                     <x-input-error :messages="$errors->get('attachments.0')" class="mt-1" />
                 </div>
