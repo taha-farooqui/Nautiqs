@@ -176,6 +176,53 @@
         </script>
 
         @livewireScripts
+
+        {{-- Keep number fields inside the precision they declare.
+
+             A price input is step="0.01", so 5666.21121121 is not a value it
+             can hold — but the browser only says so at save time, with "the
+             two nearest valid values are…", after the figure has been typed
+             and the save refused. This trims the extra digits as they are
+             entered, so the field can never hold something it will later
+             reject.
+
+             Capture phase on purpose: it has to run before Livewire's and
+             Alpine's own input handlers, otherwise they read the untrimmed
+             value and the model ends up disagreeing with what is on screen.
+
+             The limit comes from the field's own step, so each input keeps its
+             declared precision — 0.01 gives two decimals, 0.5 gives one.
+             Steps with no decimal point (1, 50) and step="any" are untouched. --}}
+        <script>
+            (function () {
+                const decimalsAllowed = (step) => {
+                    if (!step || step === 'any') return null;
+                    const dot = step.indexOf('.');
+                    return dot === -1 ? null : step.length - dot - 1;
+                };
+
+                document.addEventListener('input', (e) => {
+                    const el = e.target;
+                    if (!el || el.tagName !== 'INPUT' || el.type !== 'number') return;
+
+                    const max = decimalsAllowed(el.getAttribute('step'));
+                    if (max === null) return;
+
+                    // A type=number field reports '' while its text is not yet
+                    // parseable ("5666." mid-typing), so read the raw text.
+                    const raw = el.value;
+                    const m = raw.match(/^(-?\d*)[.,](\d+)$/);
+                    if (!m || m[2].length <= max) return;
+
+                    const caret = el.selectionStart;
+                    el.value = m[1] + '.' + m[2].slice(0, max);
+                    // Hold the caret where the user was typing instead of
+                    // letting it jump to the end of the field.
+                    try { el.setSelectionRange(caret - 1, caret - 1); } catch (_) {}
+                }, true);
+            })();
+        </script>
+
         @stack('scripts')
     </body>
 </html>
