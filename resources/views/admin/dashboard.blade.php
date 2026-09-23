@@ -85,12 +85,12 @@
 
     {{-- Pipeline trend chart --}}
     <section class="bg-white rounded-2xl border border-gray-200 p-5 mb-4">
-        <div class="flex items-start justify-between mb-4">
-            <div>
+        <div class="flex flex-wrap items-start justify-between gap-x-3 gap-y-2 mb-4">
+            <div class="min-w-0">
                 <h3 class="font-semibold text-gray-900">{{ __('Pipeline trend') }}</h3>
                 <p class="text-sm text-gray-500">{{ __('Last 6 months · sent vs won vs lost (all dealers)') }}</p>
             </div>
-            <div class="flex items-center gap-3 text-xs">
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
                 <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span> {{ __('Sent') }}</span>
                 <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> {{ __('Won') }}</span>
                 <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-red-500"></span> {{ __('Lost') }}</span>

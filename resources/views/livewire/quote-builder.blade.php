@@ -624,8 +624,8 @@
                 {{ __('Discounts') }}
             </h3>
             <div class="space-y-3">
-                <div class="flex items-center gap-3">
-                    <label class="flex-1 text-sm text-gray-700">{{ __('Boat discount') }} <span class="text-xs text-gray-400">{{ __('(applies to base price only)') }}</span></label>
+                <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
+                    <label class="flex-1 min-w-0 text-sm text-gray-700">{{ __('Boat discount') }} <span class="text-xs text-gray-400">{{ __('(applies to base price only)') }}</span></label>
                     {{-- % / EUR switch: dealers negotiate both ways ("10% off"
                          vs "5000 EUR off"). Switching mode swaps which input is
                          live; the calculator converts a euro entry into the
@@ -654,8 +654,8 @@
                         @else — @endif
                     </span>
                 </div>
-                <div class="flex items-center gap-3">
-                    <label class="flex-1 text-sm text-gray-700">{{ __('Options discount') }} <span class="text-xs text-gray-400">{{ __('(across all options)') }}</span></label>
+                <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
+                    <label class="flex-1 min-w-0 text-sm text-gray-700">{{ __('Options discount') }} <span class="text-xs text-gray-400">{{ __('(across all options)') }}</span></label>
                     {{-- % / EUR switch: dealers negotiate both ways ("10% off"
                          vs "5000 EUR off"). Switching mode swaps which input is
                          live; the calculator converts a euro entry into the
@@ -684,8 +684,8 @@
                         @else — @endif
                     </span>
                 </div>
-                <div class="flex items-center gap-3">
-                    <label class="flex-1 text-sm text-gray-700">{{ __('Engines discount') }} <span class="text-xs text-gray-400">{{ __('(across all engines)') }}</span></label>
+                <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
+                    <label class="flex-1 min-w-0 text-sm text-gray-700">{{ __('Engines discount') }} <span class="text-xs text-gray-400">{{ __('(across all engines)') }}</span></label>
                     {{-- % / EUR switch: dealers negotiate both ways ("10% off"
                          vs "5000 EUR off"). Switching mode swaps which input is
                          live; the calculator converts a euro entry into the
@@ -714,8 +714,8 @@
                         @else — @endif
                     </span>
                 </div>
-                <div class="flex items-center gap-3">
-                    <label class="flex-1 text-sm text-gray-700">{{ __('Global discount') }} <span class="text-xs text-gray-400">{{ __('(applies to the entire quote)') }}</span></label>
+                <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
+                    <label class="flex-1 min-w-0 text-sm text-gray-700">{{ __('Global discount') }} <span class="text-xs text-gray-400">{{ __('(applies to the entire quote)') }}</span></label>
                     {{-- % / EUR switch: dealers negotiate both ways ("10% off"
                          vs "5000 EUR off"). Switching mode swaps which input is
                          live; the calculator converts a euro entry into the
