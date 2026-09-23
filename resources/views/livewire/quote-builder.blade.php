@@ -625,7 +625,7 @@
             </h3>
             <div class="space-y-3">
                 <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
-                    <label class="flex-1 min-w-0 text-sm text-gray-700 break-words">{{ __('Boat discount') }} <span class="text-xs text-gray-400">{{ __('(applies to base price only)') }}</span></label>
+                    <label class="w-full sm:w-auto sm:flex-1 min-w-0 text-sm text-gray-700 break-words">{{ __('Boat discount') }} <span class="text-xs text-gray-400">{{ __('(applies to base price only)') }}</span></label>
                     {{-- % / EUR switch: dealers negotiate both ways ("10% off"
                          vs "5000 EUR off"). Switching mode swaps which input is
                          live; the calculator converts a euro entry into the
@@ -645,7 +645,7 @@
                             class="w-24 text-right rounded border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800 disabled:bg-gray-100" />
                         <span class="text-sm text-gray-500 w-3">%</span>
                     @endif
-                    <span class="text-sm text-red-600 font-medium w-28 text-right">
+                    <span class="flex-1 sm:flex-none sm:w-28 text-sm text-red-600 font-medium text-right">
                         @if ($t && ($t['boat_discount_amount'] ?? 0) > 0)
                             -{{ number_format($discShown('boat'), 0, ',', ' ') }} €
                             @if ($boat_discount_mode === 'eur' && ($t['boat_discount_pct'] ?? 0) > 0)
@@ -655,7 +655,7 @@
                     </span>
                 </div>
                 <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
-                    <label class="flex-1 min-w-0 text-sm text-gray-700 break-words">{{ __('Options discount') }} <span class="text-xs text-gray-400">{{ __('(across all options)') }}</span></label>
+                    <label class="w-full sm:w-auto sm:flex-1 min-w-0 text-sm text-gray-700 break-words">{{ __('Options discount') }} <span class="text-xs text-gray-400">{{ __('(across all options)') }}</span></label>
                     {{-- % / EUR switch: dealers negotiate both ways ("10% off"
                          vs "5000 EUR off"). Switching mode swaps which input is
                          live; the calculator converts a euro entry into the
@@ -675,7 +675,7 @@
                             class="w-24 text-right rounded border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800 disabled:bg-gray-100" />
                         <span class="text-sm text-gray-500 w-3">%</span>
                     @endif
-                    <span class="text-sm text-red-600 font-medium w-28 text-right">
+                    <span class="flex-1 sm:flex-none sm:w-28 text-sm text-red-600 font-medium text-right">
                         @if ($t && ($t['options_discount_amount'] ?? 0) > 0)
                             -{{ number_format($discShown('options'), 0, ',', ' ') }} €
                             @if ($options_discount_mode === 'eur' && ($t['options_discount_pct'] ?? 0) > 0)
@@ -685,7 +685,7 @@
                     </span>
                 </div>
                 <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
-                    <label class="flex-1 min-w-0 text-sm text-gray-700 break-words">{{ __('Engines discount') }} <span class="text-xs text-gray-400">{{ __('(across all engines)') }}</span></label>
+                    <label class="w-full sm:w-auto sm:flex-1 min-w-0 text-sm text-gray-700 break-words">{{ __('Engines discount') }} <span class="text-xs text-gray-400">{{ __('(across all engines)') }}</span></label>
                     {{-- % / EUR switch: dealers negotiate both ways ("10% off"
                          vs "5000 EUR off"). Switching mode swaps which input is
                          live; the calculator converts a euro entry into the
@@ -705,7 +705,7 @@
                             class="w-24 text-right rounded border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800 disabled:bg-gray-100" />
                         <span class="text-sm text-gray-500 w-3">%</span>
                     @endif
-                    <span class="text-sm text-red-600 font-medium w-28 text-right">
+                    <span class="flex-1 sm:flex-none sm:w-28 text-sm text-red-600 font-medium text-right">
                         @if ($t && ($t['engines_discount_amount'] ?? 0) > 0)
                             -{{ number_format($discShown('engines'), 0, ',', ' ') }} €
                             @if ($engines_discount_mode === 'eur' && ($t['engines_discount_pct'] ?? 0) > 0)
@@ -715,7 +715,7 @@
                     </span>
                 </div>
                 <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
-                    <label class="flex-1 min-w-0 text-sm text-gray-700 break-words">{{ __('Global discount') }} <span class="text-xs text-gray-400">{{ __('(applies to the entire quote)') }}</span></label>
+                    <label class="w-full sm:w-auto sm:flex-1 min-w-0 text-sm text-gray-700 break-words">{{ __('Global discount') }} <span class="text-xs text-gray-400">{{ __('(applies to the entire quote)') }}</span></label>
                     {{-- % / EUR switch: dealers negotiate both ways ("10% off"
                          vs "5000 EUR off"). Switching mode swaps which input is
                          live; the calculator converts a euro entry into the
@@ -735,7 +735,7 @@
                             class="w-24 text-right rounded border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800 disabled:bg-gray-100" />
                         <span class="text-sm text-gray-500 w-3">%</span>
                     @endif
-                    <span class="text-sm text-red-600 font-medium w-28 text-right">
+                    <span class="flex-1 sm:flex-none sm:w-28 text-sm text-red-600 font-medium text-right">
                         @if ($t && ($t['global_discount_amount'] ?? 0) > 0)
                             -{{ number_format($discShown('global'), 0, ',', ' ') }} €
                             @if ($global_discount_mode === 'eur' && ($t['global_discount_pct'] ?? 0) > 0)
