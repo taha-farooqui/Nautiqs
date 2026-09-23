@@ -291,7 +291,7 @@
                         <div class="space-y-1">
                             @foreach ($items as $opt)
                                 @php $oid = (string) $opt->_id; $checked = isset($selectedOptions[$oid]); @endphp
-                                <div class="flex items-center gap-3 p-2 rounded hover:bg-gray-50">
+                                <div class="flex flex-wrap items-center gap-x-3 gap-y-2 p-2 rounded hover:bg-gray-50">
                                     {{-- Whole label area is clickable (not just the box): clicking the
                                          checkbox OR the option text toggles it. Qty/discount inputs and the
                                          price sit outside this label so editing them never toggles. --}}
@@ -299,23 +299,29 @@
                                         <input type="checkbox" wire:click="toggleOption('{{ $oid }}')" @checked($checked)
                                             class="text-primary-800 focus:ring-primary-800 rounded shrink-0 mt-0.5" />
                                         <span class="flex-1 min-w-0">
-                                            <span class="block text-sm text-gray-800">{{ $opt->label }}</span>
+                                            <span class="block text-sm text-gray-800 break-words">{{ $opt->label }}</span>
                                             @if (! empty($opt->description))
-                                                <span class="block text-xs text-gray-500 mt-0.5">{!! nl2br(e($opt->description)) !!}</span>
+                                                <span class="block text-xs text-gray-500 mt-0.5 break-words">{!! nl2br(e($opt->description)) !!}</span>
                                             @endif
                                         </span>
                                     </label>
                                     @if ($checked)
-                                        <input type="number" min="1" value="{{ $selectedOptions[$oid] ?? 1 }}"
-                                            wire:model.live.debounce.300ms="selectedOptions.{{ $oid }}"
-                                            class="w-14 text-right rounded border-gray-300 text-xs py-1 focus:border-primary-800 focus:ring-primary-800"
-                                            title="{{ __('Quantity') }}" />
-                                        <div class="flex items-center gap-1">
-                                            <input type="number" min="0" max="100" step="0.5" placeholder="0"
-                                                wire:model.live.debounce.300ms="optionDiscounts.{{ $oid }}"
-                                                class="w-16 text-right rounded border-gray-300 text-xs py-1 focus:border-primary-800 focus:ring-primary-800"
-                                                title="{{ __('Discount %') }}" />
-                                            <span class="text-xs text-gray-400">%</span>
+                                        {{-- Quantity and discount move as one block so that on a narrow
+                                             screen they drop onto their own line together — beside the
+                                             label there is only room for the label and the price. --}}
+                                        <div class="order-1 sm:order-none w-full sm:w-auto flex items-center justify-end gap-2">
+                                            <label class="text-xs text-gray-500 sm:hidden">{{ __('Qty') }}</label>
+                                            <input type="number" min="1" value="{{ $selectedOptions[$oid] ?? 1 }}"
+                                                wire:model.live.debounce.300ms="selectedOptions.{{ $oid }}"
+                                                class="w-14 text-right rounded border-gray-300 text-xs py-1 focus:border-primary-800 focus:ring-primary-800"
+                                                title="{{ __('Quantity') }}" />
+                                            <div class="flex items-center gap-1">
+                                                <input type="number" min="0" max="100" step="0.5" placeholder="0"
+                                                    wire:model.live.debounce.300ms="optionDiscounts.{{ $oid }}"
+                                                    class="w-16 text-right rounded border-gray-300 text-xs py-1 focus:border-primary-800 focus:ring-primary-800"
+                                                    title="{{ __('Discount %') }}" />
+                                                <span class="text-xs text-gray-400">%</span>
+                                            </div>
                                         </div>
                                     @endif
                                     @php
@@ -328,7 +334,7 @@
                                             && $opt->original_price_currency !== 'EUR'
                                             && ! empty($opt->original_price);
                                     @endphp
-                                    <div class="w-28 text-right">
+                                    <div class="w-24 sm:w-28 text-right shrink-0">
                                         <div class="text-sm font-medium text-gray-900">{{ number_format($opt->price, 0, ',', ' ') }} €</div>
                                         @if ($optWasFx)
                                             <div class="text-[10px] text-gray-500">
