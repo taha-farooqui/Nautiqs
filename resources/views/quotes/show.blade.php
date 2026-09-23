@@ -606,10 +606,6 @@
                     <h3 class="font-semibold text-gray-900 truncate">{{ __('Quote') }} {{ $quote->number }}</h3>
                     <p class="text-xs text-gray-500 truncate">{{ $quote->client_snapshot['first_name'] ?? '' }} {{ $quote->client_snapshot['last_name'] ?? '' }} · {{ $quote->boatLabel() }}</p>
                 </div>
-                <a href="{{ route('quotes.pdf', $quote->_id) }}?inline=1" target="_blank" rel="noopener"
-                    class="inline-flex items-center gap-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-800 font-medium px-4 py-2 rounded-lg text-sm transition">
-                    <i class="ri-external-link-line"></i> {{ __('Open full screen') }}
-                </a>
                 <a href="{{ route('quotes.pdf', $quote->_id) }}"
                     class="inline-flex items-center gap-2 bg-primary-800 hover:bg-primary-900 text-white font-semibold px-4 py-2 rounded-lg text-sm transition">
                     <i class="ri-download-line"></i> {{ __('Download') }}
