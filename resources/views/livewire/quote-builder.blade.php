@@ -392,7 +392,7 @@
                             {{-- Quantity, discount, line total and remove move as one
                                  block, so on a narrow screen they drop to their own
                                  line together instead of each shrinking. --}}
-                            <div class="flex w-full sm:w-auto items-center justify-end gap-3">
+                            <div class="flex w-full sm:w-auto flex-wrap items-center justify-end gap-x-3 gap-y-2">
                             <div class="flex items-center gap-1.5 shrink-0">
                                 <label class="text-xs text-gray-500">{{ __('Qty') }}</label>
                                 <input type="number" min="1" max="99" value="{{ $row->quantity }}"
@@ -407,7 +407,7 @@
                                     class="w-16 text-right rounded border-gray-300 text-sm py-1 focus:border-primary-800 focus:ring-primary-800" />
                                 <span class="text-xs text-gray-400">%</span>
                             </div>
-                            <div class="w-28 text-right shrink-0">
+                            <div class="w-24 sm:w-28 text-right shrink-0">
                                 <span class="text-sm font-semibold {{ $row->discount > 0 ? 'text-orange-600' : 'text-gray-900' }}">{{ number_format($row->line, 0, ',', ' ') }} €</span>
                                 @if ($row->discount > 0)
                                     <div class="text-[10px] text-gray-400 line-through">{{ number_format($row->price * $row->quantity, 0, ',', ' ') }} €</div>
