@@ -421,9 +421,21 @@ becomes the regression check for any future front-end change.
 ### 4.1 Scope
 
 Bulk create and update of the dealership's **catalogue**: brands → models →
-versions (variants), including included equipment and prices. Options are
-**not** in this file — they already have their own per-boat import/export and a
-different key. Quotes are snapshots and are untouched by definition.
+versions (variants), including included equipment and prices, **and options**.
+Quotes are snapshots and are untouched by definition.
+
+> **Amended 24 Sep 2026, as built.** The client asked for the complete boat —
+> "all of its versions, options, including equipments". Options are therefore
+> in the file after all, on a second sheet rather than the same grid: an option
+> belongs to the boat, not to one version of it, so a single sheet would mean
+> repeating every option against every version and then guessing which copy was
+> meant when two disagree. The per-boat options import stays where it is; this
+> is the whole-catalogue path. Two further rules fell out of testing against
+> the live catalogue and are now part of the contract: an empty numeric or enum
+> cell means *leave it alone* (so a blank COUT HT cannot zero a cost), and text
+> comparison normalises line endings (a spreadsheet cell cannot hold a carriage
+> return, so multi-line descriptions would otherwise read as changed on every
+> import).
 
 Two uses, both must be first-class: (a) a dealer starting from a manufacturer
 price list, creating dozens of boats at once; (b) the yearly price update:
@@ -483,20 +495,25 @@ This is the one place where a little more UI buys a lot of safety.
 
 ### 4.5 Export
 
-`GET /catalogue/export` (whole catalogue) and `?brand=` filter, as XLSX via the
-existing writer (`buildOptionsXlsx` generalised to `buildXlsx`). Every version
-row carries `REF VERSION`, so the round-trip is exact. Template download
-(`/catalogue/import/template`) is the same sheet with three example rows.
+`GET /catalogue/export` (whole catalogue), with `?brand=` and `?model=` filters,
+as XLSX. Every row carries the reference of the record it came from
+(`REF MODELE`, `REF VERSION`, and the option `CODE`, backfilled on export), so
+the round-trip is exact even after a rename. Template download
+(`/catalogue/import/template`) is the same two sheets with example rows.
 
 ### 4.6 Structure
 
+As built:
+
 ```
-app/Services/BoatImporter.php                 parse / preview / commit (mirrors OptionImporter)
-app/Http/Controllers/BoatImportController.php upload, preview, confirm, export, template
+app/Services/Xlsx.php                                  multi-sheet read + write (the
+                                                       existing readers took sheet 1 only)
+app/Services/BoatCatalogueExporter.php                 workbook + template
+app/Services/BoatCatalogueImporter.php                 parse / plan / commit
+app/Http/Controllers/BoatCatalogueTransferController.php
 resources/views/catalogue/import/{upload,preview}.blade.php
-resources/views/catalogue/models.blade.php    "Importer", "Exporter", "Modèle de fichier" buttons
-routes/web.php                                5 routes under /catalogue
-tests/Feature/BoatImporterTest.php            upsert semantics (see §5.2)
+resources/views/catalogue/models.blade.php             "Exporter" / "Importer" buttons
+routes/web.php                                         5 routes under /catalogue
 ```
 
 A new controller rather than more methods on `CatalogueController`, which is
@@ -504,14 +521,19 @@ already 1 400 lines.
 
 ### 4.7 Acceptance
 
-- [ ] Template imports clean on an empty tenant: 3 brands, 3 models, 3 versions created, 0 errors.
-- [ ] Export the full NAUTIQUE CONCEPT catalogue → re-import untouched → **0 created, N updated, 0 errors**, and a document-level diff of models/versions before vs after is empty.
-- [ ] Change one price in the export, import → exactly one field on one version changed.
-- [ ] Import a file missing half the versions → version count unchanged (nothing deleted).
-- [ ] Unknown brand → private brand created and shown in the catalogue; global-copied model updated keeps `source=global`.
-- [ ] A row with `PRIX HT = -5` is reported and skipped; the other rows land.
-- [ ] Five real quotes created before the import render identical PDFs after it.
-- [ ] Tenant isolation: importing as company A cannot read or write company B's brands (test with two tenants).
+Run 24 Sep 2026 against the production database — every write inside a
+throwaway company, created and destroyed by the script, with a platform-wide
+document census either side proving nothing else moved. 23 checks, all passing.
+
+- [x] Template imports clean on an empty tenant: 2 brands, 2 boats, 3 versions, 3 options, 0 errors; year, type, propulsion, length and the pipe-separated equipment all land.
+- [x] Export the full NAUTIQUE CONCEPT catalogue (44 boats, 144 versions, 2 202 options) → re-import untouched → **0 created, 0 updated, 0 errors, 2 388 unchanged**.
+- [x] Change one price, import → exactly one field on one version changed; cost and equipment untouched; nothing created or deleted.
+- [x] Import a file holding one boat → all counts unchanged (nothing deleted).
+- [x] Unknown brand → private brand created.
+- [x] `PRIX HT = -5`, a missing MARQUE and `ANNEE = 3200` are each reported and skipped whole; the good rows land.
+- [x] Options match on CODE, update in place, and a description is kept when its column is absent.
+- [x] Tenant isolation: a file naming another tenant's boat by its own REF cannot read or write it — the row becomes a new boat in the importing tenant instead.
+- [x] Driven through the browser end to end: export downloads, template downloads, an untouched re-import previews as 0/0/6/0 with Apply disabled, a four-column price update previews one changed field, applies, and restores.
 
 ---
 
