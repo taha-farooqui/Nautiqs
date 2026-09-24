@@ -34,6 +34,9 @@
         [
             'section' => 'Settings',
             'items' => array_filter([
+                // Also in the avatar menu, but nobody looks for their own
+                // profile up there when every other setting is down here.
+                ['label' => 'Profile',           'icon' => 'ri-user-settings-line',      'route' => 'profile.edit',     'active' => 'profile.*'],
                 ['label' => 'Company settings',  'icon' => 'ri-building-line',           'route' => 'company.settings', 'active' => 'company.settings'],
                 $isTenantAdmin
                     ? ['label' => 'Team',        'icon' => 'ri-team-line',               'route' => 'team.index',       'active' => 'team.*']
