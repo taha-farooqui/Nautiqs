@@ -27,6 +27,10 @@ class CompanyProvisioner
             'default_vat_rate'     => 20.0,
             'default_margin_pct'   => 10.0,
             'default_display_mode' => 'TTC',
+            // Left unset this falls through to APP_TIMEZONE, which is UTC on
+            // the server — so a French dealership saw every date and time two
+            // hours behind its own clock in summer.
+            'timezone'             => 'Europe/Paris',
             'margin_presets'       => [
                 'hull'         => 12.0,
                 'engine'       => 8.0,
