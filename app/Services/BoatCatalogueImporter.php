@@ -172,6 +172,22 @@ class BoatCatalogueImporter
 
             $key = $ref !== '' ? 'ref:' . $ref : 'name:' . mb_strtolower($brand) . '|' . mb_strtolower($name);
 
+            // Validate the whole row before recording any of it. A row that is
+            // reported as rejected must not also half-import: telling the
+            // dealer a row was skipped and then creating its version anyway is
+            // worse than either outcome on its own.
+            $fields = $this->boatFields($r, $has, $line, $errors);
+            if ($fields === null) continue;
+
+            // No VERSION column, or an empty one: the row describes the boat only.
+            $vName = isset($has['variant']) ? trim((string) ($r['variant'] ?? '')) : '';
+            $vRef  = isset($has['variant_ref']) ? trim((string) ($r['variant_ref'] ?? '')) : '';
+            $version = null;
+            if ($vName !== '' || $vRef !== '') {
+                $version = $this->versionFields($r, $has, $line, $errors);
+                if ($version === null) continue;
+            }
+
             if (! isset($boats[$key])) {
                 $boats[$key] = ['ref' => $ref, 'brand' => $brand, 'name' => $name,
                                 'fields' => [], 'versions' => [], 'options' => [], 'row' => $line];
@@ -180,7 +196,6 @@ class BoatCatalogueImporter
             // Boat-level columns repeat down the version rows. The first row
             // wins; a later row that disagrees is reported rather than silently
             // overwriting, because that is nearly always a copy-paste slip.
-            $fields = $this->boatFields($r, $has, $line, $errors);
             foreach ($fields as $f => $v) {
                 if (! array_key_exists($f, $boats[$key]['fields'])) {
                     $boats[$key]['fields'][$f] = $v;
@@ -191,15 +206,9 @@ class BoatCatalogueImporter
                 }
             }
 
-            // No VERSION column, or an empty one: the row describes the boat only.
-            $vName = isset($has['variant']) ? trim((string) ($r['variant'] ?? '')) : '';
-            $vRef  = isset($has['variant_ref']) ? trim((string) ($r['variant_ref'] ?? '')) : '';
-            if ($vName === '' && $vRef === '') continue;
-
-            $version = $this->versionFields($r, $has, $line, $errors);
-            if ($version === null) continue;
-
-            $boats[$key]['versions'][] = ['ref' => $vRef, 'name' => $vName, 'fields' => $version, 'row' => $line];
+            if ($version !== null) {
+                $boats[$key]['versions'][] = ['ref' => $vRef, 'name' => $vName, 'fields' => $version, 'row' => $line];
+            }
         }
 
         return $boats;
@@ -247,8 +256,8 @@ class BoatCatalogueImporter
         return $out;
     }
 
-    /** @return array<string, mixed> */
-    private function boatFields(array $r, array $has, int $line, array &$errors): array
+    /** @return array<string, mixed>|null null when the row is invalid */
+    private function boatFields(array $r, array $has, int $line, array &$errors): ?array
     {
         $out = [];
         $str = ['code', 'complement', 'supplier'];
@@ -268,6 +277,7 @@ class BoatCatalogueImporter
             } elseif (! ctype_digit($y) || (int) $y < 1900 || (int) $y > 2100) {
                 $errors[] = ['sheet' => BoatCatalogueExporter::SHEET_BOATS, 'row' => $line,
                     'message' => __('ANNEE must be a year between 1900 and 2100.')];
+                return null;
             } else {
                 $out['year'] = (int) $y;
             }
