@@ -235,22 +235,27 @@ class BoatCatalogueImporter
                     'message' => __('COUT HT cannot be negative.')];
                 return null;
             }
-            $out['cost'] = $c ?? 0.0;
+            // Blank does not mean free. Type 0 to say the cost is nothing.
+            if ($c !== null) $out['cost'] = $c;
         }
         if (isset($has['currency'])) {
-            $cur = strtoupper(trim((string) ($r['currency'] ?? ''))) ?: 'EUR';
-            if (! in_array($cur, ['EUR', 'USD'], true)) {
-                $errors[] = ['sheet' => BoatCatalogueExporter::SHEET_BOATS, 'row' => $line,
-                    'message' => __('DEVISE must be EUR or USD.')];
-                return null;
+            $cur = strtoupper(trim((string) ($r['currency'] ?? '')));
+            if ($cur !== '') {
+                if (! in_array($cur, ['EUR', 'USD'], true)) {
+                    $errors[] = ['sheet' => BoatCatalogueExporter::SHEET_BOATS, 'row' => $line,
+                        'message' => __('DEVISE must be EUR or USD.')];
+                    return null;
+                }
+                $out['currency'] = $cur;
             }
-            $out['currency'] = $cur;
         }
+        // Equipment is the one list you clear by emptying its cell — there is
+        // no other way to say "this version includes nothing".
         if (isset($has['equipment'])) {
             $out['included_equipment'] = $this->equipment((string) ($r['equipment'] ?? ''));
         }
-        if (isset($has['is_active'])) {
-            $out['is_active'] = $this->bool($r['is_active'] ?? '', true);
+        if (isset($has['is_active']) && trim((string) ($r['is_active'] ?? '')) !== '') {
+            $out['is_active'] = $this->bool($r['is_active'], true);
         }
 
         return $out;
@@ -264,16 +269,19 @@ class BoatCatalogueImporter
         foreach ($str as $f) {
             if (isset($has[$f])) $out[$f] = trim((string) ($r[$f] ?? ''));
         }
+        // Numbers and enums: an empty cell is not a value. Blanking LONGUEUR
+        // is what someone does when they do not know it, not a claim that the
+        // boat is nought metres long.
         foreach (['length_total', 'beam', 'draft_max', 'weight'] as $f) {
             if (isset($has[$f])) {
                 $n = $this->money($r[$f] ?? '');
-                $out[$f] = $n === null ? null : round($n, 3);
+                if ($n !== null) $out[$f] = round($n, 3);
             }
         }
         if (isset($has['year'])) {
             $y = trim((string) ($r['year'] ?? ''));
             if ($y === '') {
-                $out['year'] = null;
+                // left as it was
             } elseif (! ctype_digit($y) || (int) $y < 1900 || (int) $y > 2100) {
                 $errors[] = ['sheet' => BoatCatalogueExporter::SHEET_BOATS, 'row' => $line,
                     'message' => __('ANNEE must be a year between 1900 and 2100.')];
@@ -282,11 +290,11 @@ class BoatCatalogueImporter
                 $out['year'] = (int) $y;
             }
         }
-        if (isset($has['type'])) {
-            $out['type'] = $this->lookup($r['type'] ?? '', self::TYPES, 'unknown');
-        }
-        if (isset($has['propulsion'])) {
-            $out['propulsion'] = $this->lookup($r['propulsion'] ?? '', self::PROPULSIONS, 'unknown');
+        foreach (['type' => self::TYPES, 'propulsion' => self::PROPULSIONS] as $f => $table) {
+            if (! isset($has[$f])) continue;
+            $raw = trim((string) ($r[$f] ?? ''));
+            if ($raw === '') continue;
+            $out[$f] = $this->lookup($raw, $table, 'unknown');
         }
         return $out;
     }
@@ -331,13 +339,16 @@ class BoatCatalogueImporter
             }
 
             $fields = [];
-            if (isset($has['category']))    $fields['category']    = trim((string) ($r['category'] ?? ''));
+            if (isset($has['category']) && trim((string) ($r['category'] ?? '')) !== '') {
+                $fields['category'] = trim((string) $r['category']);
+            }
             if (isset($has['description'])) $fields['description'] = trim((string) ($r['description'] ?? ''));
-            if (isset($has['position']))    $fields['position']    = (int) ($this->money($r['position'] ?? '') ?? 0);
-            if (isset($has['vat_rate'])) {
-                $v = $this->money($r['vat_rate'] ?? '');
+            if (isset($has['position']) && ($pos = $this->money($r['position'] ?? '')) !== null) {
+                $fields['position'] = (int) $pos;
+            }
+            if (isset($has['vat_rate']) && ($v = $this->money($r['vat_rate'] ?? '')) !== null) {
                 // "0.2" and "20" both mean twenty percent.
-                $fields['vat_rate'] = $v === null ? 20.0 : ($v > 0 && $v <= 1 ? round($v * 100, 2) : round($v, 2));
+                $fields['vat_rate'] = $v > 0 && $v <= 1 ? round($v * 100, 2) : round($v, 2);
             }
 
             $currency = isset($has['currency'])
@@ -366,7 +377,7 @@ class BoatCatalogueImporter
                         'message' => __(':col cannot be negative.', ['col' => strtoupper($col)])];
                     continue 2;
                 }
-                $fields[$field] = $toEur($n) ?? 0.0;
+                if ($n !== null) $fields[$field] = $toEur($n);
             }
             if ($currency !== 'EUR') {
                 $fields['currency']               = 'EUR';
@@ -576,7 +587,10 @@ class BoatCatalogueImporter
                 if ((bool) $old !== $new) $out[$f] = [$old ? 'oui' : 'non', $new ? 'oui' : 'non'];
                 continue;
             }
-            if ((string) $old !== (string) $new) $out[$f] = [$old, $new];
+            // A spreadsheet cell cannot carry a carriage return: the XML spec
+            // normalises CRLF to LF on the way in. Comparing raw would report
+            // every multi-line description as changed on every import.
+            if ($this->text($old) !== $this->text($new)) $out[$f] = [$old, $new];
         }
         return $out;
     }
@@ -740,6 +754,12 @@ class BoatCatalogueImporter
             $out[$field] = isset($raw[$i]) ? trim((string) $raw[$i]) : '';
         }
         return $out;
+    }
+
+    /** Line endings only — the padding inside these descriptions is meaningful. */
+    private function text($v): string
+    {
+        return str_replace(["\r\n", "\r"], "\n", (string) $v);
     }
 
     private function blank(array $row): bool
