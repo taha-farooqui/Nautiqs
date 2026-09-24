@@ -19,7 +19,11 @@ Schedule::command('quotes:send-follow-ups')
     ->appendOutputTo(storage_path('logs/follow-ups.log'));
 
 /*
- * Backups — twice daily, at midnight and half past twelve, Paris time.
+ * Backups — twice daily, at midnight and half past twelve, in the zone set
+ * by config('backup.timezone') (Europe/Paris). The Backups page lists every
+ * run in that same zone, so what is scheduled and what is shown agree: the
+ * server itself runs on UTC, and a midnight backup printed as 22:00 the day
+ * before reads like a backup taken at the wrong time.
  *
  * Two separate entries rather than twiceDailyAt(), which forces the same
  * minute past the hour on both runs. The timezone is explicit so the times
@@ -31,13 +35,13 @@ Schedule::command('quotes:send-follow-ups')
  */
 Schedule::command('backup:run --trigger=scheduled')
     ->dailyAt('00:00')
-    ->timezone('Europe/Paris')
+    ->timezone(config('backup.timezone'))
     ->withoutOverlapping(120)
     ->appendOutputTo(storage_path('logs/backups.log'));
 
 Schedule::command('backup:run --trigger=scheduled')
     ->dailyAt('12:30')
-    ->timezone('Europe/Paris')
+    ->timezone(config('backup.timezone'))
     ->withoutOverlapping(120)
     ->appendOutputTo(storage_path('logs/backups.log'));
 
@@ -47,5 +51,5 @@ Schedule::command('backup:run --trigger=scheduled')
  */
 Schedule::command('backup:prune')
     ->dailyAt('03:00')
-    ->timezone('Europe/Paris')
+    ->timezone(config('backup.timezone'))
     ->appendOutputTo(storage_path('logs/backups.log'));

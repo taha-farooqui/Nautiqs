@@ -208,7 +208,40 @@ class QuoteBuilder extends Component
     {
         // Spec §6 — only show brands the dealership has activated. Includes
         // both global-sourced (copied) and private brands.
-        return CompanyBrand::where('is_active', true)->orderBy('name')->get();
+        //
+        // A brand with nothing sellable under it is a dead end: picking it
+        // leaves the model list empty and the dealer wondering what they did
+        // wrong. Brands arrive here automatically — the platform fans every
+        // new global brand out to every dealership — so an empty one is
+        // normal, not a mistake, and it simply has no place in the builder.
+        // Same sellability test as models() below, run once for all brands.
+        $brands = CompanyBrand::where('is_active', true)->orderBy('name')->get();
+
+        $liveModels = CompanyBoatModel::whereIn(
+                'company_brand_id',
+                $brands->pluck('_id')->map(fn ($i) => (string) $i)->all()
+            )
+            ->where('is_archived', false)
+            ->get(['_id', 'company_brand_id']);
+
+        $sellableModelIds = CompanyBoatVariant::whereIn(
+                'company_model_id',
+                $liveModels->pluck('_id')->map(fn ($i) => (string) $i)->all()
+            )
+            ->where('is_active', true)
+            ->where('is_archived', false)
+            ->pluck('company_model_id')->map(fn ($i) => (string) $i)->unique()->all();
+
+        $brandsWithBoats = $liveModels
+            ->filter(fn ($m) => in_array((string) $m->_id, $sellableModelIds, true))
+            ->pluck('company_brand_id')->map(fn ($i) => (string) $i)->unique()->all();
+
+        return $brands
+            // Never drop the brand this quote is already on, or reopening an
+            // older draft would silently blank the selection.
+            ->filter(fn ($b) => in_array((string) $b->_id, $brandsWithBoats, true)
+                || (string) $b->_id === (string) $this->brand_id)
+            ->values();
     }
 
     #[Computed]

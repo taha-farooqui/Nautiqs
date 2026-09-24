@@ -234,10 +234,19 @@ class QuoteCalculator
             $marginType   = 'real';
         } else {
             // Estimated via margin presets (§3 priority 2 + 4).
+            //
+            // Engines are billed through the options rows but they are their
+            // own preset in company settings, and a dealer who sets 8% on
+            // engines and 25% on options means those two numbers. So the two
+            // blocks are estimated apart, each on its own post-discount net.
+            $optionsNet = $optionsBeforeBlock - $optionsBlockDiscount;
+            $enginesNet = $enginesBeforeBlock - $enginesBlockDiscount;
+
             $estimated = 0.0;
-            $estimated += $baseSubtotal  * ($company->marginForCategory('hull') / 100);
-            $estimated += $optionsSubtotal * ($company->marginForCategory('options') / 100);
-            $estimated += $customSubtotal  * ($company->marginForCategory('custom_items') / 100);
+            $estimated += $baseSubtotal   * ($company->marginForCategory('hull') / 100);
+            $estimated += $optionsNet     * ($company->marginForCategory('options') / 100);
+            $estimated += $enginesNet     * ($company->marginForCategory('engine') / 100);
+            $estimated += $customSubtotal * ($company->marginForCategory('custom_items') / 100);
             $marginAmount = $estimated;
             $marginPct    = $totalHt > 0 ? ($marginAmount / $totalHt) * 100 : 0;
             $marginType   = 'estimated';

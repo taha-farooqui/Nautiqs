@@ -17,6 +17,10 @@
     @php
         $last = $stats['last'];
         $lastOk = $last && $last->status === \App\Models\BackupRun::STATUS_OK;
+        // The server runs on UTC and the schedule is written in Paris time, so
+        // without this a midnight backup is listed as 22:00 the day before.
+        $tz = config('backup.timezone');
+        $at = fn ($d) => $d?->copy()->setTimezone($tz)->translatedFormat('j M Y, H:i');
     @endphp
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <div class="bg-white rounded-2xl border {{ $stats['is_stale'] ? 'border-red-200' : 'border-gray-200' }} p-5">
@@ -26,7 +30,7 @@
                     {{ $last->started_at?->diffForHumans() }}
                 </p>
                 <p class="text-xs text-gray-500 mt-1">
-                    {{ $last->started_at?->translatedFormat('j M Y, H:i') }}
+                    {{ $at($last->started_at) }}
                     @if (! $lastOk)
                         · <span class="text-red-700 font-semibold">{{ __('failed') }}</span>
                     @endif
@@ -140,6 +144,7 @@
             <h3 class="font-semibold text-gray-900">{{ __('History') }}</h3>
             <p class="text-xs text-gray-500">
                 {{ __('Every run is kept here, including the ones whose file has been removed — so the record of what was taken survives the archive itself.') }}
+                {{ __('Times are shown in :zone, the same clock the schedule runs on.', ['zone' => __($tz)]) }}
             </p>
         </div>
 
@@ -169,7 +174,7 @@
                             @endphp
                             <tr class="hover:bg-gray-50/50">
                                 <td class="px-5 py-3 whitespace-nowrap">
-                                    <div class="text-gray-900">{{ $run->started_at?->translatedFormat('j M Y, H:i') }}</div>
+                                    <div class="text-gray-900">{{ $at($run->started_at) }}</div>
                                     <div class="text-xs text-gray-500">
                                         {{ $run->trigger === \App\Models\BackupRun::TRIGGER_MANUAL ? __('Manual') : __('Scheduled') }}
                                         @if ($run->started_by) · {{ $run->started_by }} @endif
@@ -213,7 +218,7 @@
                                             <i class="ri-archive-line"></i> {{ __('Removed from server') }}
                                         </span>
                                         <div class="text-xs text-gray-500 mt-1">
-                                            {{ __('Downloaded :when', ['when' => $run->downloaded_at?->translatedFormat('j M Y') ?: '—']) }}
+                                            {{ __('Downloaded :when', ['when' => $run->downloaded_at?->copy()->setTimezone($tz)->translatedFormat('j M Y') ?: '—']) }}
                                         </div>
                                     @else
                                         <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold">
@@ -221,7 +226,7 @@
                                         </span>
                                         @if ($run->downloaded_at)
                                             <div class="text-xs text-gray-500 mt-1">
-                                                {{ __('Downloaded :when', ['when' => $run->downloaded_at->translatedFormat('j M Y')]) }}
+                                                {{ __('Downloaded :when', ['when' => $run->downloaded_at->copy()->setTimezone($tz)->translatedFormat('j M Y')]) }}
                                             </div>
                                         @endif
                                     @endif

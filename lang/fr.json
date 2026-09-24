@@ -1208,5 +1208,7 @@
     "or drop them here": "ou déposez-les ici",
     "too large": "trop volumineux",
     "unsupported type": "type non pris en charge",
-    "no room left": "nombre maximum de fichiers atteint"
+    "no room left": "nombre maximum de fichiers atteint",
+    "Times are shown in :zone, the same clock the schedule runs on.": "Les heures sont affichées en :zone, le fuseau utilisé par la planification.",
+    "Europe/Paris": "heure de Paris"
 }

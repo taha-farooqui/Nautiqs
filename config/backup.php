@@ -111,4 +111,19 @@ return [
     */
     'stale_after_hours' => (int) env('BACKUP_STALE_AFTER_HOURS', 26),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Schedule timezone
+    |--------------------------------------------------------------------------
+    |
+    | The times in routes/console.php are read in this zone, and the Backups
+    | page prints every run in it too. One value for both, because the server
+    | runs on UTC: with the schedule in Paris time and the page in UTC, a
+    | backup taken at midnight in Nice was listed as 22:00 the previous day,
+    | and the only sensible conclusion to draw from that was that it had run
+    | at the wrong time.
+    |
+    */
+    'timezone' => env('BACKUP_TIMEZONE', 'Europe/Paris'),
+
 ];
