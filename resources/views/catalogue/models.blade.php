@@ -46,10 +46,22 @@
             </select>
         </form>
 
-        <a href="{{ route('catalogue.models.create') }}"
-            class="inline-flex items-center gap-1 px-3 py-2 text-sm font-semibold bg-primary-800 hover:bg-primary-900 text-white rounded-lg">
-            <i class="ri-add-line"></i> {{ __('Add boat') }}
-        </a>
+        <div class="flex flex-wrap items-center gap-2">
+            {{-- Export carries whatever filter is on screen, so "export this
+                 brand" needs no separate control. --}}
+            <a href="{{ route('catalogue.transfer.export', array_filter(['brand' => $brandFilter])) }}"
+                class="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium border border-gray-300 hover:bg-gray-50 text-gray-800 rounded-lg">
+                <i class="ri-download-line"></i> {{ __('Export') }}
+            </a>
+            <a href="{{ route('catalogue.transfer.form') }}"
+                class="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium border border-gray-300 hover:bg-gray-50 text-gray-800 rounded-lg">
+                <i class="ri-upload-line"></i> {{ __('Import') }}
+            </a>
+            <a href="{{ route('catalogue.models.create') }}"
+                class="inline-flex items-center gap-1 px-3 py-2 text-sm font-semibold bg-primary-800 hover:bg-primary-900 text-white rounded-lg">
+                <i class="ri-add-line"></i> {{ __('Add boat') }}
+            </a>
+        </div>
     </div>
 
     @if ($rows->isEmpty())

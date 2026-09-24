@@ -153,6 +153,16 @@ Route::middleware(['auth', 'verified', 'maintenance'])->group(function () {
 
     // Catalogue (§6 + §7) — dealer's workspace catalogue
     Route::prefix('catalogue')->name('catalogue.')->group(function () {
+        // Whole-catalogue transfer: boats + versions + equipment + options in
+        // one workbook. Import is upload -> preview -> confirm; see
+        // BoatCatalogueTransferController.
+        $t = \App\Http\Controllers\BoatCatalogueTransferController::class;
+        Route::get('/export',           [$t, 'export'])->name('transfer.export');
+        Route::get('/import',           [$t, 'form'])->name('transfer.form');
+        Route::get('/import/template',  [$t, 'template'])->name('transfer.template');
+        Route::post('/import/preview',  [$t, 'preview'])->name('transfer.preview');
+        Route::post('/import/confirm',  [$t, 'confirm'])->name('transfer.confirm');
+
         // Browse / list
         Route::get('/models',   [CatalogueController::class, 'models'])->name('models');
         Route::get('/brands',   [CatalogueController::class, 'brands'])->name('brands');
