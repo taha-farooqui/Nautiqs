@@ -147,7 +147,9 @@ class BoatCatalogueExporter
                     $o->cost !== null ? round((float) $o->cost, 2) : '',
                     round((float) $o->price, 2),
                     'EUR',
-                    $o->vat_rate !== null ? (float) $o->vat_rate : 20,
+                    // Blank, not 20, when no rate is stored: writing a default
+                    // here would make the next import set one.
+                    $o->vat_rate !== null && $o->vat_rate !== '' ? (float) $o->vat_rate : '',
                     (int) ($o->position ?? 0),
                 ];
             }
