@@ -68,7 +68,7 @@
             <div>
                 <h4 class="font-semibold text-gray-900 mb-1">{{ __('Two sheets') }}</h4>
                 <p class="text-gray-600">
-                    {{ __('BATEAUX: MARQUE, MODELE, VERSION, PRIX HT, COUT HT, DEVISE and EQUIPEMENTS INCLUS — one row per version, with the equipment in a single cell separated by |. OPTIONS: MARQUE, MODELE, FAMILLE, DESIGNATION, DESCRIPTION, PA HT and PV HT — one row per option.') }}
+                    {{ __('BATEAUX: MARQUE, MODELE, VERSION, PRIX HT, COUT HT, DEVISE and EQUIPEMENTS INCLUS — one row per version, with the equipment in a single cell separated by a semicolon. OPTIONS: MARQUE, MODELE, FAMILLE, DESIGNATION, DESCRIPTION, PA HT and PV HT — one row per option.') }}
                 </p>
             </div>
             <div>

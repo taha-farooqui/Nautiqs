@@ -611,7 +611,7 @@ class BoatCatalogueImporter
             if ($f === 'included_equipment') {
                 $flat = fn ($l) => collect($l ?? [])
                     ->map(fn ($e) => is_array($e) ? (string) ($e['label'] ?? '') : (string) $e)->all();
-                if ($flat($old) !== $flat($new)) $out[$f] = [implode(' | ', $flat($old)), implode(' | ', $flat($new))];
+                if ($flat($old) !== $flat($new)) $out[$f] = [implode('; ', $flat($old)), implode('; ', $flat($new))];
                 continue;
             }
             if (is_float($new) || is_int($new)) {
@@ -842,7 +842,7 @@ class BoatCatalogueImporter
     private function equipment(string $raw): array
     {
         if (trim($raw) === '') return [];
-        return collect(preg_split('/\s*[|;\r\n]\s*/u', $raw))
+        return collect(preg_split('/\s*[;|\r\n]\s*/u', $raw))
             ->map(fn ($l) => trim((string) $l))
             ->filter(fn ($l) => $l !== '')
             ->map(fn ($l) => ['label' => $l, 'type' => 'standard'])

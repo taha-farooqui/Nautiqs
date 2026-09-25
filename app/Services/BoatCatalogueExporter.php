@@ -19,7 +19,11 @@ use App\Models\CompanyOption;
  *
  *   BATEAUX  one row per version. MARQUE and MODELE repeat down the rows of a
  *            boat. A boat with no versions still gets a row, with VERSION
- *            empty, so that it survives the round trip.
+ *            empty, so that it survives the round trip. Included equipment is
+ *            one cell, items separated by a semicolon — not a comma, because
+ *            160 of the 4 107 equipment lines in the live catalogues contain
+ *            one ("LUMIERE DE NAVIGATION VERTE, ROUGE, 360°" is a single
+ *            item), while none contains a semicolon or a pipe.
  *   OPTIONS  one row per option, tied to its boat by MARQUE and MODELE.
  *
  * The columns are the ones dealers fill. Measured across the four live
@@ -105,7 +109,7 @@ class BoatCatalogueExporter
                 $equipment = collect($v->included_equipment ?? [])
                     ->map(fn ($e) => is_array($e) ? (string) ($e['label'] ?? '') : (string) $e)
                     ->filter(fn ($l) => trim($l) !== '')
-                    ->implode(' | ');
+                    ->implode('; ');
 
                 $boatRows[] = array_merge($boat, [
                     (string) $v->name,
@@ -149,9 +153,9 @@ class BoatCatalogueExporter
                 'widths'  => self::BOAT_WIDTHS,
                 'rows'    => [
                     ['Brig', 'Eagle 6.7', 'Standard', 45000, 32000, 'EUR',
-                     'Taud de soleil | Échelle de bain | Douchette'],
+                     'Taud de soleil; Échelle de bain; Douchette'],
                     ['Brig', 'Eagle 6.7', 'Confort', 52000, 37500, 'EUR',
-                     'Taud de soleil | Échelle de bain | Douchette | Table cockpit'],
+                     'Taud de soleil; Échelle de bain; Douchette; Table cockpit'],
                     ['Salpa', 'Soleil 21.5', 'Standard', 63621, '', 'EUR', ''],
                 ],
             ],
