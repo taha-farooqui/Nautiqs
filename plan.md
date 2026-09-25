@@ -441,31 +441,40 @@ Two uses, both must be first-class: (a) a dealer starting from a manufacturer
 price list, creating dozens of boats at once; (b) the yearly price update:
 export → edit the price column → import, nothing else changes.
 
-### 4.2 File format — one flat sheet, one row per version
+### 4.2 File format — two sheets, only the columns dealers fill
 
-The existing readers only parse sheet 1, and dealers edit flat files in Excel
-comfortably. Model-level values repeat on each version row; on import the first
-row for a model wins and later disagreements are reported as warnings.
+**Revised 25 Sep 2026.** The first cut of this shipped with twenty columns on
+the boats sheet and twelve on the options sheet, because the schema has that
+many fields. Measuring what the four live catalogues actually contain — 80
+boats, 242 versions, 3 227 options — settled it:
 
-| Column | Required | Notes |
+| Column | Filled | Kept? |
 |---|---|---|
-| `MARQUE` | ✔ | brand name; matched case-insensitively; created as a **private** brand if unknown |
-| `MODELE` | ✔ | commercial name |
-| `CODE MODELE` | | manufacturer code |
-| `COMPLEMENT` | | sub-name (Cabin / Open) |
-| `ANNEE` | | 1900–2100 |
-| `TYPE` | | open, cabin, semi-rigid, day-cruiser, fishing, sail — FR words accepted (`semi-rigide`, `voilier`, `pêche`…) |
-| `PROPULSION` | | outboard, inboard, sail — `hors-bord`, `in-board`, `voile` accepted |
-| `VERSION` | ✔ | variant name |
-| `PRIX HT` | ✔ | ≥ 0 |
-| `COUT HT` | | dealer cost — never printed anywhere client-facing |
-| `DEVISE` | | EUR (default) or USD → converted with the live rate as options do |
-| `EQUIPEMENTS INCLUS` | | one cell, items separated by `\|` |
-| `ACTIF` | | oui/non, default oui |
-| `REF VERSION` | | **written by export**, blank on hand-typed files: the stable key for exact re-match |
+| `CODE MODELE` | 100%, but all 80 values match the `NAME-XXXX` pattern the app generates | no — nobody typed one |
+| option `CODE` | 100%, but 3 217 of 3 227 are the `famille__designation` key the importer derives | no — same |
+| `COMPLEMENT`, `ANNEE`, `TYPE`, `PROPULSION`, `LONGUEUR`, `LARGEUR`, `TIRANT D'EAU`, `POIDS`, `FOURNISSEUR` | 0% on every boat | no |
+| `ACTIF` | `true` on all 242 versions | no |
+| `TVA` | 20 on 3 215, null on 12 — no variance | no |
+| `REF MODELE`, `REF VERSION` | written by the export only | no — zero duplicate names in the live data, so names match reliably |
+| `DEVISE` (boats) | 22 versions priced in USD | **yes** — dropping it would silently reprice them |
+| `COUT HT` / `PA HT` | differs from the selling price on 242/242 versions and 2 947 options | **yes** |
+| `DESCRIPTION` | 232 options, and requested by the client by name | **yes** |
 
-FR/EN header aliases as in the other importers (`Brand`, `Model`, `Variant`,
-`Price HT`…). Max 5 000 rows, 10 MB.
+**BATEAUX** — one row per version, `MARQUE` and `MODELE` repeating:
+
+`MARQUE` · `MODELE` · `VERSION` · `PRIX HT` · `COUT HT` · `DEVISE` · `EQUIPEMENTS INCLUS`
+
+**OPTIONS** — one row per option:
+
+`MARQUE` · `MODELE` · `FAMILLE` · `DESIGNATION` · `DESCRIPTION` · `PA HT` · `PV HT`
+
+Equipment is one cell, items separated by `|`. A boat with no versions still
+gets a row with `VERSION` empty, so it survives the round trip. FR/EN header
+aliases as in the other importers. Max 5 000 rows, 10 MB.
+
+The **importer still accepts every dropped column**, including the REF ones, so
+a file exported before this revision imports exactly, and a dealer who wants to
+set dimensions or a year from a spreadsheet can simply add the column back.
 
 ### 4.3 Upsert rules — the part that must never surprise anyone
 
@@ -474,9 +483,15 @@ FR/EN header aliases as in the other importers (`Brand`, `Model`, `Variant`,
    was copied from the global catalogue is updated in place (prices, year,
    dimensions) and **keeps** `source=global` and its `global_model_id` — that
    is exactly the copy-on-activation principle: the dealer owns the copy.
-3. **Version**: match by `REF VERSION` when present, else by (model, name) →
-   update `base_price`, `cost`, `currency`, `included_equipment`, `is_active`;
-   else create `source=private`.
+3. **Version**: match by (model, name), or by `REF VERSION` when an older file
+   still carries one → update `base_price`, `cost`, `currency`,
+   `included_equipment`; else create `source=private`.
+3b. **Option**: match by (boat, famille, désignation), or by `CODE` when present
+   → update price, cost, description; else create, appended in file order.
+   A record is claimed by the first row that matches it, so two rows sharing a
+   name pair with the two records in file order rather than both landing on the
+   first — there is one such pair in the live data, and without this a
+   re-import of an untouched export changed a cost.
 4. **Never delete, never archive.** A version missing from the file is left
    exactly as it is. (This is why `syncVariantRows()` is not reused — §0.)
 5. Column absent from the file → field untouched (so the yearly price file with
