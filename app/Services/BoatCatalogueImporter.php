@@ -412,15 +412,15 @@ class BoatCatalogueImporter
             ];
 
             // Options are matched on famille + désignation, so two rows that
-            // agree on both are ambiguous. Rare — one pair in 3 227 live
-            // options — but silently applying the second over the first would
-            // be the wrong kind of quiet.
+            // agree on both are paired with the two records in file order. Rare
+            // — one pair in 3 227 live options — and worth saying out loud,
+            // because the pairing is positional rather than meaningful.
             $sig = mb_strtolower(trim((string) ($fields['category'] ?? '')) . '|' . $label);
             foreach ($boats[$key]['options'] as $seen) {
                 $seenSig = mb_strtolower(trim((string) ($seen['fields']['category'] ?? '')) . '|' . $seen['label']);
                 if ($seenSig === $sig) {
                     $warnings[] = ['sheet' => BoatCatalogueExporter::SHEET_OPTIONS, 'row' => $line,
-                        'message' => __('":label" appears twice for this boat; the last row wins.', ['label' => $label])];
+                        'message' => __('":label" appears more than once for this boat; the rows are matched in the order they appear.', ['label' => $label])];
                     break;
                 }
             }
@@ -507,17 +507,25 @@ class BoatCatalogueImporter
                     ->where('company_model_id', $entry['model_id'])->get()
                 : collect();
 
+            // A record is claimed by the first row that matches it. Two rows
+            // with the same name then pair up with the two records in the order
+            // they appear, instead of both landing on the first one and the
+            // second silently overwriting the first.
+            $usedVariants = [];
+
             foreach ($boat['versions'] as $v) {
+                $free = fn ($x) => ! in_array((string) $x->_id, $usedVariants, true);
                 $match = null;
                 if ($v['ref'] !== '') {
-                    $match = $existingVariants->first(fn ($x) => (string) $x->_id === $v['ref']);
+                    $match = $existingVariants->first(fn ($x) => (string) $x->_id === $v['ref'] && $free($x));
                 }
                 if (! $match && $v['name'] !== '') {
                     $match = $existingVariants->first(
-                        fn ($x) => mb_strtolower(trim((string) $x->name)) === mb_strtolower($v['name']));
+                        fn ($x) => mb_strtolower(trim((string) $x->name)) === mb_strtolower($v['name']) && $free($x));
                 }
 
                 if ($match) {
+                    $usedVariants[] = (string) $match->_id;
                     $changed = $this->diff($match, $v['fields']);
                     $entry['versions'][] = ['id' => (string) $match->_id, 'name' => $v['name'] ?: (string) $match->name,
                         'action' => $changed ? 'update' : 'unchanged', 'changes' => $changed,
@@ -546,20 +554,25 @@ class BoatCatalogueImporter
                     ->where('company_model_id', $entry['model_id'])->get()
                 : collect();
 
+            $usedOptions = [];
+
             foreach ($boat['options'] as $o) {
+                $free = fn ($x) => ! in_array((string) $x->_id, $usedOptions, true);
                 $match = null;
                 if ($o['code'] !== '') {
                     $match = $existingOptions->first(
-                        fn ($x) => mb_strtolower(trim((string) $x->code)) === mb_strtolower($o['code']));
+                        fn ($x) => mb_strtolower(trim((string) $x->code)) === mb_strtolower($o['code']) && $free($x));
                 }
                 if (! $match) {
                     $cat = mb_strtolower(trim((string) ($o['fields']['category'] ?? '')));
                     $match = $existingOptions->first(fn ($x) =>
                         mb_strtolower(trim((string) $x->label)) === mb_strtolower($o['label'])
-                        && ($cat === '' || mb_strtolower(trim((string) $x->category)) === $cat));
+                        && ($cat === '' || mb_strtolower(trim((string) $x->category)) === $cat)
+                        && $free($x));
                 }
 
                 if ($match) {
+                    $usedOptions[] = (string) $match->_id;
                     $changed = $this->diff($match, $o['fields']);
                     $entry['options'][] = ['id' => (string) $match->_id, 'code' => $o['code'], 'label' => $o['label'],
                         'action' => $changed ? 'update' : 'unchanged', 'changes' => $changed,
