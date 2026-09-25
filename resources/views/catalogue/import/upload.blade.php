@@ -68,7 +68,7 @@
             <div>
                 <h4 class="font-semibold text-gray-900 mb-1">{{ __('Two sheets') }}</h4>
                 <p class="text-gray-600">
-                    {{ __('BATEAUX holds one row per version — the boat\'s own columns repeat down its rows, and included equipment is one cell with items separated by |. OPTIONS holds one row per option, tied to its boat by MARQUE and MODELE.') }}
+                    {{ __('BATEAUX: MARQUE, MODELE, VERSION, PRIX HT, COUT HT, DEVISE and EQUIPEMENTS INCLUS — one row per version, with the equipment in a single cell separated by |. OPTIONS: MARQUE, MODELE, FAMILLE, DESIGNATION, DESCRIPTION, PA HT and PV HT — one row per option.') }}
                 </p>
             </div>
             <div>
@@ -86,7 +86,7 @@
             <div>
                 <h4 class="font-semibold text-gray-900 mb-1">{{ __('Export first if you are updating') }}</h4>
                 <p class="text-gray-600">
-                    {{ __('The export fills in the REF columns, which match each row back to the exact record. Edit that file and re-import it and nothing is ever duplicated, even if you rename a boat.') }}
+                    {{ __('Rows are matched on their names: the brand, then the boat, then the version, then the option\'s famille and désignation. Start from an export and nothing is ever duplicated. Change one of those names and you create a new record rather than rename the old one — rename in the catalogue instead.') }}
                 </p>
             </div>
         </div>

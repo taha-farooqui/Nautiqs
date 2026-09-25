@@ -40,7 +40,13 @@ class BoatCatalogueImporter
 
     /* ============================================================ HEADERS */
 
-    /** Header text (ascii, lowercased, trimmed) → field. FR first, EN aliases after. */
+    /*
+     * Header text (ascii, lowercased, trimmed) → field. FR first, EN aliases
+     * after. Wider than what the export writes on purpose: the export shows
+     * only the columns dealers fill, but a file that carries the others — an
+     * older export, or a dealer who wants to set dimensions from a spreadsheet
+     * — still imports them.
+     */
     private const BOAT_ALIASES = [
         'ref modele' => 'model_ref',   'ref model' => 'model_ref',    'model ref' => 'model_ref',
         'marque' => 'brand',           'brand' => 'brand',
@@ -398,12 +404,28 @@ class BoatCatalogueImporter
                                 'options_only' => true];
             }
 
-            $boats[$key]['options'][] = [
+            $option = [
                 'code'   => trim((string) ($r['code'] ?? '')),
                 'label'  => $label,
                 'fields' => $fields,
                 'row'    => $line,
             ];
+
+            // Options are matched on famille + désignation, so two rows that
+            // agree on both are ambiguous. Rare — one pair in 3 227 live
+            // options — but silently applying the second over the first would
+            // be the wrong kind of quiet.
+            $sig = mb_strtolower(trim((string) ($fields['category'] ?? '')) . '|' . $label);
+            foreach ($boats[$key]['options'] as $seen) {
+                $seenSig = mb_strtolower(trim((string) ($seen['fields']['category'] ?? '')) . '|' . $seen['label']);
+                if ($seenSig === $sig) {
+                    $warnings[] = ['sheet' => BoatCatalogueExporter::SHEET_OPTIONS, 'row' => $line,
+                        'message' => __('":label" appears twice for this boat; the last row wins.', ['label' => $label])];
+                    break;
+                }
+            }
+
+            $boats[$key]['options'][] = $option;
         }
     }
 
@@ -674,6 +696,10 @@ class BoatCatalogueImporter
             }
 
             /* -- options ------------------------------------------------ */
+            // Without an ORDRE column, new options take the order the file put
+            // them in, appended after whatever the boat already has.
+            $nextPosition = null;
+
             foreach ($entry['options'] as $o) {
                 $option = $o['id']
                     ? CompanyOption::withoutGlobalScopes()->where('company_id', $companyId)
@@ -683,6 +709,13 @@ class BoatCatalogueImporter
                 if ($option) {
                     if ($o['changes']) { $option->update($o['fields']); $u['options']++; }
                 } else {
+                    if ($nextPosition === null) {
+                        $nextPosition = 1 + (int) CompanyOption::withoutGlobalScopes()
+                            ->where('company_id', $companyId)->where('company_model_id', $modelId)
+                            ->get()->max(fn ($x) => (int) ($x->position ?? 0));
+                    }
+                    // Same auto-derived key the per-boat options import uses, so
+                    // the two paths recognise each other's rows.
                     $code = $o['code'] !== '' ? $o['code']
                         : Str::slug((string) ($o['fields']['category'] ?? '')) . '__' . Str::slug($o['label']);
                     CompanyOption::create(array_merge([
@@ -690,7 +723,7 @@ class BoatCatalogueImporter
                         'global_option_id' => null, 'source' => 'private',
                         'category' => '', 'label' => $o['label'], 'code' => $code,
                         'price' => 0.0, 'cost' => 0.0, 'vat_rate' => 20, 'currency' => 'EUR',
-                        'position' => 0, 'is_archived' => false,
+                        'position' => $nextPosition++, 'is_archived' => false,
                     ], $o['fields']));
                     $c['options']++;
                 }
