@@ -212,7 +212,10 @@
                             @endphp
                             <div class="flex-1">
                                 <div class="font-medium text-gray-900">{{ $v->name }}</div>
-                                <div class="text-xs text-gray-500">{{ $vCcy }} · {{ __('base price') }}</div>
+                                {{-- Spell out the tax base: the summary above shows this same
+                                     boat incl. VAT, and two different numbers for one price is
+                                     the first thing anyone queries. --}}
+                                <div class="text-xs text-gray-500">{{ $vCcy }} · {{ __('base price excl. VAT') }}</div>
                             </div>
                             <div class="text-right">
                                 <div class="font-semibold text-gray-900">{{ number_format($vEur, 0, ',', ' ') }} €</div>
