@@ -522,6 +522,8 @@
                         <div x-show="showMargin" x-cloak class="flex items-center gap-2">
                             @if (($t['margin_type'] ?? '') === 'real')
                                 <span class="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 font-semibold">{{ __('REAL') }}</span>
+                            @elseif (($t['margin_type'] ?? '') === 'mixed')
+                                <span class="px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 font-semibold">{{ __('PARTLY REAL') }}</span>
                             @else
                                 <span class="px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-semibold">{{ __('ESTIMATED') }}</span>
                             @endif

@@ -208,49 +208,70 @@ class QuoteCalculator
         $totalTtc   = $totalHt + $vatAmount;
         $netPayable = $totalTtc - $tradeIn;
 
-        // Margin (§3 cascade + §8.3)
-        $realCostTotal = 0.0;
-        $hasAnyRealCost = false;
-        if ($baseCost !== null) {
-            $realCostTotal += $baseCost;
-            $hasAnyRealCost = true;
-        }
-        foreach ($optionsRows as $r) {
-            if ($r['has_real_cost']) {
-                $realCostTotal += $r['line_cost'];
-                $hasAnyRealCost = true;
-            }
-        }
-        foreach ($customRows as $r) {
-            if ($r['has_real_cost']) {
-                $realCostTotal += $r['line_cost'];
-                $hasAnyRealCost = true;
-            }
-        }
+        // Margin (§3 cascade + §8.3), resolved line by line.
+        //
+        // Two things used to go wrong here.
+        //
+        // A cost of zero counted as a real cost. The field starts at zero and
+        // stays there until somebody types a purchase price, so a 63 621 €
+        // boat with nothing in the cost box was reported as 100% margin —
+        // which is the one number on this panel nobody should ever believe.
+        // Zero is the field left alone; type 0 and it still reads as unknown,
+        // which for a boat is the right reading.
+        //
+        // And a quote that mixed priced-up and costless lines subtracted only
+        // the known costs from the whole total, so every line without a cost
+        // was counted as pure profit. A 100 000 € boat bought at 82 000 with
+        // 20 000 € of costless options read as 38 000 € of margin instead of
+        // 18 000 €.
+        //
+        // So each line answers for itself: it uses its purchase price if it
+        // has one, and otherwise its category's preset. Engines answer to the
+        // engine preset even though they ride in the options rows. Every net
+        // is taken after its own discounts and after the quote-wide one,
+        // because a discount comes out of the margin — that is what a discount
+        // is.
+        $realCost = 0.0;
+        $estCost  = 0.0;
+        $anyReal  = false;
+        $anyEst   = false;
 
-        if ($hasAnyRealCost) {
-            $marginAmount = $totalHt - $realCostTotal;
-            $marginPct    = $totalHt > 0 ? ($marginAmount / $totalHt) * 100 : 0;
-            $marginType   = 'real';
+        $impliedCost = fn (float $net, string $category): float
+            => $net * (1 - $company->marginForCategory($category) / 100);
+
+        if ($baseCost !== null && $baseCost > 0) {
+            $realCost += $baseCost;
+            $anyReal   = true;
         } else {
-            // Estimated via margin presets (§3 priority 2 + 4).
-            //
-            // Engines are billed through the options rows but they are their
-            // own preset in company settings, and a dealer who sets 8% on
-            // engines and 25% on options means those two numbers. So the two
-            // blocks are estimated apart, each on its own post-discount net.
-            $optionsNet = $optionsBeforeBlock - $optionsBlockDiscount;
-            $enginesNet = $enginesBeforeBlock - $enginesBlockDiscount;
-
-            $estimated = 0.0;
-            $estimated += $baseSubtotal   * ($company->marginForCategory('hull') / 100);
-            $estimated += $optionsNet     * ($company->marginForCategory('options') / 100);
-            $estimated += $enginesNet     * ($company->marginForCategory('engine') / 100);
-            $estimated += $customSubtotal * ($company->marginForCategory('custom_items') / 100);
-            $marginAmount = $estimated;
-            $marginPct    = $totalHt > 0 ? ($marginAmount / $totalHt) * 100 : 0;
-            $marginType   = 'estimated';
+            $estCost += $impliedCost($baseSubtotal * $globalScale, 'hull');
+            $anyEst   = true;
         }
+
+        foreach ($optionsRows as $r) {
+            if ($r['has_real_cost'] && (float) $r['line_cost'] > 0) {
+                $realCost += (float) $r['line_cost'];
+                $anyReal   = true;
+            } else {
+                $scale   = ($isEngine($r) ? $enginesBlockScale : $optionsBlockScale) * $globalScale;
+                $estCost += $impliedCost($r['line_after_cat'] * $scale, $isEngine($r) ? 'engine' : 'options');
+                $anyEst   = true;
+            }
+        }
+
+        foreach ($customRows as $r) {
+            if ($r['has_real_cost'] && (float) $r['line_cost'] > 0) {
+                $realCost += (float) $r['line_cost'];
+                $anyReal   = true;
+            } else {
+                $estCost += $impliedCost($r['line_after_cat'] * $globalScale, 'custom_items');
+                $anyEst   = true;
+            }
+        }
+
+        $totalCost    = $realCost + $estCost;
+        $marginAmount = $totalHt - $totalCost;
+        $marginPct    = $totalHt > 0 ? ($marginAmount / $totalHt) * 100 : 0;
+        $marginType   = $anyReal && $anyEst ? 'mixed' : ($anyReal ? 'real' : 'estimated');
 
         return [
             'base_price_gross'         => round($basePrice, 2),
@@ -290,7 +311,7 @@ class QuoteCalculator
             'total_ttc'               => round($totalTtc, 2),
             'trade_in_deduction'      => round($tradeIn, 2),
             'net_payable'             => round($netPayable, 2),
-            'total_cost'              => $hasAnyRealCost ? round($realCostTotal, 2) : null,
+            'total_cost'              => round($totalCost, 2),
             'margin_amount'           => round($marginAmount, 2),
             'margin_pct'              => round($marginPct, 2),
             'margin_type'             => $marginType,

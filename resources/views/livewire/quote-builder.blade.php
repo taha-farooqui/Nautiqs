@@ -1026,6 +1026,10 @@
                             <span class="text-gray-600">{{ __('Margin') }}
                                 @if ($t['margin_type'] === 'real')
                                     <span class="ml-1 px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 font-semibold">{{ __('REAL') }}</span>
+                                @elseif ($t['margin_type'] === 'mixed')
+                                    {{-- Some lines have a purchase price and some do not. Saying
+                                         REAL here would claim more certainty than there is. --}}
+                                    <span class="ml-1 px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 font-semibold">{{ __('PARTLY REAL') }}</span>
                                 @else
                                     <span class="ml-1 px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-semibold">{{ __('ESTIMATED') }}</span>
                                 @endif
@@ -1034,9 +1038,20 @@
                         </div>
                         @if ($t['total_cost'])
                             <div class="flex items-center justify-between mt-1 text-gray-500">
-                                <span>{{ $t['margin_type'] === 'real' ? __('Total cost') : __('Estimated cost') }}</span>
+                                <span>{{ match ($t['margin_type']) {
+                                    'real'  => __('Purchase cost'),
+                                    'mixed' => __('Cost, partly estimated'),
+                                    default => __('Estimated cost'),
+                                } }}</span>
                                 <span class="font-medium">{{ number_format($t['total_cost'], 0, ',', ' ') }} €</span>
                             </div>
+                        @endif
+                        @if ($t['margin_type'] !== 'real')
+                            <p class="mt-1 text-gray-400">
+                                {{ $t['margin_type'] === 'mixed'
+                                    ? __('Lines with no purchase price use your margin presets.')
+                                    : __('No purchase price entered — from your margin presets.') }}
+                            </p>
                         @endif
                         <p class="mt-1 text-gray-400">{{ __('Never shown to the client.') }}</p>
                     </div>
