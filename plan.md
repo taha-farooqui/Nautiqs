@@ -189,6 +189,29 @@ one failure mode ours can't: our own VPS being compromised.
 
 ## 2. Client personal data — encryption at rest
 
+> **Built 27 Sep 2026.** Live on production; 989 values across 385 documents
+> encrypted, `pii:scan` clean. Two deliberate departures from what follows:
+>
+> 1. **Names are encrypted too** (§2.2 recommended keeping them clear). The
+>    client asked for last names by name, and the reason to keep them clear —
+>    losing partial search and sort-by-surname — turned out not to apply.
+> 2. **No blind indexes** (§2.3). Search and sort run in PHP over the dealer's
+>    own decrypted rows instead. The largest client list on the platform is 14;
+>    at a few thousand it is still well under a tenth of a second. That keeps
+>    *every* existing search — partial surnames, partial emails — rather than
+>    the exact-match-only search a blind index gives, and adds two it did not
+>    do: accent-blind (`helene` → Hélène) and phone digits (`0628` → 06 28 92…).
+>    If a dealer ever outgrows it, blind indexes are the next step.
+>
+> Also added beyond the plan: **masking on the superadmin dashboard**
+> (`J••• D•••`, `j•••@g•••.com`) — the one place the platform saw a dealer's
+> clients, and the control that actually keeps it from the platform, which
+> holds the key. And three more encrypted fields found during the audit:
+> email subject and body, attachment filenames (often the client's name), and
+> SMTP error text (which quotes the recipient's address back).
+>
+> Key management: `docs/runbooks/key-rotation.md`.
+
 ### 2.1 Correcting the ask: encryption, not hashing
 
 A hash is one-way. A hashed email can never be shown on screen, printed on a
@@ -320,13 +343,22 @@ doing it at the model layer.
 
 ### 2.7 Acceptance
 
-- [ ] Raw document in Compass/mongosh shows ciphertext for every encrypted field; names in clear.
-- [ ] Client list, client page, quote builder client dropdown, quote page, both PDFs, all three emails render decrypted values identically to before (diff the PDF text output of 5 real quotes before/after).
-- [ ] Search: full email → found; full phone in any format → found; surname fragment → found; half an email → not found (documented behaviour).
-- [ ] `pii:scan` → 0 findings. `pii:encrypt --execute` run twice → second run changes 0 documents.
-- [ ] Restore the post-migration backup into `nautiqs-dev` **with** the `.env` → data readable. Restore it **without** `APP_KEY` → ciphertext (proves the key matters and the runbook is right).
-- [ ] `pii:decrypt` on staging returns the collection byte-for-byte to the pre-migration state (compare `pii:scan` counts and a sample of 20 docs).
-- [ ] Key rotation runbook executed once on staging end to end.
+Run 27 Sep 2026. Tests ran from a separate copy of the new code on the VPS,
+against the production database, every write inside a throwaway company; the
+raw documents of all real clients, quotes, email logs and notifications were
+byte-identical before and after. 19 unit, 72 integration and 27 page checks.
+
+- [x] Raw document shows ciphertext for every encrypted field; company, city, country in clear.
+- [x] Client list, client page, edit form, quote builder dropdown, quote page, quote PDF, email log and its detail view, notifications and Cmd-K all render decrypted values. A browser run of the live site before and after encrypting production was identical line for line (same rows, order, search hits, same 572 KB PDF).
+- [x] Search: surname fragment, accent-blind first name, part of an email, phone with or without spaces or `+33` — all found. Filters combine with search. Pagination over in-memory results works (25 clients → 20 + 5).
+- [x] `pii:scan` → 0 plaintext, 0 unreadable, no client email in any other field. `pii:encrypt --execute` twice → second run changed 0.
+- [x] Saving a form with no edits leaves the record untouched (no fresh ciphertext, no "Client updated" notification).
+- [x] A key that did not write the data stops the request with a clear error rather than printing ciphertext; ciphertext from another key is never wrapped a second time.
+- [x] `pii:decrypt` restores plaintext; re-encrypting after it is clean (on the throwaway company).
+- [x] Superadmin dashboard: every client masked; no real surname or email anywhere in the page.
+- [x] Backup taken minutes before the migration contains `.env`; its `APP_KEY` fingerprint matches the live one.
+- [ ] Restore into `nautiqs-dev` with and without the key — not done; there is no staging database set up.
+- [ ] Key rotation executed end to end — not done, for the same reason. `pii:decrypt` and `pii:encrypt` were exercised; the `APP_PREVIOUS_KEYS` fallback the rotation depends on was **not**, and should be tried on staging before it is ever needed for real.
 
 ---
 
