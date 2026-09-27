@@ -108,7 +108,9 @@ class SendQuoteFollowUps extends Command
                         ->where('type', EmailLog::TYPE_QUOTE)
                         ->where('status', EmailLog::STATUS_SENT)
                         ->orderBy('sent_at', 'desc')
-                        ->value('to_email')
+                        // first() then the attribute, not value(): the address
+                        // is encrypted, and only the model decrypts it.
+                        ->first()?->to_email
                         ?: ($quote->client_snapshot['email'] ?? null);
 
                     if (empty($to)) {

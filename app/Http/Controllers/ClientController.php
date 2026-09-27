@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ClientRequest;
 use App\Models\Client;
 use App\Models\Quote;
+use App\Support\Pii\Search;
 use Illuminate\Http\Request;
 
 /**
@@ -18,20 +19,14 @@ class ClientController extends Controller
     {
         $q = trim((string) $request->query('q', ''));
 
-        $query = Client::query()->orderBy('last_name');
+        // Names, email and phone are encrypted, so the database can neither
+        // match nor sort them. The dealer's own clients are filtered and
+        // filed by surname here instead — see App\Support\Pii\Search.
+        $clients = Search::filter(Client::query()->get(), $q, fn (Client $c) => [
+            $c->first_name, $c->last_name, $c->company_name, $c->email, $c->phone, $c->city,
+        ])->sortBy(fn (Client $c) => Search::nameKey($c->last_name, $c->first_name))->values();
 
-        if ($q !== '') {
-            $query->where(function ($w) use ($q) {
-                $w->where('first_name', 'like', "%{$q}%")
-                  ->orWhere('last_name',    'like', "%{$q}%")
-                  ->orWhere('company_name', 'like', "%{$q}%")
-                  ->orWhere('email',        'like', "%{$q}%")
-                  ->orWhere('phone',        'like', "%{$q}%")
-                  ->orWhere('city',         'like', "%{$q}%");
-            });
-        }
-
-        $clients = $query->paginate(20)->withQueryString();
+        $clients = Search::paginate($clients, $request, 20);
 
         return view('clients.index', [
             'clients' => $clients,

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\EncryptedPii;
 use App\Models\Concerns\BelongsToTenant;
 use MongoDB\Laravel\Eloquent\Model;
 
@@ -36,6 +37,34 @@ class Client extends Model
         'navigation_area',  // where they sail — free text
         'current_boat',     // what they own today — free text
         'lead_source',      // how they found us (see LEAD_SOURCES)
+    ];
+
+    /**
+     * Encrypted at rest: everything that identifies, reaches or locates the
+     * person, and the dealer's private notes about them. Left readable:
+     * company_name (a business, not a person), city and country (too coarse
+     * to identify anyone once the name is gone), and lead_source (marketing,
+     * and the settings page lists its values).
+     *
+     * Nothing can filter or sort on these in the database any more — the
+     * ciphertext is different every time — so search and sort-by-surname run
+     * in PHP over the dealer's own clients. See App\Support\Pii\Search.
+     */
+    public const PII = [
+        'first_name', 'last_name', 'email', 'phone', 'address_line', 'postal_code',
+        'internal_notes', 'navigation_area', 'current_boat',
+    ];
+
+    protected $casts = [
+        'first_name'      => EncryptedPii::class,
+        'last_name'       => EncryptedPii::class,
+        'email'           => EncryptedPii::class,
+        'phone'           => EncryptedPii::class,
+        'address_line'    => EncryptedPii::class,
+        'postal_code'     => EncryptedPii::class,
+        'internal_notes'  => EncryptedPii::class,
+        'navigation_area' => EncryptedPii::class,
+        'current_boat'    => EncryptedPii::class,
     ];
 
     /**

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\EncryptedPii;
 use MongoDB\Laravel\Eloquent\Model;
 
 /**
@@ -26,8 +27,14 @@ class Notification extends Model
         'read_at',
     ];
 
+    /*
+     * The message names the client ("Jean Dupont (jean@…)", "Q-2026-004 was
+     * sent to jean@…"), so it is encrypted like the client record it came
+     * from. The title is fixed text ("Client added") and stays readable.
+     */
     protected $casts = [
         'read_at' => 'datetime',
+        'message' => EncryptedPii::class,
     ];
 
     public function isUnread(): bool

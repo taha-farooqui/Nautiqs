@@ -11,6 +11,7 @@ use App\Models\Engine;
 use App\Models\Quote;
 use App\Models\QuoteCounter;
 use App\Services\QuoteCalculator;
+use App\Support\Pii\Search;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
 
@@ -200,7 +201,10 @@ class QuoteBuilder extends Component
     #[Computed]
     public function clients()
     {
-        return Client::orderBy('last_name')->get();
+        // Surnames are encrypted, so the database cannot order them.
+        return Client::get()
+            ->sortBy(fn (Client $c) => Search::nameKey($c->last_name, $c->first_name))
+            ->values();
     }
 
     #[Computed]

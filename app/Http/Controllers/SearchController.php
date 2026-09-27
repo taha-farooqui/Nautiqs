@@ -6,6 +6,7 @@ use App\Models\Client;
 use App\Models\CompanyBoatModel;
 use App\Models\CompanyBrand;
 use App\Models\Quote;
+use App\Support\Pii\Search;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -24,16 +25,20 @@ class SearchController extends Controller
             return response()->json(['quotes' => [], 'clients' => [], 'models' => []]);
         }
 
-        $quotes = Quote::query()
-            ->where(function ($w) use ($q) {
-                $w->where('number', 'like', "%{$q}%")
-                  ->orWhere('client_snapshot.first_name', 'like', "%{$q}%")
-                  ->orWhere('client_snapshot.last_name',  'like', "%{$q}%")
-                  ->orWhere('model_snapshot.name',        'like', "%{$q}%");
-            })
-            ->orderBy('created_at', 'desc')
-            ->limit(8)
-            ->get(['number', 'client_snapshot', 'model_snapshot', 'totals', 'status'])
+        // Client names and contact details are encrypted, so both lookups
+        // below load the dealer's own rows and match in PHP. See Search.
+        $quotes = Search::filter(
+            Quote::query()->orderBy('created_at', 'desc')
+                ->get(['number', 'client_snapshot', 'model_snapshot', 'totals', 'status', 'created_at']),
+            $q,
+            fn ($qu) => [
+                $qu->number,
+                $qu->client_snapshot['first_name'] ?? null,
+                $qu->client_snapshot['last_name'] ?? null,
+                $qu->model_snapshot['name'] ?? null,
+            ]
+        )
+            ->take(8)
             ->map(fn ($qu) => [
                 'id'     => (string) $qu->_id,
                 'number' => $qu->number,
@@ -44,18 +49,14 @@ class SearchController extends Controller
                 'url'    => route('quotes.show', $qu->_id),
             ]);
 
-        $clients = Client::query()
-            ->where(function ($w) use ($q) {
-                $w->where('first_name',   'like', "%{$q}%")
-                  ->orWhere('last_name',  'like', "%{$q}%")
-                  ->orWhere('company_name','like', "%{$q}%")
-                  ->orWhere('email',      'like', "%{$q}%")
-                  ->orWhere('phone',      'like', "%{$q}%")
-                  ->orWhere('city',       'like', "%{$q}%");
-            })
-            ->orderBy('last_name')
-            ->limit(8)
-            ->get(['first_name', 'last_name', 'company_name', 'email', 'city'])
+        $clients = Search::filter(
+            Client::query()->get(['first_name', 'last_name', 'company_name', 'email', 'phone', 'city']),
+            $q,
+            fn ($c) => [$c->first_name, $c->last_name, $c->company_name, $c->email, $c->phone, $c->city]
+        )
+            ->sortBy(fn ($c) => Search::nameKey($c->last_name, $c->first_name))
+            ->take(8)
+            ->values()
             ->map(fn ($c) => [
                 'id'    => (string) $c->_id,
                 'name'  => trim($c->first_name . ' ' . $c->last_name),

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\EmailLog;
+use App\Support\Pii\Search;
 use Illuminate\Http\Request;
 
 /**
@@ -25,17 +26,18 @@ class EmailLogController extends Controller
             $query->where('status', $status);
         }
 
+        // Recipient, name and subject are encrypted, so a search runs in PHP
+        // over the rows the type and status filters already let through.
         $q = trim((string) $request->query('q', ''));
-        if ($q !== '') {
-            $query->where(function ($w) use ($q) {
-                $w->where('to_email',     'like', "%{$q}%")
-                  ->orWhere('to_name',    'like', "%{$q}%")
-                  ->orWhere('subject',    'like', "%{$q}%")
-                  ->orWhere('quote_number','like', "%{$q}%");
-            });
-        }
-
-        $logs = $query->paginate(25)->withQueryString();
+        $logs = $q === ''
+            ? $query->paginate(25)->withQueryString()
+            : Search::paginate(
+                Search::filter($query->get(), $q, fn (EmailLog $l) => [
+                    $l->to_email, $l->to_name, $l->subject, $l->quote_number,
+                ]),
+                $request,
+                25
+            );
 
         $counts = [
             'all'                 => EmailLog::count(),

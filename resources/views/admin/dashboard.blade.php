@@ -191,7 +191,12 @@
                         <tbody class="divide-y divide-gray-100">
                             @foreach ($recent as $q)
                                 @php
-                                    $clientName = trim(($q->client_snapshot['first_name'] ?? '') . ' ' . ($q->client_snapshot['last_name'] ?? '')) ?: __('Guest');
+                                    // A dealer's clients are the dealer's, not the platform's:
+                                    // the superadmin sees that a quote has a client, never who.
+                                    $clientName = \App\Support\Pii\Mask::name(trim(
+                                        ($q->client_snapshot['first_name'] ?? '') . ' ' . ($q->client_snapshot['last_name'] ?? '')
+                                    )) ?: __('Guest');
+                                    $clientEmail = \App\Support\Pii\Mask::email($q->client_snapshot['email'] ?? '');
                                 @endphp
                                 <tr class="hover:bg-gray-50/50">
                                     <td class="px-5 py-3">
@@ -199,7 +204,7 @@
                                     </td>
                                     <td class="px-5 py-3">
                                         <div class="text-sm text-gray-900">{{ $clientName }}</div>
-                                        <div class="text-[11px] text-gray-500 truncate max-w-[200px]">{{ $q->client_snapshot['email'] ?? '' }}</div>
+                                        <div class="text-[11px] text-gray-500 truncate max-w-[200px]">{{ $clientEmail }}</div>
                                     </td>
                                     <td class="px-5 py-3">
                                         <span class="font-mono text-xs px-2 py-1 rounded bg-gray-100 text-gray-700">{{ $q->number }}</span>

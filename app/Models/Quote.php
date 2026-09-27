@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToTenant;
+use App\Support\Pii\PiiCipher;
 use MongoDB\Laravel\Eloquent\Model;
 
 /**
@@ -215,6 +216,61 @@ class Quote extends Model
     public function client()
     {
         return $this->belongsTo(Client::class, 'client_id');
+    }
+
+    /**
+     * The client as they were when the quote was written, frozen onto it.
+     * Same rule as the Client record: the fields that identify, reach or
+     * locate the person are encrypted; company, city and country are not.
+     */
+    public const SNAPSHOT_PII = ['first_name', 'last_name', 'email', 'phone', 'address_line', 'postal_code'];
+
+    /**
+     * Read through here, `$quote->client_snapshot['email']` is plaintext
+     * everywhere it is used — the quote page, both PDFs, the emails, the
+     * follow-up scheduler — and none of them needed to change.
+     *
+     * An accessor and mutator rather than a cast, for two reasons. A cast
+     * cannot reach inside an embedded document. And an 'array' cast on this
+     * driver stores the document as a JSON string, which is exactly what the
+     * August repair (FixQuoteSnapshotTypes) had to undo; the mutator writes a
+     * native embedded object and reads either shape.
+     */
+    public function getClientSnapshotAttribute($value): ?array
+    {
+        $snapshot = self::snapshotArray($value);
+
+        return $snapshot === null ? null : PiiCipher::decryptKeys($snapshot, self::SNAPSHOT_PII);
+    }
+
+    public function setClientSnapshotAttribute($value): void
+    {
+        $snapshot = self::snapshotArray($value);
+
+        $this->attributes['client_snapshot'] = $snapshot === null
+            ? null
+            : PiiCipher::encryptKeys(
+                $snapshot,
+                self::SNAPSHOT_PII,
+                self::snapshotArray($this->attributes['client_snapshot'] ?? null)
+            );
+    }
+
+    /** Array, BSON document or legacy JSON string, as a plain array. */
+    private static function snapshotArray($value): ?array
+    {
+        if ($value === null) {
+            return null;
+        }
+        if ($value instanceof \Traversable) {
+            return iterator_to_array($value);
+        }
+        if (is_string($value)) {
+            $decoded = json_decode($value, true);
+            return is_array($decoded) ? $decoded : null;
+        }
+
+        return is_array($value) ? $value : null;
     }
 
     public function isEditable(): bool

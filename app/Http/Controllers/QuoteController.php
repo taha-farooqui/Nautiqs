@@ -6,6 +6,7 @@ use App\Models\EmailLog;
 use App\Models\Quote;
 use App\Models\QuoteCounter;
 use App\Services\EmailTemplateService;
+use App\Support\Pii\Search;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 
@@ -51,17 +52,13 @@ class QuoteController extends Controller
             $query->where('created_by_user_id', $createdBy);
         }
 
+        // The client's name is encrypted on the quote, so a search that could
+        // match it runs in PHP over the quotes the other filters already let
+        // through. With no search term the database paginates as before.
         $q = trim((string) $request->query('q', ''));
-        if ($q !== '') {
-            $query->where(function ($w) use ($q) {
-                $w->where('number', 'like', "%{$q}%")
-                  ->orWhere('client_snapshot.first_name', 'like', "%{$q}%")
-                  ->orWhere('client_snapshot.last_name',  'like', "%{$q}%")
-                  ->orWhere('model_snapshot.name',        'like', "%{$q}%");
-            });
-        }
-
-        $quotes = $query->paginate(20)->withQueryString();
+        $quotes = $q === ''
+            ? $query->paginate(20)->withQueryString()
+            : Search::paginate(self::matching($query->get(), $q), $request, 20);
 
         $counts = [
             'all'     => Quote::count(),
@@ -231,18 +228,26 @@ class QuoteController extends Controller
         $query = Quote::onlyTrashed()->with('client')->orderBy('trashed_at', 'desc');
 
         $q = trim((string) $request->query('q', ''));
-        if ($q !== '') {
-            $query->where(function ($w) use ($q) {
-                $w->where('number', 'like', "%{$q}%")
-                  ->orWhere('client_snapshot.first_name', 'like', "%{$q}%")
-                  ->orWhere('client_snapshot.last_name',  'like', "%{$q}%")
-                  ->orWhere('model_snapshot.name',        'like', "%{$q}%");
-            });
-        }
-
-        $quotes = $query->paginate(20)->withQueryString();
+        $quotes = $q === ''
+            ? $query->paginate(20)->withQueryString()
+            : Search::paginate(self::matching($query->get(), $q), $request, 20);
 
         return view('quotes.trash', compact('quotes', 'q'));
+    }
+
+    /**
+     * Quotes whose number, boat or client name contains the query. The same
+     * four things the database search looked at; the client name is read
+     * decrypted through the model.
+     */
+    private static function matching(\Illuminate\Support\Collection $quotes, string $q): \Illuminate\Support\Collection
+    {
+        return Search::filter($quotes, $q, fn (Quote $x) => [
+            $x->number,
+            $x->client_snapshot['first_name'] ?? null,
+            $x->client_snapshot['last_name'] ?? null,
+            $x->model_snapshot['name'] ?? null,
+        ]);
     }
 
     public function restore(string $id)
