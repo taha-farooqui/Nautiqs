@@ -232,8 +232,10 @@
                             <tr>
                                 <td class="px-5 py-3">
                                     <div class="text-sm text-gray-900">{{ \App\Support\Pii\Mask::name($c->full_name) ?: '—' }}</div>
+                                    {{-- Masked too: a sole trader's "company" is very often
+                                         just their own name, and on live data at least one is. --}}
                                     @if ($c->company_name)
-                                        <div class="text-[11px] text-gray-500">{{ $c->company_name }}</div>
+                                        <div class="text-[11px] text-gray-500">{{ \App\Support\Pii\Mask::name($c->company_name) }}</div>
                                     @endif
                                 </td>
                                 <td class="px-5 py-3 text-gray-700">{{ \App\Support\Pii\Mask::email($c->email) ?: '—' }}</td>
