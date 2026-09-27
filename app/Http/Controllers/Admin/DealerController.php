@@ -189,7 +189,30 @@ class DealerController extends Controller
                 ->sum(fn ($q) => (float) ($q->totals['total_ht'] ?? 0)),
         ];
 
-        return view('admin.dealers.show', compact('dealer', 'users', 'stats'));
+        // The dealer's activity, so the platform can see how an account is
+        // used. Who their clients are stays theirs: the view masks every
+        // identifying field (App\Support\Pii\Mask). Two independent page
+        // numbers, so paging one list does not reset the other.
+        $quotes = Quote::where('company_id', $id)
+            ->orderBy('created_at', 'desc')
+            ->paginate(10, ['number', 'status', 'client_snapshot', 'model_snapshot', 'variant_snapshot', 'totals', 'created_at'], 'quotes_page')
+            ->withQueryString()
+            ->fragment('quotes');
+
+        // Newest first: surnames are encrypted, so the database cannot file
+        // them — and the platform only ever sees them masked anyway.
+        $clients = Client::where('company_id', $id)
+            ->orderBy('created_at', 'desc')
+            ->paginate(10, ['*'], 'clients_page')
+            ->withQueryString()
+            ->fragment('clients');
+
+        $quotesPerClient = Quote::where('company_id', $id)
+            ->whereIn('client_id', $clients->getCollection()->map(fn ($c) => (string) $c->_id)->all())
+            ->get(['client_id'])
+            ->countBy('client_id');
+
+        return view('admin.dealers.show', compact('dealer', 'users', 'stats', 'quotes', 'clients', 'quotesPerClient'));
     }
 
     public function suspend(string $id)

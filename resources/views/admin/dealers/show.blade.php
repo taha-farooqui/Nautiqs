@@ -140,4 +140,115 @@
             @endif
         </div>
     </div>
+
+    {{-- ─────────────────── The dealer's quotes and clients ───────────────────
+         How the account is used, not who its clients are: every field that
+         identifies a person is masked. The platform holds the encryption key,
+         so this mask — not the encryption — is what keeps a dealer's client
+         list from us. --}}
+    <div class="mt-4 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-xs text-gray-600 flex items-start gap-2">
+        <i class="ri-shield-keyhole-line text-base text-gray-500 shrink-0"></i>
+        <span>{{ __('Client details belong to the dealer. They are encrypted in the database and shown masked here.') }}</span>
+    </div>
+
+    {{-- Quotes --}}
+    <div id="quotes" class="mt-4 bg-white rounded-2xl border border-gray-200 overflow-hidden scroll-mt-20">
+        <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+            <h3 class="font-semibold text-gray-900">{{ __('Quotes') }}</h3>
+            <span class="text-xs text-gray-500">{{ $quotes->total() }}</span>
+        </div>
+        @if ($quotes->isEmpty())
+            <div class="px-5 py-6 text-center text-sm text-gray-500">{{ __('No quotes yet.') }}</div>
+        @else
+            <div class="overflow-x-auto">
+                <table class="w-full min-w-[720px] text-sm">
+                    <thead class="bg-gray-50 text-left text-xs uppercase text-gray-500 tracking-wide">
+                        <tr>
+                            <th class="px-5 py-3 font-semibold">{{ __('Quote') }}</th>
+                            <th class="px-5 py-3 font-semibold">{{ __('Client') }}</th>
+                            <th class="px-5 py-3 font-semibold">{{ __('Boat') }}</th>
+                            <th class="px-5 py-3 font-semibold text-right">{{ __('Amount excl. VAT') }}</th>
+                            <th class="px-5 py-3 font-semibold">{{ __('Status') }}</th>
+                            <th class="px-5 py-3 font-semibold">{{ __('Created') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        @foreach ($quotes as $q)
+                            @php
+                                $snap = $q->client_snapshot ?? [];
+                                $name = \App\Support\Pii\Mask::name(trim(($snap['first_name'] ?? '') . ' ' . ($snap['last_name'] ?? '')));
+                            @endphp
+                            <tr>
+                                <td class="px-5 py-3 whitespace-nowrap">
+                                    <span class="font-mono text-xs px-2 py-1 rounded bg-gray-100 text-gray-700">{{ $q->number }}</span>
+                                </td>
+                                <td class="px-5 py-3">
+                                    <div class="text-sm text-gray-900">{{ $name ?: __('Guest') }}</div>
+                                    <div class="text-[11px] text-gray-500">{{ \App\Support\Pii\Mask::email($snap['email'] ?? '') }}</div>
+                                </td>
+                                <td class="px-5 py-3">
+                                    <div class="text-sm text-gray-900">{{ $q->boatLabel() ?: '—' }}</div>
+                                    <div class="text-[11px] text-gray-500">{{ $q->model_snapshot['brand'] ?? '' }}</div>
+                                </td>
+                                <td class="px-5 py-3 text-right font-semibold text-gray-900 whitespace-nowrap">
+                                    {{ number_format($q->totals['total_ht'] ?? 0, 0, ',', ' ') }} €
+                                </td>
+                                <td class="px-5 py-3"><x-app.status-pill :status="$q->status ?? 'draft'" /></td>
+                                <td class="px-5 py-3 text-gray-500 whitespace-nowrap">{{ $q->created_at?->translatedFormat('j M Y') }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            @if ($quotes->hasPages())
+                <div class="px-5 py-3 border-t border-gray-100">{{ $quotes->links() }}</div>
+            @endif
+        @endif
+    </div>
+
+    {{-- Clients --}}
+    <div id="clients" class="mt-4 bg-white rounded-2xl border border-gray-200 overflow-hidden scroll-mt-20">
+        <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+            <h3 class="font-semibold text-gray-900">{{ __('Clients') }}</h3>
+            <span class="text-xs text-gray-500">{{ $clients->total() }}</span>
+        </div>
+        @if ($clients->isEmpty())
+            <div class="px-5 py-6 text-center text-sm text-gray-500">{{ __('No clients yet.') }}</div>
+        @else
+            <div class="overflow-x-auto">
+                <table class="w-full min-w-[720px] text-sm">
+                    <thead class="bg-gray-50 text-left text-xs uppercase text-gray-500 tracking-wide">
+                        <tr>
+                            <th class="px-5 py-3 font-semibold">{{ __('Name') }}</th>
+                            <th class="px-5 py-3 font-semibold">{{ __('Email') }}</th>
+                            <th class="px-5 py-3 font-semibold">{{ __('Phone') }}</th>
+                            <th class="px-5 py-3 font-semibold">{{ __('City') }}</th>
+                            <th class="px-5 py-3 font-semibold text-right">{{ __('Quotes') }}</th>
+                            <th class="px-5 py-3 font-semibold">{{ __('Added') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        @foreach ($clients as $c)
+                            <tr>
+                                <td class="px-5 py-3">
+                                    <div class="text-sm text-gray-900">{{ \App\Support\Pii\Mask::name($c->full_name) ?: '—' }}</div>
+                                    @if ($c->company_name)
+                                        <div class="text-[11px] text-gray-500">{{ $c->company_name }}</div>
+                                    @endif
+                                </td>
+                                <td class="px-5 py-3 text-gray-700">{{ \App\Support\Pii\Mask::email($c->email) ?: '—' }}</td>
+                                <td class="px-5 py-3 text-gray-700 whitespace-nowrap">{{ \App\Support\Pii\Mask::phone($c->phone) ?: '—' }}</td>
+                                <td class="px-5 py-3 text-gray-700">{{ $c->city ?: '—' }}</td>
+                                <td class="px-5 py-3 text-right text-gray-900">{{ $quotesPerClient[(string) $c->_id] ?? 0 }}</td>
+                                <td class="px-5 py-3 text-gray-500 whitespace-nowrap">{{ $c->created_at?->translatedFormat('j M Y') }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            @if ($clients->hasPages())
+                <div class="px-5 py-3 border-t border-gray-100">{{ $clients->links() }}</div>
+            @endif
+        @endif
+    </div>
 </x-admin-layout>

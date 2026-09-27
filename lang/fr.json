@@ -1289,5 +1289,10 @@
     "Cost, partly estimated": "Coût, en partie estimé",
     "Lines with no purchase price use your margin presets.": "Les lignes sans prix d’achat utilisent vos préréglages de marge.",
     "No purchase price entered — from your margin presets.": "Aucun prix d’achat saisi — d’après vos préréglages de marge.",
-    "base price excl. VAT": "prix de base HT"
+    "base price excl. VAT": "prix de base HT",
+    "Added": "Ajouté",
+    "Client details belong to the dealer. They are encrypted in the database and shown masked here.": "Les coordonnées des clients appartiennent au concessionnaire. Elles sont chiffrées en base et affichées masquées ici.",
+    "Created": "Créé",
+    "No clients yet.": "Aucun client pour le moment.",
+    "No quotes yet.": "Aucun devis pour le moment."
 }
