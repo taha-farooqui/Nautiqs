@@ -421,6 +421,70 @@
                                 <i class="ri-close-line"></i>
                             </button>
                             </div>
+
+                            {{-- The kit and propeller that go with this engine: the
+                                 ones added, then the ones linked to it but not
+                                 added yet, one click each. --}}
+                            @if ($row->accessories || $row->suggestions->isNotEmpty())
+                                <div class="w-full pl-7 space-y-1.5">
+                                    @foreach ($row->accessories as $acc)
+                                        <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-md bg-white border border-gray-200 px-2.5 py-1.5"
+                                            wire:key="acc-{{ $acc->key }}">
+                                            <i class="{{ $acc->icon }} text-gray-400 shrink-0"></i>
+                                            <div class="flex-1 min-w-[10rem]">
+                                                <span class="block text-[11px] font-semibold uppercase tracking-wide text-gray-400">{{ $acc->kind }}</span>
+                                                <span class="block text-xs text-gray-800 break-words">{{ $acc->label }}</span>
+                                            </div>
+                                            <div class="flex flex-wrap items-center justify-end gap-x-3 gap-y-1.5 ml-auto">
+                                                <div class="flex items-center gap-1.5 shrink-0">
+                                                    <label class="text-xs text-gray-500">{{ __('Qty') }}</label>
+                                                    <input type="number" min="1" max="99" value="{{ $acc->quantity }}"
+                                                        wire:change="setAccessoryQty('{{ $acc->key }}', $event.target.value)"
+                                                        class="w-14 text-center rounded border-gray-300 text-xs py-1 focus:border-primary-800 focus:ring-primary-800" />
+                                                </div>
+                                                <div class="flex items-center gap-1 shrink-0">
+                                                    <input type="number" min="0" max="100" step="0.5" placeholder="0"
+                                                        value="{{ $acc->discount ?: '' }}"
+                                                        wire:change="setAccessoryDiscount('{{ $acc->key }}', $event.target.value)"
+                                                        title="{{ __('Discount %') }}"
+                                                        class="w-14 text-right rounded border-gray-300 text-xs py-1 focus:border-primary-800 focus:ring-primary-800" />
+                                                    <span class="text-xs text-gray-400">%</span>
+                                                </div>
+                                                <div class="w-24 text-right shrink-0">
+                                                    <span class="text-sm font-semibold {{ $acc->discount > 0 ? 'text-orange-600' : 'text-gray-900' }}">{{ number_format($acc->line, 0, ',', ' ') }} €</span>
+                                                </div>
+                                                <button type="button" wire:click="removeAccessory('{{ $acc->key }}')"
+                                                    class="text-gray-400 hover:text-red-600 shrink-0" title="{{ __('Remove') }}">
+                                                    <i class="ri-close-line"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    @endforeach
+
+                                    @if ($row->suggestions->isNotEmpty())
+                                        <div class="flex flex-wrap items-center gap-1.5">
+                                            <span class="text-[11px] text-gray-500 mr-0.5">{{ __('Suggested') }}:</span>
+                                            @foreach ($row->suggestions as $sug)
+                                                <button type="button" wire:click="addAccessory('{{ $row->id }}', '{{ $sug->id }}')"
+                                                    wire:key="sug-{{ $row->id }}-{{ $sug->id }}"
+                                                    title="{{ $sug->label }}"
+                                                    class="inline-flex items-center gap-1.5 max-w-full rounded-full border border-dashed border-primary-300 bg-white hover:bg-primary-50 hover:border-primary-800 px-2.5 py-1 text-xs text-primary-900">
+                                                    <i class="ri-add-line shrink-0"></i>
+                                                    <i class="{{ $sug->icon }} shrink-0 text-primary-700"></i>
+                                                    <span class="truncate max-w-[14rem] sm:max-w-[20rem]">{{ $sug->label }}</span>
+                                                    <span class="shrink-0 font-semibold">{{ number_format($sug->price, 0, ',', ' ') }} €</span>
+                                                </button>
+                                            @endforeach
+                                            @if ($row->suggestions->count() > 1)
+                                                <button type="button" wire:click="addAllAccessories('{{ $row->id }}')"
+                                                    class="text-xs font-medium text-primary-800 hover:underline px-1">
+                                                    {{ __('Add all') }}
+                                                </button>
+                                            @endif
+                                        </div>
+                                    @endif
+                                </div>
+                            @endif
                         </div>
                     @endforeach
                 </div>
@@ -935,10 +999,13 @@
                          but the dealer reads them as different things — so
                          split the summary by source instead of lumping them. --}}
                     @php
-                        $engineRows = collect($t['options_rows'])->filter(fn ($r) => ($r['source'] ?? null) === 'engine');
-                        $optionOnly = collect($t['options_rows'])->reject(fn ($r) => ($r['source'] ?? null) === 'engine');
+                        // Kits and propellers ride in the engine block's amount;
+                        // only the engines themselves are counted.
+                        $inEngineBlock = fn ($r) => in_array($r['source'] ?? null, ['engine', 'accessory'], true);
+                        $engineRows = collect($t['options_rows'])->filter($inEngineBlock);
+                        $optionOnly = collect($t['options_rows'])->reject($inEngineBlock);
                         $customRows = collect($t['custom_items_rows'] ?? []);
-                        $engineQty  = (int) $engineRows->sum('quantity');
+                        $engineQty  = (int) $engineRows->where('source', 'engine')->sum('quantity');
 
                         // Show each block GROSS with its own discount underneath —
                         // line_after_cat is already net, so quoting that alone hid

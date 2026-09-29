@@ -8,6 +8,7 @@ use App\Models\CompanyBoatVariant;
 use App\Models\CompanyBrand;
 use App\Models\CompanyOption;
 use App\Models\Engine;
+use App\Models\EngineAccessory;
 use App\Models\Quote;
 use App\Models\QuoteCounter;
 use App\Services\QuoteCalculator;
@@ -58,6 +59,11 @@ class QuoteBuilder extends Component
 
     // Per-engine discount %, keyed by the same namespaced engine id.
     public array $engineDiscounts = [];
+
+    // Kits and propellers added under an engine: "{engineId}|{accessoryId}"
+    // => qty. Keyed by both, so one propeller under two engines is two lines.
+    public array $selectedAccessories = [];
+    public array $accessoryDiscounts = [];
 
     // §8.1 Step 5 — Custom line items
     public array $custom_items = [];
@@ -153,8 +159,20 @@ class QuoteBuilder extends Component
         $this->optionDiscounts = [];
         $this->selectedEngines = [];
         $this->engineDiscounts = [];
+        $this->selectedAccessories = [];
+        $this->accessoryDiscounts = [];
         foreach (($quote->options ?? []) as $row) {
             if (empty($row['option_id'])) continue;
+            // An accessory goes back under the engine it was added to. Checked
+            // first: falling through would re-load it as an equipment option.
+            if (($row['source'] ?? null) === 'accessory') {
+                if (! empty($row['parent_id']) && str_starts_with($row['option_id'], 'acc:')) {
+                    $key = $row['parent_id'] . '|' . substr($row['option_id'], 4);
+                    $this->selectedAccessories[$key] = $row['quantity'] ?? 1;
+                    $this->accessoryDiscounts[$key]  = $row['item_discount_pct'] ?? $row['discount_pct'] ?? 0;
+                }
+                continue;
+            }
             // Distinguish engines from regular options when re-loading.
             if (($row['source'] ?? null) === 'engine') {
                 $this->selectedEngines[$row['option_id']] = $row['quantity'] ?? 1;
@@ -426,9 +444,111 @@ class QuoteBuilder extends Component
     {
         if (isset($this->selectedEngines[$engineId])) {
             unset($this->selectedEngines[$engineId], $this->engineDiscounts[$engineId]);
+            // Its kit and propeller go with it.
+            foreach ($this->accessoryKeysOf($engineId) as $key) {
+                unset($this->selectedAccessories[$key], $this->accessoryDiscounts[$key]);
+            }
         } else {
             $this->selectedEngines[$engineId] = 1;
         }
+    }
+
+    /** @return array<int, string> keys of the accessories added under this engine */
+    private function accessoryKeysOf(string $engineId): array
+    {
+        return array_values(array_filter(
+            array_keys($this->selectedAccessories),
+            fn ($k) => str_starts_with($k, $engineId . '|')
+        ));
+    }
+
+    /**
+     * Add a suggested kit or propeller under an engine. Quantity starts at the
+     * engine's: twin engines take two propellers.
+     */
+    public function addAccessory(string $engineId, string $accessoryId): void
+    {
+        if (! isset($this->selectedEngines[$engineId]) || ! EngineAccessory::find($accessoryId)) {
+            return;
+        }
+        $key = $engineId . '|' . $accessoryId;
+        $this->selectedAccessories[$key] ??= (int) $this->selectedEngines[$engineId];
+    }
+
+    /** Every accessory linked to this engine that is not on the quote yet. */
+    public function addAllAccessories(string $engineId): void
+    {
+        $engine = $this->engineModel($engineId);
+        foreach ($engine?->accessoryIds() ?? [] as $accessoryId) {
+            $this->addAccessory($engineId, $accessoryId);
+        }
+    }
+
+    public function removeAccessory(string $key): void
+    {
+        unset($this->selectedAccessories[$key], $this->accessoryDiscounts[$key]);
+    }
+
+    public function setAccessoryQty(string $key, $qty): void
+    {
+        if (! isset($this->selectedAccessories[$key])) {
+            return;
+        }
+        $this->selectedAccessories[$key] = max(1, min((int) $qty, 99));
+    }
+
+    public function setAccessoryDiscount(string $key, $pct): void
+    {
+        if (! isset($this->selectedAccessories[$key])) {
+            return;
+        }
+        $pct = ($pct === '' || $pct === null) ? 0 : (float) $pct;
+        $this->accessoryDiscounts[$key] = max(0, min($pct, 100));
+    }
+
+    private function engineModel(string $engineId): ?Engine
+    {
+        [$ns, $rawId] = array_pad(explode(':', $engineId, 2), 2, null);
+
+        return $ns === 'private' && $rawId ? Engine::find($rawId) : null;
+    }
+
+    /**
+     * The accessories added under one engine, kit first, as [key, model, qty]
+     * — shared by the builder rows and the priced payload so the two list
+     * them in the same order.
+     *
+     * @param  \Illuminate\Support\Collection  $models  EngineAccessory keyed by id
+     */
+    private function accessoryLinesOf(string $engineId, $models): array
+    {
+        $lines = [];
+        foreach ($this->accessoryKeysOf($engineId) as $key) {
+            $accessoryId = explode('|', $key, 2)[1] ?? '';
+            if (isset($models[$accessoryId])) {
+                $lines[] = [$key, $models[$accessoryId], (int) $this->selectedAccessories[$key]];
+            }
+        }
+        usort($lines, fn ($a, $b) => ($a[1]->type === EngineAccessory::TYPE_KIT ? 0 : 1) <=> ($b[1]->type === EngineAccessory::TYPE_KIT ? 0 : 1));
+
+        return $lines;
+    }
+
+    /** One query for every accessory the quote uses or its engines suggest. */
+    private function accessoryModels(iterable $engines = []): \Illuminate\Support\Collection
+    {
+        $ids = [];
+        foreach (array_keys($this->selectedAccessories) as $key) {
+            $ids[] = explode('|', $key, 2)[1] ?? '';
+        }
+        foreach ($engines as $engine) {
+            array_push($ids, ...$engine->accessoryIds());
+        }
+        $ids = array_values(array_unique(array_filter($ids)));
+
+        return $ids
+            ? EngineAccessory::whereIn('_id', $ids)->get()->keyBy(fn ($a) => (string) $a->_id)
+            : collect();
     }
 
     /**
@@ -460,6 +580,12 @@ class QuoteBuilder extends Component
 
         $qty = (int) $qty;
         $this->selectedEngines[$engineId] = max(1, min($qty, 99));
+
+        // The engine's accessories follow: a second engine needs a second
+        // propeller. Adjustable afterwards — twin engines often share one kit.
+        foreach ($this->accessoryKeysOf($engineId) as $key) {
+            $this->selectedAccessories[$key] = $this->selectedEngines[$engineId];
+        }
     }
 
     /**
@@ -480,16 +606,53 @@ class QuoteBuilder extends Component
         }
 
         $byId = Engine::whereIn('_id', $privateIds)->get()->keyBy(fn ($e) => 'private:' . (string) $e->_id);
+        $accessories = $this->accessoryModels($byId);
 
         return collect($this->selectedEngines)
-            ->map(function ($qty, $id) use ($byId) {
+            ->map(function ($qty, $id) use ($byId, $accessories) {
                 $e = $byId[$id] ?? null;
                 if (! $e) return null;
                 $price    = (float) $e->price;
                 $quantity = (int) $qty;
                 $discount = (float) ($this->engineDiscounts[$id] ?? 0);
 
+                $added = [];
+                foreach ($this->accessoryLinesOf($id, $accessories) as [$key, $a, $aQty]) {
+                    $aDisc = (float) ($this->accessoryDiscounts[$key] ?? 0);
+                    $added[] = (object) [
+                        'key'      => $key,
+                        'id'       => (string) $a->_id,
+                        'type'     => $a->type,
+                        'icon'     => $a->icon(),
+                        'kind'     => $a->typeLabel(),
+                        'label'    => $a->label,
+                        'price'    => (float) $a->price,
+                        'quantity' => $aQty,
+                        'discount' => $aDisc,
+                        'line'     => (float) $a->price * $aQty * (1 - $aDisc / 100),
+                    ];
+                }
+                $addedIds = array_column($added, 'id');
+
+                // Linked to the engine, not on the quote yet: offered, not added.
+                $suggestions = collect($e->accessoryIds())
+                    ->map(fn ($aid) => $accessories[$aid] ?? null)
+                    ->filter()
+                    ->reject(fn ($a) => in_array((string) $a->_id, $addedIds, true))
+                    ->sortBy(fn ($a) => $a->type === EngineAccessory::TYPE_KIT ? 0 : 1)
+                    ->map(fn ($a) => (object) [
+                        'id'    => (string) $a->_id,
+                        'type'  => $a->type,
+                        'icon'  => $a->icon(),
+                        'kind'  => $a->typeLabel(),
+                        'label' => $a->label,
+                        'price' => (float) $a->price,
+                    ])
+                    ->values();
+
                 return (object) [
+                    'accessories' => $added,
+                    'suggestions' => $suggestions,
                     'id'       => $id,
                     'label'    => trim(($e->brand ?? '') . ' ' . ($e->code ?? '')),
                     'hp'       => $e->horsepower,
@@ -592,6 +755,8 @@ class QuoteBuilder extends Component
             $allEngines['private:' . (string) $e->_id] = $e;
         }
 
+        $accessoryModels = $this->accessoryModels();
+
         foreach ($this->selectedEngines as $engineId => $qty) {
             $eng = $allEngines[$engineId] ?? null;
             if (! $eng) continue;
@@ -609,6 +774,24 @@ class QuoteBuilder extends Component
                 // cover one, so the dealer spells it out per engine.
                 'description'  => $eng->description ?: null,
             ];
+
+            // Its kit and propeller, straight after it: same category, so the
+            // PDF prints them in the engine block beneath this engine.
+            foreach ($this->accessoryLinesOf($engineId, $accessoryModels) as [$key, $acc, $aQty]) {
+                $optionsPayload[] = [
+                    'option_id'    => 'acc:' . (string) $acc->_id,
+                    'parent_id'    => $engineId,
+                    'category'     => 'Engine',
+                    'label'        => $acc->label,
+                    'unit_price'   => (float) $acc->price,
+                    'unit_cost'    => $acc->cost !== null ? (float) $acc->cost : null,
+                    'currency'     => 'EUR',
+                    'vat_rate'     => $acc->vat_rate,
+                    'quantity'     => $aQty,
+                    'discount_pct' => (float) ($this->accessoryDiscounts[$key] ?? 0),
+                    'source'       => 'accessory',
+                ];
+            }
         }
 
         // FX: if the variant or any option uses a non-EUR currency and the

@@ -28,7 +28,15 @@
             'section' => 'Catalogue',
             'items' => [
                 ['label' => 'Catalogue',         'icon' => 'ri-sailboat-line',           'route' => 'catalogue.models',  'active' => 'catalogue.models'],
-                ['label' => 'Engines',           'icon' => 'ri-settings-3-line',         'route' => 'engines.index',     'active' => 'engines.*'],
+                [
+                    'label'     => 'Engines',
+                    'icon'      => 'ri-settings-3-line',
+                    'activeAny' => ['engines.*', 'engine-accessories.*'],
+                    'children'  => [
+                        ['label' => 'Engines',     'icon' => 'ri-settings-3-line', 'route' => 'engines.index',            'active' => 'engines.*'],
+                        ['label' => 'Accessories', 'icon' => 'ri-tools-line',      'route' => 'engine-accessories.index', 'active' => 'engine-accessories.*'],
+                    ],
+                ],
             ],
         ],
         [

@@ -108,6 +108,9 @@ class QuoteCalculator
                 // (engines live in this list too and must stay identifiable).
                 'option_id'          => $opt['option_id'] ?? null,
                 'source'             => $opt['source'] ?? null,
+                // For an accessory: the engine line it was added under, so a
+                // reopened quote puts it back beneath the same engine.
+                'parent_id'          => $opt['parent_id'] ?? null,
                 'category'           => $opt['category'] ?? 'Options',
                 'label'              => $opt['label'] ?? '',
                 'description'        => $opt['description'] ?? null,
@@ -154,7 +157,9 @@ class QuoteCalculator
         // Engines live in $optionsRows for pricing, but the dealer negotiates
         // them separately from equipment options, so each block carries its own
         // discount and neither touches the other's rows.
-        $isEngine   = fn (array $r) => ($r['source'] ?? null) === 'engine';
+        // A kit or propeller added under an engine belongs to the engine block:
+        // the engine discount covers it and the engine margin preset prices it.
+        $isEngine   = fn (array $r) => in_array($r['source'] ?? null, ['engine', 'accessory'], true);
         $optionOnly = array_filter($optionsRows, fn ($r) => ! $isEngine($r));
         $engineOnly = array_filter($optionsRows, $isEngine);
 

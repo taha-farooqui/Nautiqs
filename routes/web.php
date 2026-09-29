@@ -239,11 +239,18 @@ Route::middleware(['auth', 'verified', 'maintenance'])->group(function () {
     // Bulk-import routes declared BEFORE the resource so they win
     // against any future {engine} route binding on the same prefix.
     Route::get('/engines/template', [EngineController::class, 'template'])->name('engines.template');
+    Route::get('/engines/export',   [EngineController::class, 'export'])->name('engines.export');
     Route::post('/engines/import',  [EngineController::class, 'import'])->name('engines.import');
     // Declared before the resource so DELETE /engines/bulk isn't captured by
     // the {engine} destroy binding.
     Route::delete('/engines/bulk', [EngineController::class, 'bulkDestroy'])->name('engines.bulk-destroy');
     Route::resource('engines', EngineController::class)->except(['show']);
+
+    // Kits and propellers sold with an engine, linked to the engines they fit.
+    Route::resource('accessories', \App\Http\Controllers\EngineAccessoryController::class)
+        ->except(['show'])
+        ->names('engine-accessories')
+        ->parameters(['accessories' => 'id']);
 
     // Inline brand picker for the catalogue form — used by the autocomplete
     // dropdown when adding a new model. Returns active CompanyBrand rows.

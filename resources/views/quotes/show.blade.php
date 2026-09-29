@@ -369,9 +369,11 @@
                             </thead>
                             <tbody class="divide-y divide-gray-100">
                                 @foreach ($quote->options as $opt)
+                                    @php $isAccessory = ($opt['source'] ?? null) === 'accessory'; @endphp
                                     <tr>
-                                        <td class="py-2">
-                                            <div class="font-medium text-gray-900">{{ $opt['label'] ?? '' }}</div>
+                                        {{-- A kit or propeller sits indented under its engine. --}}
+                                        <td class="py-2 {{ $isAccessory ? 'pl-5' : '' }}">
+                                            <div class="{{ $isAccessory ? 'text-gray-800' : 'font-medium text-gray-900' }}">{{ $opt['label'] ?? '' }}</div>
                                             @if (! empty($opt['description']))
                                                 <div class="text-xs text-gray-600">{!! nl2br(e($opt['description'])) !!}</div>
                                             @endif
@@ -455,8 +457,10 @@
                         // Engines are option rows in the maths; show them on
                         // their own line so the two read separately, each with
                         // its own discount underneath (line_after_cat is net).
-                        $engineRows = collect($t['options_rows'] ?? [])->filter(fn ($r) => ($r['source'] ?? null) === 'engine');
-                        $optionOnly = collect($t['options_rows'] ?? [])->reject(fn ($r) => ($r['source'] ?? null) === 'engine');
+                        // Kits and propellers count in the engine block.
+                        $inEngineBlock = fn ($r) => in_array($r['source'] ?? null, ['engine', 'accessory'], true);
+                        $engineRows = collect($t['options_rows'] ?? [])->filter($inEngineBlock);
+                        $optionOnly = collect($t['options_rows'] ?? [])->reject($inEngineBlock);
                         $customRows = collect($t['custom_items_rows'] ?? []);
                         $optGross = $optionOnly->sum('line_gross');
                         $optDisc  = $optGross - $optionOnly->sum('line_after_cat');
@@ -480,7 +484,7 @@
                         <div class="flex justify-between text-red-600 text-xs"><dt class="ml-4">{{ __('Options discount') }}</dt><dd>-{{ number_format($dOptionsBlock, 2, ',', ' ') }} €</dd></div>
                     @endif
                     @if ($engineRows->isNotEmpty())
-                        <div class="flex justify-between"><dt class="text-gray-600">{{ __('Engines') }} ({{ (int) $engineRows->sum('quantity') }})</dt><dd class="font-medium">{{ number_format($engGross, 2, ',', ' ') }} €</dd></div>
+                        <div class="flex justify-between"><dt class="text-gray-600">{{ __('Engines') }} ({{ (int) $engineRows->where('source', 'engine')->sum('quantity') }})</dt><dd class="font-medium">{{ number_format($engGross, 2, ',', ' ') }} €</dd></div>
                         @if ($engDisc > 0.005)
                             <div class="flex justify-between text-red-600 text-xs"><dt class="ml-4">{{ __('Discounts on engines') }}</dt><dd>-{{ number_format($engDisc, 2, ',', ' ') }} €</dd></div>
                         @endif

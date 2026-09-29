@@ -31,6 +31,10 @@
             </div>
         </form>
         <div class="flex items-center gap-2">
+            <a href="{{ route('engines.export') }}"
+                class="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium bg-white hover:bg-gray-50 text-gray-800 border border-gray-300 rounded-lg">
+                <i class="ri-download-2-line"></i> {{ __('Export') }}
+            </a>
             <button type="button" @click="importOpen = true"
                 class="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium bg-white hover:bg-gray-50 text-gray-800 border border-gray-300 rounded-lg">
                 <i class="ri-upload-2-line"></i> {{ __('Import') }}
@@ -67,11 +71,11 @@
                             <i class="ri-information-line"></i> {{ __('Need a template?') }}
                         </p>
                         <p class="text-xs text-gray-700 mb-2">
-                            {{ __('Download the sample CSV, fill in your engines, then upload it back here.') }}
+                            {{ __('Same layout as the Suzuki price export: one row per engine, with its kit and propeller beside it. To update prices, export your list, edit it and import it back.') }}
                         </p>
                         <a href="{{ route('engines.template') }}"
                             class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold bg-white border border-primary-200 hover:bg-primary-50 text-primary-800 rounded-lg">
-                            <i class="ri-download-2-line"></i> {{ __('Download template (CSV)') }}
+                            <i class="ri-download-2-line"></i> {{ __('Download template (Excel)') }}
                         </a>
                     </div>
 
@@ -94,13 +98,14 @@
                         <div class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-700">
                             <p class="font-semibold mb-1">{{ __('Expected columns') }}</p>
                             <ul class="space-y-0.5">
-                                <li><span class="font-mono">Brand</span> — {{ __('required') }}</li>
-                                <li><span class="font-mono">Model</span> — {{ __('required, engine code/SKU') }}</li>
-                                <li><span class="font-mono">PV HT</span> — {{ __('required, selling price HT') }}</li>
-                                <li><span class="font-mono">PA HT</span> — {{ __('optional, purchase cost') }}</li>
-                                <li><span class="font-mono">TVA</span> — {{ __('optional, defaults to 20') }}</li>
-                                <li><span class="font-mono">Description</span> — {{ __('optional, shown under the engine on the quote') }}</li>
+                                <li><span class="font-mono">MARQUE</span>, <span class="font-mono">MODELE</span> — {{ __('required') }}</li>
+                                <li><span class="font-mono">MOTEUR PV HT</span> — {{ __('required, selling price HT') }} <span class="text-gray-400">({{ __('or PV HT') }})</span></li>
+                                <li><span class="font-mono">MOTEUR PA HT</span> — {{ __('optional, purchase cost') }}</li>
+                                <li><span class="font-mono">KIT PRE-RIGGING</span>, <span class="font-mono">KIT PA HT</span>, <span class="font-mono">KIT PV HT</span> — {{ __('optional') }}</li>
+                                <li><span class="font-mono">HELICE</span>, <span class="font-mono">HELICE PA HT</span>, <span class="font-mono">HELICE PV HT</span> — {{ __('optional') }}</li>
+                                <li><span class="font-mono">CV</span>, <span class="font-mono">TVA</span>, <span class="font-mono">DESCRIPTION</span> — {{ __('optional') }}</li>
                             </ul>
+                            <p class="text-gray-500 mt-2">{{ __('Each kit and propeller is created once in Accessories and linked to its engines. "Inclus / non applicable" at 0 € creates nothing.') }}</p>
                             <p class="text-gray-500 mt-2">{{ __('Leave the Description column out entirely to keep the descriptions already saved.') }}</p>
                             <p class="text-gray-500 mt-2">{{ __('Rows matching an existing Brand + Model will be updated; the rest will be created.') }}</p>
                         </div>
@@ -168,6 +173,7 @@
                                 <th class="px-5 py-3 font-semibold text-right">{{ __('Public HT') }}</th>
                                 <th class="px-5 py-3 font-semibold text-right">{{ __('VAT') }}</th>
                                 <th class="px-5 py-3 font-semibold text-right">{{ __('TTC') }}</th>
+                                <th class="px-5 py-3 font-semibold text-right">{{ __('Accessories') }}</th>
                                 <th class="px-5 py-3 font-semibold"></th>
                             </tr>
                         </thead>
@@ -183,6 +189,13 @@
                                     <td class="px-5 py-3 text-right font-semibold text-gray-900">{{ number_format($engine->price, 2, ',', ' ') }} €</td>
                                     <td class="px-5 py-3 text-right text-gray-700">{{ number_format($engine->vat_rate, 2) }}%</td>
                                     <td class="px-5 py-3 text-right font-semibold text-gray-900">{{ number_format($engine->ttc, 2, ',', ' ') }} €</td>
+                                    <td class="px-5 py-3 text-right text-gray-600 whitespace-nowrap">
+                                        @if ($engine->accessories)
+                                            <i class="ri-links-line text-gray-400"></i> {{ $engine->accessories }}
+                                        @else
+                                            <span class="text-gray-300">—</span>
+                                        @endif
+                                    </td>
                                     <td class="px-5 py-3">
                                         <div class="flex items-center justify-end gap-1">
                                             <a href="{{ route('engines.edit', $engine->id) }}"

@@ -242,7 +242,8 @@
                 $line = $withVat($opt['line_after_cat'] ?? 0, $opt['line_vat_rate'] ?? null);
             @endphp
             <tr class="item-row">
-                <td>
+                {{-- A kit or propeller is printed indented under its engine. --}}
+                <td @if (($opt['source'] ?? null) === 'accessory') style="padding-left: 16px;" @endif>
                     <span class="qopt-name">{{ $opt['label'] ?? '' }}</span>
                     @if ($itemDisc > 0)
                         <span class="qopt-disc-badge">-{{ number_format($itemDisc, 0) }}%</span>

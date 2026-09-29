@@ -93,6 +93,48 @@
             <x-input-error :messages="$errors->get('description')" class="mt-1" />
         </div>
 
+        {{-- Kits and propellers offered with this engine on a quote. The same
+             link is editable from the Accessories page, one accessory at a
+             time; this is the same data seen from the engine. --}}
+        <div class="pt-2 border-t border-gray-100">
+            <div class="flex items-baseline justify-between gap-2 mb-2">
+                <label class="block text-sm font-medium text-gray-700">{{ __('Suggested accessories') }}</label>
+                <a href="{{ route('engine-accessories.create') }}" class="text-xs text-primary-800 hover:underline">
+                    <i class="ri-add-line"></i> {{ __('New accessory') }}
+                </a>
+            </div>
+            @if ($accessories->isEmpty())
+                <p class="text-sm text-gray-500">
+                    {{ __('No kits or propellers yet. Add them on the Accessories page, or import a price list with KIT and HELICE columns.') }}
+                </p>
+            @else
+                @php $linked = collect(old('accessory_ids', $engine?->accessoryIds() ?? []))->map(fn ($i) => (string) $i)->all(); @endphp
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    @foreach (['kit' => __('Kits'), 'propeller' => __('Propellers')] as $t => $heading)
+                        @php $group = $accessories->where('type', $t); @endphp
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1.5">{{ $heading }}</p>
+                            @forelse ($group as $a)
+                                <label class="flex items-start gap-2 py-1 cursor-pointer">
+                                    <input type="checkbox" name="accessory_ids[]" value="{{ $a->_id }}"
+                                        @checked(in_array((string) $a->_id, $linked, true))
+                                        class="mt-0.5 rounded border-gray-300 text-primary-800 focus:ring-primary-800" />
+                                    <span class="text-sm text-gray-800 leading-snug">
+                                        {{ $a->label }}
+                                        <span class="text-gray-400 whitespace-nowrap">· {{ number_format($a->price, 2, ',', ' ') }} €</span>
+                                    </span>
+                                </label>
+                            @empty
+                                <p class="text-sm text-gray-400 italic">{{ __('None yet.') }}</p>
+                            @endforelse
+                        </div>
+                    @endforeach
+                </div>
+                {{-- Always posted, so unticking the last box clears the list. --}}
+                <input type="hidden" name="accessory_ids_present" value="1" />
+            @endif
+        </div>
+
         <div class="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
             <a href="{{ route('engines.index') }}" class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">{{ __('Cancel') }}</a>
             <button class="inline-flex items-center gap-1 px-4 py-2 text-sm font-semibold bg-primary-800 hover:bg-primary-900 text-white rounded-lg">

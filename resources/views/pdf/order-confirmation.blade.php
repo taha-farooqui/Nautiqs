@@ -165,7 +165,7 @@
         <tr class="cat-row"><td colspan="4">{{ $catLabel($category) }}</td></tr>
         @foreach ($items as $opt)
             <tr class="item-row">
-                <td>
+                <td @if (($opt['source'] ?? null) === 'accessory') style="padding-left: 16px;" @endif>
                     <span class="qopt-name">{{ $opt['label'] ?? '' }}</span>
                     @if (! empty($opt['description']))
                         <div class="qopt-desc">{!! nl2br(e($opt['description'])) !!}</div>
