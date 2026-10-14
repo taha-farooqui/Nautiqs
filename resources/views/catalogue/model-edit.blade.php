@@ -266,12 +266,12 @@
                             </div>
                             <div class="md:col-span-2">
                                 <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Public HT') }} *</label>
-                                <input type="number" step="0.01" min="0" :name="`new_options[${i}][price]`" x-model="o.price"
+                                <input type="number" step="0.01" :name="`new_options[${i}][price]`" x-model="o.price"
                                     class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
                             </div>
                             <div class="md:col-span-2">
                                 <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Cost') }}</label>
-                                <input type="number" step="0.01" min="0" :name="`new_options[${i}][cost]`" x-model="o.cost"
+                                <input type="number" step="0.01" :name="`new_options[${i}][cost]`" x-model="o.cost"
                                     class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
                             </div>
                             <div class="md:col-span-1">
@@ -752,12 +752,12 @@
                                 </div>
                                 <div class="md:col-span-2">
                                     <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Public HT') }} *</label>
-                                    <input type="number" step="0.01" min="0" :name="`options[${i}][price]`" x-model="o.price" required
+                                    <input type="number" step="0.01" :name="`options[${i}][price]`" x-model="o.price" required
                                         class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
                                 </div>
                                 <div class="md:col-span-2">
                                     <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Cost') }}</label>
-                                    <input type="number" step="0.01" min="0" :name="`options[${i}][cost]`" x-model="o.cost"
+                                    <input type="number" step="0.01" :name="`options[${i}][cost]`" x-model="o.cost"
                                         class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
                                 </div>
                                 <div class="md:col-span-1">

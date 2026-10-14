@@ -90,7 +90,7 @@ class CatalogueController extends Controller
     {
         $q = trim((string) $request->query('q', ''));
 
-        $workspace = CompanyBrand::where('is_active', true)
+        $workspace = CompanyBrand::where('is_active', true)->where('company_id', auth()->user()->company_id)
             ->when($q !== '', fn ($w) => $w->where('name', 'like', "%{$q}%"))
             ->orderBy('name')
             ->limit(30)
@@ -174,7 +174,7 @@ class CatalogueController extends Controller
         $brandFilter  = $request->query('brand');
         $q            = trim((string) $request->query('q', ''));
 
-        $companyBrandsActive = CompanyBrand::where('is_active', true)
+        $companyBrandsActive = CompanyBrand::where('is_active', true)->where('company_id', auth()->user()->company_id)
             ->orderBy('name')
             ->get();
 
@@ -393,7 +393,7 @@ class CatalogueController extends Controller
      */
     public function createModel(Request $request)
     {
-        $brands   = CompanyBrand::where('is_active', true)->orderBy('name')->get();
+        $brands   = CompanyBrand::where('is_active', true)->where('company_id', auth()->user()->company_id)->orderBy('name')->get();
         $variants = collect();
         $options  = collect();
 
@@ -459,8 +459,8 @@ class CatalogueController extends Controller
             'new_options'                  => 'nullable|array',
             'new_options.*.category'       => 'required_with:new_options|string|max:100',
             'new_options.*.label'          => 'required_with:new_options|string',
-            'new_options.*.price'          => 'required_with:new_options|numeric|min:0',
-            'new_options.*.cost'           => 'nullable|numeric|min:0',
+            'new_options.*.price'          => 'required_with:new_options|numeric',
+            'new_options.*.cost'           => 'nullable|numeric',
 
             'library_option_ids'      => 'nullable|array',
             'library_option_ids.*'    => 'string',
@@ -546,7 +546,7 @@ class CatalogueController extends Controller
     public function editModel(string $modelId)
     {
         $model    = CompanyBoatModel::findOrFail($modelId);
-        $brands   = CompanyBrand::where('is_active', true)->orderBy('name')->get();
+        $brands   = CompanyBrand::where('is_active', true)->where('company_id', auth()->user()->company_id)->orderBy('name')->get();
         $variants = CompanyBoatVariant::where('company_model_id', $modelId)->where('is_archived', false)->get();
         $options  = CompanyOption::where('company_model_id', $modelId)->where('is_archived', false)->orderBy('position')->get();
 
@@ -636,7 +636,7 @@ class CatalogueController extends Controller
      */
     public function createVariant(Request $request)
     {
-        $brands = CompanyBrand::where('is_active', true)->orderBy('name')->get();
+        $brands = CompanyBrand::where('is_active', true)->where('company_id', auth()->user()->company_id)->orderBy('name')->get();
 
         $brandId = $request->query('brand');
         $models  = $brandId
@@ -837,8 +837,8 @@ class CatalogueController extends Controller
             'options.*.id'       => 'nullable|string',
             'options.*.category' => 'required|string|max:100',
             'options.*.label'    => 'required|string',
-            'options.*.price'    => 'required|numeric|min:0',
-            'options.*.cost'     => 'nullable|numeric|min:0',
+            'options.*.price'    => 'required|numeric',
+            'options.*.cost'     => 'nullable|numeric',
             'options.*.currency' => 'nullable|in:EUR,USD',
         ]);
 
@@ -863,31 +863,19 @@ class CatalogueController extends Controller
             $costIn  = round((float) ($row['cost'] ?? 0), 2);
             $ccy     = $row['currency'] ?? 'EUR';
 
-            $priceEur = $priceIn;
-            $costEur  = $costIn;
-            $fxRate   = null;
-            if ($ccy !== 'EUR') {
-                $rate = $fx->rate($ccy, 'EUR');
-                if ($rate !== null) {
-                    $priceEur = round($priceIn * $rate, 2);
-                    $costEur  = round($costIn * $rate, 2);
-                    $fxRate   = $rate;
-                }
-            }
-
             $payload = [
                 'category'                => $row['category'],
                 'label'                   => $row['label'],
                 'description'             => $row['description'] ?? null,
-                'price'                   => $priceEur,
-                'cost'                    => $costEur,
-                'currency'                => 'EUR',
+                'price'                   => $priceIn,
+                'cost'                    => $costIn,
+                'currency'                => $ccy,
                 'original_price'          => $priceIn,
                 'original_price_currency' => $ccy,
                 'original_cost'           => $costIn,
                 'original_cost_currency'  => $ccy,
-                'fx_rate_used'            => $ccy !== 'EUR' ? $fxRate : null,
-                'fx_rate_date'            => $ccy !== 'EUR' ? now() : null,
+                'fx_rate_used'            => null,
+                'fx_rate_date'            => null,
                 'position'                => $i,
             ];
 
@@ -949,8 +937,8 @@ class CatalogueController extends Controller
             'options.*.label'        => 'required|string',
             // No length cap: dealers paste full pack contents in here.
             'options.*.description'  => 'nullable|string',
-            'options.*.price'        => 'required|numeric|min:0',
-            'options.*.cost'         => 'nullable|numeric|min:0',
+            'options.*.price'        => 'required|numeric',
+            'options.*.cost'         => 'nullable|numeric',
             'options.*.currency'     => 'nullable|in:EUR,USD',
             'active_tab'             => 'nullable|in:boat,versions,options',
         ]);

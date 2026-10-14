@@ -179,7 +179,7 @@ class OptionImporter
                 'price'                   => $row['price'],
                 'cost'                    => $row['cost'],
                 'vat_rate'                => $row['vat_rate'],
-                'currency'                => 'EUR',
+                'currency'                => $row['currency'] ?? 'EUR',
                 'original_cost'           => $row['original_cost'],
                 'original_cost_currency'  => $row['original_cost_currency'],
                 'original_price'          => $row['original_price'],
@@ -277,41 +277,23 @@ class OptionImporter
             // currency. If the rate lookup fails, reject the row with a
             // clear message and let the rest of the import continue.
             $costEur  = $data['cost'];
-            $priceEur = $data['price'];
-            $rateUsed = 1.0;
-            if ($data['cost_currency'] !== 'EUR' && $data['cost'] > 0) {
-                $rate = $this->fx->rate($data['cost_currency'], 'EUR');
-                if ($rate === null) {
-                    $errors[] = ['row' => $rowNumber, 'message' => 'FX rate unavailable for ' . $data['cost_currency'] . '→EUR. Please retry.'];
-                    continue;
-                }
-                $costEur  = round($data['cost'] * $rate, 2);
-                $rateUsed = $rate;
-            }
-            if ($data['price_currency'] !== 'EUR' && $data['price'] > 0) {
-                $rate = $this->fx->rate($data['price_currency'], 'EUR');
-                if ($rate === null) {
-                    $errors[] = ['row' => $rowNumber, 'message' => 'FX rate unavailable for ' . $data['price_currency'] . '→EUR. Please retry.'];
-                    continue;
-                }
-                $priceEur = round($data['price'] * $rate, 2);
-                $rateUsed = $rate; // last-wins; both rates are typically the same anyway
-            }
-
+            // Prix stockés tels quels dans la devise d'origine.
+            // La conversion en EUR se fait au moment du devis (QuoteBuilder).
             $out[] = [
-                'rowNumber'               => $rowNumber,
-                'code'                    => $data['code'],
-                'category'                => $data['category'],
-                'label'                   => $data['label'],
-                'description'             => $data['description'],
-                'price'                   => $priceEur,
-                'cost'                    => $costEur,
-                'vat_rate'                => $data['vat_rate'],
+                'rowNumber' => $rowNumber,
+                'code'      => $data['code'],
+                'category'  => $data['category'],
+                'label'     => $data['label'],
+                'description' => $data['description'],
+                'price'     => $data['price'],
+                'cost'      => $data['cost'],
+                'vat_rate'  => $data['vat_rate'],
+                'currency'  => $data['price_currency'],  // USD ou EUR
                 'original_cost'           => $data['cost'],
                 'original_cost_currency'  => $data['cost_currency'],
                 'original_price'          => $data['price'],
                 'original_price_currency' => $data['price_currency'],
-                'fx_rate_used'            => $rateUsed,
+                'fx_rate_used'            => null,
             ];
         }
 

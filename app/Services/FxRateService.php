@@ -46,7 +46,7 @@ class FxRateService
         $fresh = Cache::remember(self::CACHE_PREFIX . "{$base}:{$target}", self::CACHE_TTL, function () use ($base, $target) {
             try {
                 $res = Http::timeout(self::TIMEOUT)
-                    ->get(self::ENDPOINT, ['from' => $base, 'to' => $target]);
+                    ->withOptions(['allow_redirects' => true])->get(self::ENDPOINT, ['from' => $base, 'to' => $target]);
                 if (! $res->ok()) {
                     Log::warning('FX rate fetch failed', ['base' => $base, 'target' => $target, 'status' => $res->status()]);
                     return null;
