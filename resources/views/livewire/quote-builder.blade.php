@@ -528,7 +528,10 @@
                                 @keydown.escape="open = false"
                                 class="w-full px-3 py-1.5 text-sm rounded-md border-gray-200 focus:border-primary-800 focus:ring-primary-800" />
                         </div>
-                        <ul class="max-h-72 overflow-y-auto py-1">
+                        {{-- Alpine owns this list. Letting Livewire morph the x-for
+                             clones on each re-render left them without their `row`
+                             scope, which threw and could swallow the next click. --}}
+                        <ul class="max-h-72 overflow-y-auto py-1" wire:ignore>
                             <template x-for="row in filtered" :key="row.id">
                                 <li>
                                     <button type="button" @click="toggle(row)"
@@ -1158,6 +1161,15 @@
             open: false,
             query: '',
             selectedIds: initialIds || [],
+
+            init() {
+                // The list is wire:ignore'd, so take the ticks from the server
+                // state: an engine removed from its row unticks here too.
+                this.$watch(
+                    () => Object.keys(this.$wire.selectedEngines || {}).join('\n'),
+                    ids => { this.selectedIds = ids ? ids.split('\n') : []; }
+                );
+            },
 
             get filtered() {
                 const q = this.query.trim().toLowerCase();

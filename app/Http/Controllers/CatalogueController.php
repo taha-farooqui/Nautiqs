@@ -239,9 +239,34 @@ class CatalogueController extends Controller
 
         return view('catalogue.models', [
             'rows'        => $rows,
-            'brands'      => $companyBrandsActive,
+            // The filter lists only brands with boats in this workspace. The
+            // platform fans every new global brand out to every dealership, so
+            // most active brands are empty and only clutter the dropdown.
+            'brands'      => $this->brandsWithBoats($companyBrandsActive, $brandFilter),
             'brandFilter' => $brandFilter,
         ]);
+    }
+
+    /**
+     * The brands that have at least one boat (non-archived model) in this
+     * workspace, in the order given. $keepId stays in even when empty, so a
+     * selection already made never silently disappears from its dropdown.
+     * Adding a boat still offers every active brand: that is where a new one
+     * gets its first boat.
+     */
+    private function brandsWithBoats($brands, ?string $keepId = null)
+    {
+        $withBoats = CompanyBoatModel::whereIn(
+                'company_brand_id',
+                $brands->pluck('_id')->map(fn ($i) => (string) $i)->all()
+            )
+            ->where('is_archived', false)
+            ->pluck('company_brand_id')->map(fn ($i) => (string) $i)->unique()->all();
+
+        return $brands
+            ->filter(fn ($b) => in_array((string) $b->_id, $withBoats, true)
+                || ($keepId && (string) $b->_id === $keepId))
+            ->values();
     }
 
     /**
@@ -636,9 +661,13 @@ class CatalogueController extends Controller
      */
     public function createVariant(Request $request)
     {
-        $brands = CompanyBrand::where('is_active', true)->where('company_id', auth()->user()->company_id)->orderBy('name')->get();
-
+        // A version needs an existing boat, so a brand without one is a dead end.
         $brandId = $request->query('brand');
+        $brands  = $this->brandsWithBoats(
+            CompanyBrand::where('is_active', true)->where('company_id', auth()->user()->company_id)->orderBy('name')->get(),
+            $brandId
+        );
+
         $models  = $brandId
             ? CompanyBoatModel::where('company_brand_id', $brandId)
                 ->where('is_archived', false)
