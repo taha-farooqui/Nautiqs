@@ -1025,7 +1025,11 @@
          bottom of the viewport showing net payable, tapped to open the full
          panel. From xl it is the sticky side column it has always been. --}}
     <div class="xl:col-span-1" x-data="{ open: false }">
-        <div class="fixed bottom-0 right-0 left-0 z-20 xl:static xl:z-auto">
+        {{-- Sticky on this wrapper, not on the panel inside it: sticky only
+             moves within its parent, and the panel's parent was this wrapper,
+             exactly as tall as the panel — so it never stuck. This wrapper's
+             parent is the full-height grid column. --}}
+        <div class="fixed bottom-0 right-0 left-0 z-20 xl:sticky xl:top-20 xl:z-auto">
 
             {{-- Collapsed bar — below xl only. --}}
             <button type="button" x-on:click="open = ! open"
@@ -1043,7 +1047,7 @@
                  a long summary can never push its own total out of reach. --}}
             <div x-bind:class="open ? 'block' : 'hidden xl:block'"
                 class="bg-white border border-gray-200 max-h-[75vh] overflow-y-auto
-                       xl:sticky xl:top-20 xl:max-h-none xl:overflow-hidden xl:rounded-2xl">
+                       xl:max-h-[calc(100vh-6rem)] xl:rounded-2xl">
             <div class="px-5 py-4 bg-primary-900 text-white">
                 <div class="flex items-center justify-between">
                     <div>
