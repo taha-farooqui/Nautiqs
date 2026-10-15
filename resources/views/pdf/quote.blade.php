@@ -96,20 +96,40 @@
     // the net figure), the raw inputs for older quotes.
     $customRows = ! empty($t['custom_items_rows']) ? $t['custom_items_rows'] : ($quote->custom_items ?? []);
 
-    // Remix Icon code points (fonts/RemixIcon.ttf).
+    // Remix Icon code points (fonts/RemixIcon.ttf) — contact lines only.
     $icon = fn (string $hex) => '<span class="ic">&#x' . $hex . ';</span>';
-    $I = [
-        'user' => 'f256', 'phone' => 'efec', 'mail' => 'eef6', 'pin' => 'ef14', 'building' => 'eb0f',
-        'calendar' => 'eb27', 'time' => 'f20f', 'check' => 'eb7b', 'boat' => 'f0ad', 'shield' => 'f100',
-        'truck' => 'f231', 'card' => 'ea92', 'note' => 'f19b', 'tag' => 'f023', 'exchange' => 'ecad',
-        'pen' => 'f04a', 'file' => 'ed0f', 'support' => 'ec0c',
+    $I = ['phone' => 'efec', 'mail' => 'eef6', 'pin' => 'ef14', 'check' => 'eb7b'];
+
+    // Every discount, for the totals column.
+    $dBoat    = (float) ($t['boat_discount_amount'] ?? 0);
+    $dOptions = (float) ($t['options_discount_amount'] ?? 0);
+    $dEngines = (float) ($t['engines_discount_amount'] ?? 0);
+    $dGlobal  = (float) ($t['global_discount_amount'] ?? 0);
+    $dItems   = collect($t['options_rows'] ?? [])
+        ->sum(fn ($r) => (float) ($r['line_gross'] ?? 0) - (float) ($r['line_after_cat'] ?? 0));
+    $dCustom  = collect($t['custom_items_rows'] ?? [])
+        ->sum(fn ($r) => (float) ($r['amount'] ?? 0) - (float) ($r['line_after_cat'] ?? 0));
+    $dTotal   = $dBoat + $dItems + $dOptions + $dEngines + $dCustom + $dGlobal;
+    // The stored subtotal is already net of line discounts; start from the
+    // gross so gross − every discount = total HT, line by line.
+    $grossHt = (float) ($t['base_price_gross'] ?? 0)
+        + collect($t['options_rows'] ?? [])->sum(fn ($r) => (float) ($r['line_gross'] ?? 0))
+        + collect($t['custom_items_rows'] ?? [])->sum(fn ($r) => (float) ($r['amount'] ?? 0));
+    // One VAT line per rate when lines carry different rates.
+    $vatBands = collect($t['vat_breakdown'] ?? [])->filter(fn ($taxable) => $taxable > 0.005);
+
+    $terms = [
+        [__('Payment'),  $quote->terms['payment']  ?? null],
+        [__('Delivery'), $quote->terms['delivery'] ?? null],
+        [__('Warranty'), $quote->terms['warranty'] ?? null],
+        [__('Notes'),    $quote->terms['notes']    ?? null],
     ];
 @endphp
 
 {{-- ═══════════════ HEADER ═══════════════ --}}
-<table class="hd">
+<table>
     <tr>
-        <td style="width:55%;">
+        <td style="width:60%;">
             @if ($logoSrc)
                 <img src="{{ $logoSrc }}" class="hd-logo" alt="{{ $company->name }}" />
             @else
@@ -123,33 +143,40 @@
                 @if ($company->salesperson_email) {{ $company->salesperson_email }} @endif
             </div>
         </td>
-        <td style="width:45%;">
-            <div class="hd-kicker">{{ __('Quotation') }}</div>
-            <div class="hd-number">{{ $quote->number }}</div>
-            <table class="hd-dates">
-                <tr>
-                    <td>
-                        <div class="k">{{ __('Issued on') }}</div>
-                        <div class="v">{!! $icon($I['calendar']) !!}{{ $quote->created_at?->format('d/m/Y') }}</div>
-                    </td>
-                    @if ($quote->expires_at)
-                        <td>
-                            <div class="k">{{ __('Valid until') }}</div>
-                            <div class="v">{!! $icon($I['time']) !!}{{ $quote->expires_at->format('d/m/Y') }}</div>
-                        </td>
-                    @endif
-                </tr>
-            </table>
+        <td style="width:40%;">
+            <div class="hd-title">{{ __('Quotation') }}</div>
         </td>
     </tr>
 </table>
-<div class="hd-rule"></div>
+
+<div class="info">
+    <table>
+        <tr>
+            <td>
+                <div class="k">{{ __('Reference') }}</div>
+                <div class="v">{{ $quote->number }}</div>
+            </td>
+            <td>
+                <div class="k">{{ __('Issued on') }}</div>
+                <div class="v">{{ $quote->created_at?->format('d/m/Y') }}</div>
+            </td>
+            <td>
+                <div class="k">{{ __('Valid until') }}</div>
+                <div class="v">{{ $quote->expires_at ? $quote->expires_at->format('d/m/Y') : '—' }}</div>
+            </td>
+            <td>
+                <div class="k">{{ __('Your contact') }}</div>
+                <div class="v">{{ $spName ?: $company->name }}</div>
+            </td>
+        </tr>
+    </table>
+</div>
 
 {{-- ═══════════════ PARTIES ═══════════════ --}}
 <table class="parties">
     <tr>
         <td class="col">
-            <div class="label">{!! $icon($I['user']) !!}{{ __('Client') }}</div>
+            <div class="h3">{{ __('Client') }}</div>
             <div class="party-name">{{ $clientFn ?: __('Guest') }}</div>
             @if ($clientCo) <div class="party-co">{{ $clientCo }}</div> @endif
             <table class="lines">
@@ -159,7 +186,7 @@
             </table>
         </td>
         <td class="col">
-            <div class="label">{!! $icon($I['support']) !!}{{ __('Your contact') }}</div>
+            <div class="h3">{{ __('Your contact') }}</div>
             <div class="party-name">{{ $spName ?: $company->name }}</div>
             @if ($spName && $company->name) <div class="party-co">{{ $company->name }}</div> @endif
             <table class="lines">
@@ -174,12 +201,12 @@
 <div class="boat">
     <table>
         <tr>
-            <td style="width:68%;">
-                @if ($bBrand) <div class="boat-brand">{{ $bBrand }}</div> @endif
+            <td style="width:66%;">
+                <div class="boat-k">{{ $bBrand ?: __('Boat') }}</div>
                 <div class="boat-name">{{ $bModel ?: $bVariant }}</div>
                 @if ($bVariant && $bVariant !== $bModel) <div class="boat-var">{{ $bVariant }}</div> @endif
             </td>
-            <td class="r" style="width:32%;">
+            <td class="r" style="width:34%;">
                 <div class="boat-k">{{ $showTtc ? __('Net payable') : __('Total excl. VAT') }}</div>
                 <div class="boat-v">{{ $eur($showTtc ? ($t['net_payable'] ?? $t['total_ttc'] ?? 0) : ($t['total_ht'] ?? 0)) }}</div>
             </td>
@@ -189,138 +216,122 @@
 
 {{-- ═══════════════ INCLUDED EQUIPMENT ═══════════════ --}}
 @if (! empty($equipment))
-    <div class="sec">
-        {!! $icon($I['boat']) !!}{{ __('Standard included equipment') }}
-        <span class="note">{{ __('Included in base price') }}</span>
-    </div>
-    <table class="equip">
-        @foreach (collect($equipment)->values()->chunk(2) as $pair)
-            <tr>
-                @foreach ($pair as $eq)
-                    <td>{!! $icon($I['check']) !!}{{ $eq['label'] ?? '' }}</td>
-                @endforeach
-                @if ($pair->count() < 2) <td></td> @endif
+    <table class="sheet equip">
+        <thead>
+            <tr class="title">
+                <td colspan="2">{{ __('Standard included equipment') }} <span class="note">{{ __('Included in base price') }}</span></td>
             </tr>
-        @endforeach
+        </thead>
+        <tbody>
+            @foreach (collect($equipment)->values()->chunk(2) as $i => $pair)
+                <tr class="{{ $loop->first ? 'first' : '' }}">
+                    @foreach ($pair as $eq)
+                        {{-- Icon and text in their own cells, so a long label
+                             wraps under itself, not under the check. --}}
+                        <td><table><tr><td class="i">{!! $icon($I['check']) !!}</td><td>{{ $eq['label'] ?? '' }}</td></tr></table></td>
+                    @endforeach
+                    @if ($pair->count() < 2) <td></td> @endif
+                </tr>
+            @endforeach
+        </tbody>
     </table>
 @endif
 
-{{-- ═══════════════ ITEMS ═══════════════ --}}
-<div class="sec">{!! $icon($I['file']) !!}{{ __('Selected options & services') }}</div>
+{{-- ═══════════════ ITEMS ═══════════════
+     DomPDF never splits a table row across pages, but it will happily leave a
+     heading row at the foot of a page and push the next row over (a thead
+     doesn't help either). So each category band is packed into one row
+     together with its first item, via an inner table with the same column
+     widths — and the section title and captions ride in the very first one. --}}
+@php
+    // [label, rows] in print order.
+    $groups = [];
+    $groups[] = [__('Base boat'), [[
+        'name' => $baseLabel, 'desc' => null, 'sub' => false,
+        'disc' => $dBoat > 0 ? __('Discount') . $discSuffix('boat') . ' · −' . $eur($discShown('boat')) : null,
+        'qty' => 1, 'unit' => $withVat($t['base_price_gross'] ?? 0), 'total' => $withVat($t['base_ht'] ?? 0),
+    ]]];
+    foreach ($optionRows as $category => $items) {
+        $rows = [];
+        foreach ($items as $opt) {
+            $rate = $opt['line_vat_rate'] ?? null;
+            // Line + category discount, compounded as the calculator applies them.
+            $effPct = (1 - (1 - (float) ($opt['item_discount_pct'] ?? 0) / 100)
+                         * (1 - (float) ($opt['cat_discount_pct'] ?? 0) / 100)) * 100;
+            $saved = $withVat((float) ($opt['line_gross'] ?? 0) - (float) ($opt['line_after_cat'] ?? 0), $rate);
+            $rows[] = [
+                'name' => $opt['label'] ?? '', 'desc' => $opt['description'] ?? null,
+                'sub'  => ($opt['source'] ?? null) === 'accessory',
+                'disc' => $effPct > 0.05 ? __('Discount') . ' ' . $pct($effPct) . ($saved > 0.005 ? ' · −' . $eur($saved) : '') : null,
+                'qty'  => $opt['quantity'] ?? 1,
+                'unit' => $withVat($opt['unit_price'] ?? 0, $rate),
+                'total'=> $withVat($opt['line_after_cat'] ?? 0, $rate),
+            ];
+        }
+        $groups[] = [$catLabel($category), $rows];
+    }
+    if (! empty($customRows)) {
+        $rows = [];
+        foreach ($customRows as $ci) {
+            $amount = (float) ($ci['amount'] ?? 0);
+            $net    = (float) ($ci['line_after_cat'] ?? $amount);
+            $ciPct  = $amount > 0 ? (1 - $net / $amount) * 100 : 0;
+            $rows[] = [
+                'name' => $ci['label'] ?? '', 'desc' => null, 'sub' => false,
+                'disc' => $ciPct > 0.05 ? __('Discount') . ' ' . $pct($ciPct) . ' · −' . $eur($withVat($amount - $net)) : null,
+                'qty' => 1, 'unit' => $withVat($amount), 'total' => $withVat($net),
+            ];
+        }
+        $groups[] = [__('Services'), $rows];
+    }
 
-<table class="items">
-    <thead>
+    // The four cells of an item line.
+    $cells = function (array $r) use ($eur) {
+        $html = '<td class="' . ($r['sub'] ? 'sub' : '') . '"><div class="it-name">' . e($r['name']) . '</div>';
+        if (! empty($r['desc'])) $html .= '<div class="it-desc">' . nl2br(e($r['desc'])) . '</div>';
+        if ($r['disc'])          $html .= '<div class="it-disc">' . e($r['disc']) . '</div>';
+        return $html . '</td>'
+            . '<td class="c-qty it-qty">' . e($r['qty']) . '</td>'
+            . '<td class="c-unit it-unit">' . e($eur($r['unit'])) . '</td>'
+            . '<td class="c-total it-total">' . e($eur($r['total'])) . '</td>';
+    };
+@endphp
+
+<table class="items sheet">
+    @foreach ($groups as [$label, $rows])
+        {{-- Band + first item: one unbreakable row. --}}
         <tr>
-            <td>{{ __('Description') }}</td>
-            <td class="c-qty">{{ __('Qty') }}</td>
-            <td class="c-unit">{{ $colUnit }}</td>
-            <td class="c-total">{{ $colTotal }}</td>
-        </tr>
-    </thead>
-    <tbody>
-        {{-- Base boat: list price in the unit column, net in the total, and the
-             boat discount as one line under the name. --}}
-        <tr class="cat"><td colspan="4">{{ __('Base boat') }}</td></tr>
-        <tr class="row">
-            <td>
-                <div class="it-name">{{ $baseLabel }}</div>
-                @if (($t['boat_discount_amount'] ?? 0) > 0)
-                    <div class="it-disc">{!! $icon($I['tag']) !!}{{ __('Discount') }}{{ $discSuffix('boat') }} <span class="save">· −{{ $eur($discShown('boat')) }}</span></div>
-                @endif
+            <td colspan="4" class="pack">
+                <table class="items">
+                    @if ($loop->first)
+                        <tr class="title"><td colspan="4">{{ __('Selected options & services') }}</td></tr>
+                        <tr class="cols">
+                            <td>{{ __('Description') }}</td>
+                            <td class="c-qty">{{ __('Qty') }}</td>
+                            <td class="c-unit">{{ $colUnit }}</td>
+                            <td class="c-total">{{ $colTotal }}</td>
+                        </tr>
+                    @endif
+                    <tr class="space"><td colspan="4"></td></tr>
+                    <tr class="cat"><td colspan="4"><div>{{ $label }}</div></td></tr>
+                    <tr class="row">{!! $cells($rows[0]) !!}</tr>
+                </table>
             </td>
-            <td class="it-qty">1</td>
-            <td class="it-unit">{{ $eur($withVat($t['base_price_gross'] ?? 0)) }}</td>
-            <td class="it-total">{{ $eur($withVat($t['base_ht'] ?? 0)) }}</td>
         </tr>
-
-        @foreach ($optionRows as $category => $items)
-            <tr class="cat"><td colspan="4">{{ $catLabel($category) }}</td></tr>
-            @foreach ($items as $opt)
-                @php
-                    $rate  = $opt['line_vat_rate'] ?? null;
-                    // Line + category discount, compounded the way the
-                    // calculator applies them.
-                    $effPct = (1 - (1 - (float) ($opt['item_discount_pct'] ?? 0) / 100)
-                                 * (1 - (float) ($opt['cat_discount_pct'] ?? 0) / 100)) * 100;
-                    $saved = $withVat((float) ($opt['line_gross'] ?? 0) - (float) ($opt['line_after_cat'] ?? 0), $rate);
-                @endphp
-                <tr class="row">
-                    <td class="{{ ($opt['source'] ?? null) === 'accessory' ? 'sub' : '' }}">
-                        <div class="it-name">{{ $opt['label'] ?? '' }}</div>
-                        @if (! empty($opt['description']))
-                            <div class="it-desc">{!! nl2br(e($opt['description'])) !!}</div>
-                        @endif
-                        @if ($effPct > 0.05)
-                            <div class="it-disc">{!! $icon($I['tag']) !!}{{ __('Discount') }} {{ $pct($effPct) }}@if ($saved > 0.005) <span class="save">· −{{ $eur($saved) }}</span>@endif</div>
-                        @endif
-                    </td>
-                    <td class="it-qty">{{ $opt['quantity'] ?? 1 }}</td>
-                    <td class="it-unit">{{ $eur($withVat($opt['unit_price'] ?? 0, $rate)) }}</td>
-                    <td class="it-total">{{ $eur($withVat($opt['line_after_cat'] ?? 0, $rate)) }}</td>
-                </tr>
-            @endforeach
+        @foreach (array_slice($rows, 1) as $r)
+            <tr class="row">{!! $cells($r) !!}</tr>
         @endforeach
-
-        @if (! empty($customRows))
-            <tr class="cat"><td colspan="4">{{ __('Services') }}</td></tr>
-            @foreach ($customRows as $ci)
-                @php
-                    $amount = (float) ($ci['amount'] ?? 0);
-                    $net    = (float) ($ci['line_after_cat'] ?? $amount);
-                    $ciPct  = $amount > 0 ? (1 - $net / $amount) * 100 : 0;
-                @endphp
-                <tr class="row">
-                    <td>
-                        <div class="it-name">{{ $ci['label'] ?? '' }}</div>
-                        @if ($ciPct > 0.05)
-                            <div class="it-disc">{!! $icon($I['tag']) !!}{{ __('Discount') }} {{ $pct($ciPct) }} <span class="save">· −{{ $eur($withVat($amount - $net)) }}</span></div>
-                        @endif
-                    </td>
-                    <td class="it-qty">1</td>
-                    <td class="it-unit">{{ $eur($withVat($amount)) }}</td>
-                    <td class="it-total">{{ $eur($withVat($net)) }}</td>
-                </tr>
-            @endforeach
-        @endif
-    </tbody>
+    @endforeach
 </table>
 
 {{-- ═══════════════ TERMS + TOTALS ═══════════════ --}}
-@php
-    $dBoat    = (float) ($t['boat_discount_amount'] ?? 0);
-    $dOptions = (float) ($t['options_discount_amount'] ?? 0);
-    $dEngines = (float) ($t['engines_discount_amount'] ?? 0);
-    $dGlobal  = (float) ($t['global_discount_amount'] ?? 0);
-    $dItems   = collect($t['options_rows'] ?? [])
-        ->sum(fn ($r) => (float) ($r['line_gross'] ?? 0) - (float) ($r['line_after_cat'] ?? 0));
-    $dCustom  = collect($t['custom_items_rows'] ?? [])
-        ->sum(fn ($r) => (float) ($r['amount'] ?? 0) - (float) ($r['line_after_cat'] ?? 0));
-    $dTotal   = $dBoat + $dItems + $dOptions + $dEngines + $dCustom + $dGlobal;
-
-    // The stored subtotal is already net of line discounts; start from the
-    // gross so gross − every discount = total HT, line by line.
-    $grossHt = (float) ($t['base_price_gross'] ?? 0)
-        + collect($t['options_rows'] ?? [])->sum(fn ($r) => (float) ($r['line_gross'] ?? 0))
-        + collect($t['custom_items_rows'] ?? [])->sum(fn ($r) => (float) ($r['amount'] ?? 0));
-
-    // One VAT line per rate when lines carry different rates.
-    $vatBands = collect($t['vat_breakdown'] ?? [])->filter(fn ($taxable) => $taxable > 0.005);
-
-    $terms = [
-        ['card',  __('Payment'),  $quote->terms['payment']  ?? null],
-        ['truck', __('Delivery'), $quote->terms['delivery'] ?? null],
-        ['shield',__('Warranty'), $quote->terms['warranty'] ?? null],
-        ['note',  __('Notes'),    $quote->terms['notes']    ?? null],
-    ];
-@endphp
 <table class="bottom">
     <tr>
         <td class="left">
-            <div class="label">{!! $icon($I['file']) !!}{{ __('Terms & conditions') }}</div>
+            <div class="h3">{{ __('Terms & conditions') }}</div>
             <table class="terms">
-                @foreach ($terms as [$ic, $k, $v])
-                    <tr>
-                        <td class="i">{!! $icon($I[$ic]) !!}</td>
+                @foreach ($terms as [$k, $v])
+                    <tr class="{{ $loop->last ? 'last' : '' }}">
                         <td class="k">{{ $k }}</td>
                         <td class="v {{ $v ? '' : 'empty' }}">{{ $v ?: '—' }}</td>
                     </tr>
@@ -329,7 +340,7 @@
 
             @if (! empty($quote->trade_in) && (($quote->trade_in['value'] ?? 0) > 0))
                 <div class="tradein">
-                    <div class="t">{!! $icon($I['exchange']) !!}{{ __('Trade-in included') }}</div>
+                    <div class="t">{{ __('Trade-in included') }}</div>
                     @if (! empty($quote->trade_in['description'])) {{ $quote->trade_in['description'] }}<br> @endif
                     {{ __('Trade-in value') }} : <strong>{{ $eur($quote->trade_in['value']) }}</strong>
                 </div>
@@ -337,42 +348,40 @@
         </td>
 
         <td class="right">
+            <div class="h3">{{ __('Summary') }}</div>
             {{-- Discounts first, from the gross down. Without any, the subtotal
                  would only repeat the total HT, so the block is left out. --}}
             @if ($dTotal > 0.005)
-            <table class="totals">
-                <tr>
-                    <td class="k">{{ __('Subtotal before discounts (excl. VAT)') }}</td>
-                    <td class="v">{{ $eur($grossHt) }}</td>
-                </tr>
-                @if ($dBoat > 0)
-                    <tr class="disc"><td class="k">{{ __('Boat discount') }}{{ $discSuffix('boat') }}</td><td class="v">−{{ $eur($dBoat) }}</td></tr>
-                @endif
-                @if ($dItems + $dCustom > 0.005)
-                    <tr class="disc"><td class="k">{{ __('Line discounts') }}</td><td class="v">−{{ $eur($dItems + $dCustom) }}</td></tr>
-                @endif
-                @if ($dOptions > 0)
-                    <tr class="disc"><td class="k">{{ __('Options discount') }}{{ $discSuffix('options') }}</td><td class="v">−{{ $eur($dOptions) }}</td></tr>
-                @endif
-                @if ($dEngines > 0)
-                    <tr class="disc"><td class="k">{{ __('Engines discount') }}{{ $discSuffix('engines') }}</td><td class="v">−{{ $eur($dEngines) }}</td></tr>
-                @endif
-                @if ($dGlobal > 0)
-                    <tr class="disc"><td class="k">{{ __('Global discount') }}{{ $discSuffix('global') }}</td><td class="v">−{{ $eur($dGlobal) }}</td></tr>
-                @endif
-            </table>
-            <div class="savings">
-                <table><tr><td>{!! $icon($I['tag']) !!} {{ __('Total savings') }}</td><td class="v">−{{ $eur($dTotal) }}</td></tr></table>
-            </div>
+                <table class="totals">
+                    <tr><td class="k">{{ __('Subtotal before discounts (excl. VAT)') }}</td><td class="v">{{ $eur($grossHt) }}</td></tr>
+                    @if ($dBoat > 0)
+                        <tr class="disc"><td class="k">{{ __('Boat discount') }}{{ $discSuffix('boat') }}</td><td class="v">−{{ $eur($dBoat) }}</td></tr>
+                    @endif
+                    @if ($dItems + $dCustom > 0.005)
+                        <tr class="disc"><td class="k">{{ __('Line discounts') }}</td><td class="v">−{{ $eur($dItems + $dCustom) }}</td></tr>
+                    @endif
+                    @if ($dOptions > 0)
+                        <tr class="disc"><td class="k">{{ __('Options discount') }}{{ $discSuffix('options') }}</td><td class="v">−{{ $eur($dOptions) }}</td></tr>
+                    @endif
+                    @if ($dEngines > 0)
+                        <tr class="disc"><td class="k">{{ __('Engines discount') }}{{ $discSuffix('engines') }}</td><td class="v">−{{ $eur($dEngines) }}</td></tr>
+                    @endif
+                    @if ($dGlobal > 0)
+                        <tr class="disc"><td class="k">{{ __('Global discount') }}{{ $discSuffix('global') }}</td><td class="v">−{{ $eur($dGlobal) }}</td></tr>
+                    @endif
+                </table>
+                <div class="savings">
+                    <table><tr><td>{{ __('Total savings') }}</td><td class="v">−{{ $eur($dTotal) }}</td></tr></table>
+                </div>
             @endif
             <table class="totals">
                 <tr><td class="k">{{ __('Total excl. VAT') }}</td><td class="v">{{ $eur($t['total_ht'] ?? 0) }}</td></tr>
                 @if ($vatBands->count() > 1)
                     @foreach ($vatBands as $rate => $taxable)
-                        <tr><td class="k">{{ __('VAT') }} {{ $pct($rate) }}</td><td class="v">+{{ $eur($taxable * (float) $rate / 100) }}</td></tr>
+                        <tr><td class="k">{{ __('VAT') }} {{ $pct($rate) }}</td><td class="v">{{ $eur($taxable * (float) $rate / 100) }}</td></tr>
                     @endforeach
                 @else
-                    <tr><td class="k">{{ __('VAT') }} {{ $pct($t['vat_rate'] ?? 20) }}</td><td class="v">+{{ $eur($t['vat_amount'] ?? 0) }}</td></tr>
+                    <tr><td class="k">{{ __('VAT') }} {{ $pct($t['vat_rate'] ?? 20) }}</td><td class="v">{{ $eur($t['vat_amount'] ?? 0) }}</td></tr>
                 @endif
                 <tr class="strong"><td class="k">{{ __('Total incl. VAT') }}</td><td class="v">{{ $eur($t['total_ttc'] ?? 0) }}</td></tr>
                 @if (($t['trade_in_deduction'] ?? 0) > 0)
@@ -395,18 +404,18 @@
 <table class="sign">
     <tr>
         <td class="col">
-            <div class="label">{!! $icon($I['pen']) !!}{{ __('Client acceptance — signature') }}</div>
             <div class="sign-box">
+                <div class="sign-t">{{ __('Client acceptance — signature') }}</div>
+                <div class="sign-s">{{ __('By signing, the client accepts all terms and conditions of this quotation.') }}</div>
                 <div class="sign-line">{{ $clientFn ?: __('Client name') }} &nbsp;·&nbsp; {{ __('Date') }} : ___ / ___ / ______</div>
             </div>
-            <div class="sign-meta">{{ __('By signing, the client accepts all terms and conditions of this quotation.') }}</div>
         </td>
         <td class="col">
-            <div class="label">{!! $icon($I['pen']) !!}{{ __('Salesperson signature') }}</div>
             <div class="sign-box">
+                <div class="sign-t">{{ __('Salesperson signature') }}</div>
+                <div class="sign-s">{{ $company->name }}</div>
                 <div class="sign-line">{{ $spName ?: $company->name }} &nbsp;·&nbsp; {{ __('Date') }} : ___ / ___ / ______</div>
             </div>
-            <div class="sign-meta">{{ $company->name }}</div>
         </td>
     </tr>
 </table>
