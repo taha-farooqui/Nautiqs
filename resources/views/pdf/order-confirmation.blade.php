@@ -21,6 +21,7 @@
     $catLabel = function ($category) {
         $c = trim((string) $category);
         if (strcasecmp($c, 'Engine') === 0) return __('Engines');
+        if (strcasecmp($c, 'Accessory') === 0) return __('Accessories');
         if (strcasecmp($c, 'Option') === 0) return __('Options');
         return $c;
     };

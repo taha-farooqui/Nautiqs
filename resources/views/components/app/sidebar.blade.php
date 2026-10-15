@@ -34,9 +34,11 @@
                     'activeAny' => ['engines.*', 'engine-accessories.*'],
                     'children'  => [
                         ['label' => 'Engines',     'icon' => 'ri-settings-3-line', 'route' => 'engines.index',            'active' => 'engines.*'],
-                        ['label' => 'Accessories', 'icon' => 'ri-tools-line',      'route' => 'engine-accessories.index', 'active' => 'engine-accessories.*'],
+                        ['label' => 'Kits & propellers', 'icon' => 'ri-tools-line', 'route' => 'engine-accessories.index', 'active' => 'engine-accessories.*'],
                     ],
                 ],
+                // Third-party add-ons (GPS, audio, fishing gear) sold on any quote.
+                ['label' => 'Accessories',       'icon' => 'ri-shopping-bag-3-line',     'route' => 'accessories.index', 'active' => 'accessories.*'],
             ],
         ],
         [

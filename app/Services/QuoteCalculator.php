@@ -160,8 +160,13 @@ class QuoteCalculator
         // A kit or propeller added under an engine belongs to the engine block:
         // the engine discount covers it and the engine margin preset prices it.
         $isEngine   = fn (array $r) => in_array($r['source'] ?? null, ['engine', 'accessory'], true);
-        $optionOnly = array_filter($optionsRows, fn ($r) => ! $isEngine($r));
+        // Accessories from the dealer's accessories catalogue (GPS, audio…)
+        // are a block of their own: neither block discount reaches them, only
+        // their line discount and the quote-wide one.
+        $isExtra    = fn (array $r) => ($r['source'] ?? null) === 'extra';
+        $optionOnly = array_filter($optionsRows, fn ($r) => ! $isEngine($r) && ! $isExtra($r));
         $engineOnly = array_filter($optionsRows, $isEngine);
+        $extraOnly  = array_filter($optionsRows, $isExtra);
 
         $optionsBeforeBlock = array_sum(array_column($optionOnly, 'line_after_cat'));
         $enginesBeforeBlock = array_sum(array_column($engineOnly, 'line_after_cat'));
@@ -175,10 +180,11 @@ class QuoteCalculator
         // options figure — only the discounting is split.
         $optionsSubtotal         = ($optionsBeforeBlock - $optionsBlockDiscount)
                                  + ($enginesBeforeBlock - $enginesBlockDiscount);
+        $extrasSubtotal          = array_sum(array_column($extraOnly, 'line_after_cat'));
         $customSubtotal          = array_sum(array_column($customRows,  'line_after_cat'));
         $baseSubtotal            = $hullLine;
 
-        $subtotalBeforeGlobal = $baseSubtotal + $optionsSubtotal + $customSubtotal;
+        $subtotalBeforeGlobal = $baseSubtotal + $optionsSubtotal + $extrasSubtotal + $customSubtotal;
         // Likewise: the global discount's base is everything above it.
         $globalDiscountPct    = $asPct('global', $subtotalBeforeGlobal);
         $globalDiscountAmount = $subtotalBeforeGlobal * ($globalDiscountPct / 100);
@@ -194,6 +200,8 @@ class QuoteCalculator
         $enginesBlockScale = $enginesBeforeBlock > 0
             ? ($enginesBeforeBlock - $enginesBlockDiscount) / $enginesBeforeBlock : 1.0;
         $globalScale       = $subtotalBeforeGlobal > 0 ? $totalHt / $subtotalBeforeGlobal : 1.0;
+        $blockScaleOf      = fn (array $r): float => $isExtra($r) ? 1.0
+            : ($isEngine($r) ? $enginesBlockScale : $optionsBlockScale);
         $vatAmount         = 0.0;
         $vatBreakdown      = [];   // [rate => taxable_amount]
         $addVat = function (float $ht, float $rate) use (&$vatAmount, &$vatBreakdown) {
@@ -203,8 +211,7 @@ class QuoteCalculator
         };
         $addVat($baseSubtotal * $globalScale, $vatRate);
         foreach ($optionsRows as $r) {
-            $blockScale = $isEngine($r) ? $enginesBlockScale : $optionsBlockScale;
-            $addVat($r['line_after_cat'] * $blockScale * $globalScale, $r['line_vat_rate']);
+            $addVat($r['line_after_cat'] * $blockScaleOf($r) * $globalScale, $r['line_vat_rate']);
         }
         foreach ($customRows as $r) {
             $addVat($r['line_after_cat'] * $globalScale, $vatRate);
@@ -257,7 +264,7 @@ class QuoteCalculator
                 $realCost += (float) $r['line_cost'];
                 $anyReal   = true;
             } else {
-                $scale   = ($isEngine($r) ? $enginesBlockScale : $optionsBlockScale) * $globalScale;
+                $scale   = $blockScaleOf($r) * $globalScale;
                 $estCost += $impliedCost($r['line_after_cat'] * $scale, $isEngine($r) ? 'engine' : 'options');
                 $anyEst   = true;
             }
@@ -300,6 +307,7 @@ class QuoteCalculator
             'engines_discount_pct'    => $enginesDiscountPct,
             'engines_discount_amount' => round($enginesBlockDiscount, 2),
 
+            'accessories_ht'          => round($extrasSubtotal, 2),
             'custom_items_ht'         => round($customSubtotal, 2),
             'subtotal_ht'             => round($subtotalBeforeGlobal, 2),
 

@@ -73,7 +73,7 @@ class EngineAccessoryController extends Controller
         $this->syncEngines((string) $accessory->_id, $data['engine_ids'] ?? []);
 
         return redirect()->route('engine-accessories.index', ['type' => $accessory->type])
-            ->with('status', __('Accessory added.'));
+            ->with('status', __('Kit or propeller added.'));
     }
 
     public function edit(string $id)
@@ -97,7 +97,7 @@ class EngineAccessoryController extends Controller
         $this->syncEngines((string) $accessory->_id, $data['engine_ids'] ?? []);
 
         return redirect()->route('engine-accessories.index', ['type' => $accessory->type])
-            ->with('status', __('Accessory updated.'));
+            ->with('status', __('Kit or propeller updated.'));
     }
 
     public function destroy(string $id)
@@ -109,7 +109,7 @@ class EngineAccessoryController extends Controller
         $this->syncEngines((string) $accessory->_id, []);
         $accessory->delete();
 
-        return back()->with('status', __('Accessory removed.'));
+        return back()->with('status', __('Kit or propeller removed.'));
     }
 
     /* ------------------------------------------------------------ helpers */

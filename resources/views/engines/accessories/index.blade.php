@@ -1,4 +1,4 @@
-<x-app-layout :title="__('Accessories')" :header="__('Accessories')">
+<x-app-layout :title="__('Kits & propellers')" :header="__('Kits & propellers')">
     @if (session('status'))
         <div class="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-800 px-4 py-3 text-sm">{{ session('status') }}</div>
     @endif
@@ -31,7 +31,7 @@
             </form>
             <a href="{{ route('engine-accessories.create', array_filter(['type' => $type])) }}"
                 class="inline-flex items-center justify-center gap-1 px-3 py-2 text-sm font-semibold bg-primary-800 hover:bg-primary-900 text-white rounded-lg whitespace-nowrap">
-                <i class="ri-add-line"></i> {{ __('Add accessory') }}
+                <i class="ri-add-line"></i> {{ __('Add kit or propeller') }}
             </a>
         </div>
     </div>
@@ -40,7 +40,7 @@
         <div class="bg-white rounded-2xl border border-gray-200 px-6 py-12 text-center">
             <i class="ri-tools-line text-4xl text-gray-300"></i>
             <p class="text-sm font-medium text-gray-900 mt-3">
-                {{ $q !== '' ? __('No accessory matches.') : __('No accessories yet') }}
+                {{ $q !== '' ? __('No kit or propeller matches.') : __('No kits or propellers yet') }}
             </p>
             @if ($q === '')
                 <p class="text-sm text-gray-500 mt-1 max-w-md mx-auto">
@@ -49,7 +49,7 @@
                 <div class="mt-4 flex flex-wrap justify-center gap-2">
                     <a href="{{ route('engine-accessories.create') }}"
                         class="inline-flex items-center gap-1 px-3 py-2 text-sm font-semibold bg-primary-800 hover:bg-primary-900 text-white rounded-lg">
-                        <i class="ri-add-line"></i> {{ __('Add accessory') }}
+                        <i class="ri-add-line"></i> {{ __('Add kit or propeller') }}
                     </a>
                     <a href="{{ route('engines.index') }}"
                         class="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium border border-gray-300 hover:bg-gray-50 text-gray-800 rounded-lg">
@@ -64,7 +64,7 @@
                 <table class="w-full min-w-[760px] text-sm">
                     <thead class="bg-gray-50 text-left text-xs uppercase text-gray-500 tracking-wide">
                         <tr>
-                            <th class="px-5 py-3 font-semibold">{{ __('Accessory') }}</th>
+                            <th class="px-5 py-3 font-semibold">{{ __('Kit / propeller') }}</th>
                             <th class="px-5 py-3 font-semibold text-right">{{ __('Engines') }}</th>
                             <th class="px-5 py-3 font-semibold text-right">{{ __('Cost') }}</th>
                             <th class="px-5 py-3 font-semibold text-right">{{ __('Public HT') }}</th>
@@ -114,7 +114,7 @@
                                             <i class="ri-pencil-line"></i>
                                         </a>
                                         <form method="POST" action="{{ route('engine-accessories.destroy', $a->_id) }}"
-                                            data-confirm="{{ __('Delete this accessory? It is unlinked from its engines; quotes already written keep it.') }}"
+                                            data-confirm="{{ __('Delete this kit or propeller? It is unlinked from its engines; quotes already written keep it.') }}"
                                             data-confirm-danger="1" class="inline">
                                             @csrf @method('DELETE')
                                             <button class="inline-flex items-center justify-center w-8 h-8 text-red-600 hover:bg-red-50 rounded-lg" title="{{ __('Delete') }}">

@@ -9,6 +9,7 @@ use App\Models\CompanyBrand;
 use App\Models\CompanyOption;
 use App\Models\Engine;
 use App\Models\EngineAccessory;
+use App\Models\Accessory;
 use App\Models\Quote;
 use App\Models\QuoteCounter;
 use App\Services\QuoteCalculator;
@@ -64,6 +65,12 @@ class QuoteBuilder extends Component
     // => qty. Keyed by both, so one propeller under two engines is two lines.
     public array $selectedAccessories = [];
     public array $accessoryDiscounts = [];
+
+    // Accessories from the dealer's accessories catalogue (GPS, audio, fishing
+    // gear), tied to no boat or engine: accessory id => qty. Called "extras"
+    // in the code because "accessory" already means the engine kits above.
+    public array $selectedExtras = [];
+    public array $extraDiscounts = [];
 
     // §8.1 Step 5 — Custom line items
     public array $custom_items = [];
@@ -161,8 +168,18 @@ class QuoteBuilder extends Component
         $this->engineDiscounts = [];
         $this->selectedAccessories = [];
         $this->accessoryDiscounts = [];
+        $this->selectedExtras = [];
+        $this->extraDiscounts = [];
         foreach (($quote->options ?? []) as $row) {
             if (empty($row['option_id'])) continue;
+            if (($row['source'] ?? null) === 'extra') {
+                if (str_starts_with($row['option_id'], 'extra:')) {
+                    $id = substr($row['option_id'], 6);
+                    $this->selectedExtras[$id] = $row['quantity'] ?? 1;
+                    $this->extraDiscounts[$id] = $row['item_discount_pct'] ?? $row['discount_pct'] ?? 0;
+                }
+                continue;
+            }
             // An accessory goes back under the engine it was added to. Checked
             // first: falling through would re-load it as an equipment option.
             if (($row['source'] ?? null) === 'accessory') {
@@ -588,6 +605,72 @@ class QuoteBuilder extends Component
         }
     }
 
+    /** The dealer's whole accessories catalogue, for the picker. */
+    #[Computed]
+    public function accessoryCatalogue()
+    {
+        return Accessory::orderBy('label')->get();
+    }
+
+    public function toggleExtra(string $accessoryId): void
+    {
+        if (isset($this->selectedExtras[$accessoryId])) {
+            unset($this->selectedExtras[$accessoryId], $this->extraDiscounts[$accessoryId]);
+        } elseif (Accessory::find($accessoryId)) {
+            $this->selectedExtras[$accessoryId] = 1;
+        }
+    }
+
+    public function setExtraQty(string $accessoryId, $qty): void
+    {
+        if (isset($this->selectedExtras[$accessoryId])) {
+            $this->selectedExtras[$accessoryId] = max(1, min((int) $qty, 99));
+        }
+    }
+
+    public function setExtraDiscount(string $accessoryId, $pct): void
+    {
+        if (! isset($this->selectedExtras[$accessoryId])) {
+            return;
+        }
+        $pct = ($pct === '' || $pct === null) ? 0 : (float) $pct;
+        $this->extraDiscounts[$accessoryId] = max(0, min($pct, 100));
+    }
+
+    /**
+     * The accessories on the quote, in the order they were added. One that
+     * was deleted from the catalogue since drops out, like a deleted option.
+     */
+    #[Computed]
+    public function selectedExtraRows()
+    {
+        if (empty($this->selectedExtras)) {
+            return collect();
+        }
+        $byId = Accessory::whereIn('_id', array_keys($this->selectedExtras))->get()
+            ->keyBy(fn ($a) => (string) $a->_id);
+
+        return collect($this->selectedExtras)
+            ->map(function ($qty, $id) use ($byId) {
+                $a = $byId[$id] ?? null;
+                if (! $a) return null;
+                $discount = (float) ($this->extraDiscounts[$id] ?? 0);
+
+                return (object) [
+                    'id'       => $id,
+                    'model'    => $a,
+                    'label'    => $a->label,
+                    'price'    => (float) $a->price,
+                    'currency' => $a->currency ?: 'EUR',
+                    'quantity' => (int) $qty,
+                    'discount' => $discount,
+                    'line'     => (float) $a->price * (int) $qty * (1 - $discount / 100),
+                ];
+            })
+            ->filter()
+            ->values();
+    }
+
     /**
      * The chosen engines, resolved straight from the library so a selection
      * survives a variant change that filters it out of the HP-matched list.
@@ -792,6 +875,24 @@ class QuoteBuilder extends Component
                     'source'       => 'accessory',
                 ];
             }
+        }
+
+        // Accessories, after the engines: their own block on the PDF.
+        foreach ($this->selectedExtraRows as $row) {
+            $a = $row->model;
+            $optionsPayload[] = [
+                'option_id'    => 'extra:' . $row->id,
+                'category'     => 'Accessory',
+                'label'        => $a->label,
+                'unit_price'   => (float) $a->price,
+                // No purchase price typed → estimated from the options preset.
+                'unit_cost'    => $a->cost !== null ? (float) $a->cost : null,
+                'currency'     => $row->currency,
+                'vat_rate'     => $a->vat_rate,
+                'quantity'     => $row->quantity,
+                'discount_pct' => $row->discount,
+                'source'       => 'extra',
+            ];
         }
 
         // FX: if the variant or any option uses a non-EUR currency and the

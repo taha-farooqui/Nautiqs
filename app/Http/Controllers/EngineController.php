@@ -299,7 +299,7 @@ class EngineController extends Controller
             ]
         );
         if ($result['accessories_created'] || $result['accessories_updated'] || $result['links_added']) {
-            $msg .= ' ' . __('Accessories: :created created, :updated updated, :links linked to engines.', [
+            $msg .= ' ' . __('Kits & propellers: :created created, :updated updated, :links linked to engines.', [
                 'created' => $result['accessories_created'],
                 'updated' => $result['accessories_updated'],
                 'links'   => $result['links_added'],

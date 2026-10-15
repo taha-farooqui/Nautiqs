@@ -244,12 +244,25 @@ Route::middleware(['auth', 'verified', 'maintenance'])->group(function () {
     // Declared before the resource so DELETE /engines/bulk isn't captured by
     // the {engine} destroy binding.
     Route::delete('/engines/bulk', [EngineController::class, 'bulkDestroy'])->name('engines.bulk-destroy');
-    Route::resource('engines', EngineController::class)->except(['show']);
 
     // Kits and propellers sold with an engine, linked to the engines they fit.
-    Route::resource('accessories', \App\Http\Controllers\EngineAccessoryController::class)
+    // Under /engines, before the engines resource, so /accessories is free for
+    // the standalone accessories below.
+    Route::prefix('engines')->group(function () {
+        Route::resource('kits', \App\Http\Controllers\EngineAccessoryController::class)
+            ->except(['show'])
+            ->names('engine-accessories')
+            ->parameters(['kits' => 'id']);
+    });
+    Route::resource('engines', EngineController::class)->except(['show']);
+
+    // Accessories — third-party add-ons (GPS, audio, fishing gear) added to
+    // any quote, tied to no boat or engine. Import/export before the resource.
+    Route::get('/accessories/template', [\App\Http\Controllers\AccessoryController::class, 'template'])->name('accessories.template');
+    Route::get('/accessories/export',   [\App\Http\Controllers\AccessoryController::class, 'export'])->name('accessories.export');
+    Route::post('/accessories/import',  [\App\Http\Controllers\AccessoryController::class, 'import'])->name('accessories.import');
+    Route::resource('accessories', \App\Http\Controllers\AccessoryController::class)
         ->except(['show'])
-        ->names('engine-accessories')
         ->parameters(['accessories' => 'id']);
 
     // Inline brand picker for the catalogue form — used by the autocomplete

@@ -105,7 +105,7 @@
                                 <li><span class="font-mono">HELICE</span>, <span class="font-mono">HELICE PA HT</span>, <span class="font-mono">HELICE PV HT</span> — {{ __('optional') }}</li>
                                 <li><span class="font-mono">CV</span>, <span class="font-mono">TVA</span>, <span class="font-mono">DESCRIPTION</span> — {{ __('optional') }}</li>
                             </ul>
-                            <p class="text-gray-500 mt-2">{{ __('Each kit and propeller is created once in Accessories and linked to its engines. "Inclus / non applicable" at 0 € creates nothing.') }}</p>
+                            <p class="text-gray-500 mt-2">{{ __('Each kit and propeller is created once in Kits & propellers and linked to its engines. "Inclus / non applicable" at 0 € creates nothing.') }}</p>
                             <p class="text-gray-500 mt-2">{{ __('Leave the Description column out entirely to keep the descriptions already saved.') }}</p>
                             <p class="text-gray-500 mt-2">{{ __('Rows matching an existing Brand + Model will be updated; the rest will be created.') }}</p>
                         </div>
@@ -173,7 +173,7 @@
                                 <th class="px-5 py-3 font-semibold text-right">{{ __('Public HT') }}</th>
                                 <th class="px-5 py-3 font-semibold text-right">{{ __('VAT') }}</th>
                                 <th class="px-5 py-3 font-semibold text-right">{{ __('TTC') }}</th>
-                                <th class="px-5 py-3 font-semibold text-right">{{ __('Accessories') }}</th>
+                                <th class="px-5 py-3 font-semibold text-right">{{ __('Kits & propellers') }}</th>
                                 <th class="px-5 py-3 font-semibold"></th>
                             </tr>
                         </thead>

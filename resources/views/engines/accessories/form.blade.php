@@ -1,11 +1,11 @@
-<x-app-layout :title="$accessory ? __('Edit accessory') : __('Add accessory')" :header="$accessory ? __('Edit accessory') : __('Add accessory')">
+<x-app-layout :title="$accessory ? __('Edit kit or propeller') : __('Add kit or propeller')" :header="$accessory ? __('Edit kit or propeller') : __('Add kit or propeller')">
     @if ($errors->any())
         <div class="mb-4 rounded-lg border border-red-200 bg-red-50 text-red-700 px-4 py-3 text-sm">{{ $errors->first() }}</div>
     @endif
 
     <div class="mb-4 flex items-center gap-2 text-sm text-gray-500">
         <a href="{{ route('engine-accessories.index') }}" class="hover:text-primary-800">
-            <i class="ri-arrow-left-line"></i> {{ __('Back to accessories') }}
+            <i class="ri-arrow-left-line"></i> {{ __('Back to kits & propellers') }}
         </a>
     </div>
 
@@ -156,7 +156,7 @@
         <div class="flex items-center justify-end gap-2">
             <a href="{{ route('engine-accessories.index') }}" class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">{{ __('Cancel') }}</a>
             <button class="inline-flex items-center gap-1 px-4 py-2 text-sm font-semibold bg-primary-800 hover:bg-primary-900 text-white rounded-lg">
-                <i class="ri-save-line"></i> {{ $accessory ? __('Save changes') : __('Add accessory') }}
+                <i class="ri-save-line"></i> {{ $accessory ? __('Save changes') : __('Add kit or propeller') }}
             </button>
         </div>
     </form>

@@ -570,6 +570,124 @@
             @endif
         </div>
 
+        {{-- Step 5c: Accessories — third-party add-ons (GPS, audio, fishing
+             gear) from the dealer's accessories catalogue, tied to no boat or
+             engine. Their own block on the quote and the PDF. --}}
+        <div class="rounded-2xl border border-gray-200 p-5 {{ $hasVariant ? $cardEnabled : $cardDisabled }}">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="font-semibold text-gray-900 flex items-center gap-2">
+                    <span class="w-6 h-6 rounded-full {{ $hasVariant ? $stepActive : $stepInactive }} text-xs font-bold flex items-center justify-center">
+                        <i class="ri-shopping-bag-3-line text-xs"></i>
+                    </span>
+                    {{ __('Accessories') }}
+                    @php $extraUnits = collect($selectedExtras)->sum(); @endphp
+                    @if ($extraUnits > 0)
+                        <span class="text-xs text-gray-400 font-normal ml-1">{{ $extraUnits }} {{ __('selected') }}</span>
+                    @endif
+                </h3>
+                <a href="{{ route('accessories.index') }}" target="_blank" class="text-xs text-primary-800 hover:underline">
+                    <i class="ri-external-link-line"></i> {{ __('Manage accessories') }}
+                </a>
+            </div>
+
+            @if ($this->selectedExtraRows->isNotEmpty())
+                <div class="mb-3 space-y-2">
+                    @foreach ($this->selectedExtraRows as $row)
+                        @php $sym = $row->currency === 'USD' ? '$' : '€'; @endphp
+                        <div class="flex flex-wrap items-start gap-3 px-3 py-2 rounded-lg border border-primary-200 bg-primary-50/40" wire:key="extra-{{ $row->id }}">
+                            <i class="ri-shopping-bag-3-line text-primary-800 shrink-0 mt-1"></i>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-medium text-gray-900 break-words">{{ $row->label }}</p>
+                                <p class="text-xs text-gray-500">{{ number_format($row->price, 2, ',', ' ') }} {{ $sym }} {{ __('each') }}</p>
+                            </div>
+                            <div class="flex w-full sm:w-auto flex-wrap items-center justify-end gap-x-3 gap-y-2">
+                                <div class="flex items-center gap-1.5 shrink-0">
+                                    <label class="text-xs text-gray-500">{{ __('Qty') }}</label>
+                                    <input type="number" min="1" max="99" value="{{ $row->quantity }}"
+                                        wire:change="setExtraQty('{{ $row->id }}', $event.target.value)"
+                                        class="w-16 text-center rounded border-gray-300 text-sm py-1 focus:border-primary-800 focus:ring-primary-800" />
+                                </div>
+                                <div class="flex items-center gap-1 shrink-0">
+                                    <input type="number" min="0" max="100" step="0.5" placeholder="0"
+                                        value="{{ $row->discount ?: '' }}"
+                                        wire:change="setExtraDiscount('{{ $row->id }}', $event.target.value)"
+                                        title="{{ __('Discount %') }}"
+                                        class="w-16 text-right rounded border-gray-300 text-sm py-1 focus:border-primary-800 focus:ring-primary-800" />
+                                    <span class="text-xs text-gray-400">%</span>
+                                </div>
+                                <div class="w-24 sm:w-28 text-right shrink-0">
+                                    <span class="text-sm font-semibold {{ $row->discount > 0 ? 'text-orange-600' : 'text-gray-900' }}">{{ number_format($row->line, 0, ',', ' ') }} {{ $sym }}</span>
+                                    @if ($row->discount > 0)
+                                        <div class="text-[10px] text-gray-400 line-through">{{ number_format($row->price * $row->quantity, 0, ',', ' ') }} {{ $sym }}</div>
+                                    @endif
+                                </div>
+                                <button type="button" wire:click="toggleExtra('{{ $row->id }}')"
+                                    class="text-gray-400 hover:text-red-600 shrink-0" title="{{ __('Remove') }}">
+                                    <i class="ri-close-line"></i>
+                                </button>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
+
+            @if ($this->accessoryCatalogue->isEmpty())
+                <p class="text-sm text-gray-500">
+                    {{ __('No accessories in your catalogue yet.') }}
+                    <a href="{{ route('accessories.create') }}" target="_blank" class="text-primary-800 hover:underline">{{ __('Add an accessory') }}</a>.
+                </p>
+            @else
+                @php
+                    $extraList = $this->accessoryCatalogue->map(fn ($a) => [
+                        'id'    => (string) $a->_id,
+                        'label' => (string) $a->label,
+                        'price' => (float) $a->price,
+                        'sym'   => ($a->currency ?: 'EUR') === 'USD' ? '$' : '€',
+                    ])->values()->all();
+                @endphp
+                <div x-data="engineDropdown(@js($extraList), @js(array_keys($selectedExtras)), 'selectedExtras', 'toggleExtra')" class="relative">
+                    <button type="button" @click="open = !open"
+                        class="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg border border-gray-200 bg-white hover:border-gray-300 text-left">
+                        <span class="flex items-center gap-2 min-w-0">
+                            <i class="ri-add-line text-gray-400"></i>
+                            <span class="text-sm text-gray-500">{{ __('Add an accessory…') }}</span>
+                        </span>
+                        <i class="ri-arrow-down-s-line text-gray-400" :class="open ? 'rotate-180' : ''"></i>
+                    </button>
+
+                    <div x-show="open" x-cloak @click.outside="open = false"
+                        class="absolute z-30 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
+                        <div class="p-2 border-b border-gray-100">
+                            <input type="search" x-model="query" placeholder="{{ __('Search by name…') }}"
+                                @keydown.escape="open = false"
+                                class="w-full px-3 py-1.5 text-sm rounded-md border-gray-200 focus:border-primary-800 focus:ring-primary-800" />
+                        </div>
+                        {{-- wire:ignore'd like the engine list: Alpine owns it. --}}
+                        <ul class="max-h-72 overflow-y-auto py-1" wire:ignore>
+                            <template x-for="row in filtered" :key="row.id">
+                                <li>
+                                    <button type="button" @click="toggle(row)"
+                                        :class="isSelected(row.id) ? 'bg-primary-50/40' : 'hover:bg-gray-50'"
+                                        class="w-full text-left px-3 py-2 flex items-center justify-between gap-3">
+                                        <span class="flex items-center gap-2 min-w-0">
+                                            <i class="text-base shrink-0"
+                                                :class="isSelected(row.id) ? 'ri-checkbox-line text-primary-800' : 'ri-checkbox-blank-line text-gray-300'"></i>
+                                            <span class="text-sm font-medium text-gray-900 truncate" x-text="row.label"></span>
+                                        </span>
+                                        <span class="text-sm font-semibold text-gray-900 shrink-0"
+                                            x-text="row.price.toLocaleString('fr-FR') + ' ' + row.sym"></span>
+                                    </button>
+                                </li>
+                            </template>
+                            <template x-if="filtered.length === 0">
+                                <li class="px-3 py-4 text-center text-sm text-gray-500 italic">{{ __('No accessory matches.') }}</li>
+                            </template>
+                        </ul>
+                    </div>
+                </div>
+            @endif
+        </div>
+
         {{-- Step 6: Custom items --}}
         <div class="rounded-2xl border border-gray-200 p-5 {{ $hasVariant ? $cardEnabled : $cardDisabled }}">
             <div class="flex items-center justify-between mb-3">
@@ -1005,8 +1123,10 @@
                         // Kits and propellers ride in the engine block's amount;
                         // only the engines themselves are counted.
                         $inEngineBlock = fn ($r) => in_array($r['source'] ?? null, ['engine', 'accessory'], true);
+                        $isExtra    = fn ($r) => ($r['source'] ?? null) === 'extra';
                         $engineRows = collect($t['options_rows'])->filter($inEngineBlock);
-                        $optionOnly = collect($t['options_rows'])->reject($inEngineBlock);
+                        $extraRows  = collect($t['options_rows'])->filter($isExtra);
+                        $optionOnly = collect($t['options_rows'])->reject($inEngineBlock)->reject($isExtra);
                         $customRows = collect($t['custom_items_rows'] ?? []);
                         $engineQty  = (int) $engineRows->where('source', 'engine')->sum('quantity');
 
@@ -1017,11 +1137,13 @@
                         $optDisc    = $optGross - $dRows($optionOnly, 'line_after_cat');
                         $engGross   = $dRows($engineRows, 'line_gross');
                         $engDisc    = $engGross - $dRows($engineRows, 'line_after_cat');
+                        $extGross   = $dRows($extraRows, 'line_gross');
+                        $extDisc    = $extGross - $dRows($extraRows, 'line_after_cat');
                         $custGross  = $d($customRows->sum('amount'));
                         $custDisc   = $custGross - $d($customRows->sum('line_after_cat'));
 
                         $totalDiscount = $discShown('boat')
-                            + $optDisc + $engDisc + $custDisc
+                            + $optDisc + $engDisc + $extDisc + $custDisc
                             + $discShown('options')
                             + $discShown('engines')
                             + $discShown('global');
@@ -1043,6 +1165,13 @@
                     @endif
                     @if (($t['engines_discount_amount'] ?? 0) > 0)
                         <div class="flex justify-between text-red-600 text-xs"><dt>{{ __('Engines discount') }}{{ $discSuffix('engines') }}</dt><dd>-{{ number_format($discShown('engines'), 2, ',', ' ') }} €</dd></div>
+                    @endif
+
+                    @if ($extraRows->isNotEmpty())
+                        <div class="flex justify-between pt-2 border-t border-gray-100"><dt class="text-gray-600">{{ __('Accessories') }} ({{ (int) $extraRows->sum('quantity') }})</dt><dd class="font-medium">{{ number_format($extGross, 2, ',', ' ') }} €</dd></div>
+                        @if ($extDisc > 0.005)
+                            <div class="flex justify-between text-red-600 text-xs"><dt class="ml-4">{{ __('Discounts on accessories') }}</dt><dd>-{{ number_format($extDisc, 2, ',', ' ') }} €</dd></div>
+                        @endif
                     @endif
 
                     {{-- Custom items --}}
@@ -1153,9 +1282,10 @@
      * doesn't hit Livewire on every keystroke; ticking a row flips it in the
      * Livewire `selectedEngines` map via toggleEngine(). Multi-select because
      * twin/triple engine installations are common — quantities are then set
-     * on the selected-engine rows above the picker.
+     * on the selected-engine rows above the picker. The accessories picker
+     * reuses it with its own Livewire property and toggle method.
      */
-    function engineDropdown(rows, initialIds) {
+    function engineDropdown(rows, initialIds, prop = 'selectedEngines', method = 'toggleEngine') {
         return {
             rows: rows || [],
             open: false,
@@ -1166,7 +1296,7 @@
                 // The list is wire:ignore'd, so take the ticks from the server
                 // state: an engine removed from its row unticks here too.
                 this.$watch(
-                    () => Object.keys(this.$wire.selectedEngines || {}).join('\n'),
+                    () => Object.keys(this.$wire[prop] || {}).join('\n'),
                     ids => { this.selectedIds = ids ? ids.split('\n') : []; }
                 );
             },
@@ -1191,7 +1321,7 @@
                 this.selectedIds = this.isSelected(row.id)
                     ? this.selectedIds.filter(id => id !== row.id)
                     : [...this.selectedIds, row.id];
-                this.$wire.toggleEngine(row.id);
+                this.$wire[method](row.id);
             },
         };
     }

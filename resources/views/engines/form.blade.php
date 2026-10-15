@@ -94,18 +94,18 @@
         </div>
 
         {{-- Kits and propellers offered with this engine on a quote. The same
-             link is editable from the Accessories page, one accessory at a
+             link is editable from the Kits & propellers page, one accessory at a
              time; this is the same data seen from the engine. --}}
         <div class="pt-2 border-t border-gray-100">
             <div class="flex items-baseline justify-between gap-2 mb-2">
                 <label class="block text-sm font-medium text-gray-700">{{ __('Suggested accessories') }}</label>
                 <a href="{{ route('engine-accessories.create') }}" class="text-xs text-primary-800 hover:underline">
-                    <i class="ri-add-line"></i> {{ __('New accessory') }}
+                    <i class="ri-add-line"></i> {{ __('New kit or propeller') }}
                 </a>
             </div>
             @if ($accessories->isEmpty())
                 <p class="text-sm text-gray-500">
-                    {{ __('No kits or propellers yet. Add them on the Accessories page, or import a price list with KIT and HELICE columns.') }}
+                    {{ __('No kits or propellers yet. Add them on the Kits & propellers page, or import a price list with KIT and HELICE columns.') }}
                 </p>
             @else
                 @php $linked = collect(old('accessory_ids', $engine?->accessoryIds() ?? []))->map(fn ($i) => (string) $i)->all(); @endphp
