@@ -24,7 +24,6 @@
                     value="{{ old('label', $accessory->label ?? '') }}"
                     placeholder="{{ __('e.g. Sound system Bose') }}"
                     class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />
-                <p class="text-xs text-gray-500 mt-1">{{ __('Printed on the quote as written.') }}</p>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
@@ -33,7 +32,6 @@
                     <input type="number" step="0.01" name="cost"
                         value="{{ old('cost', $accessory->cost ?? '') }}"
                         class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />
-                    <p class="text-xs text-gray-500 mt-1">{{ __('Internal — never shown to clients.') }}</p>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Selling price HT') }} <span class="text-red-500">*</span></label>
@@ -54,7 +52,6 @@
                             <option value="{{ $ccy }}" @selected(old('currency', $accessory->currency ?? 'EUR') === $ccy)>{{ $ccy }}</option>
                         @endforeach
                     </select>
-                    <p class="text-xs text-gray-500 mt-1">{{ __('USD is converted to EUR on the quote.') }}</p>
                 </div>
             </div>
         </div>
