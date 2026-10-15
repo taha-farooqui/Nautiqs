@@ -94,7 +94,8 @@ class QuoteEmailSender
             $pdf = Pdf::loadView('pdf.order-confirmation', compact('quote', 'company'))->setPaper('a4')->setOption('isPhpEnabled', true);
             $attachmentFilename = $quote->order_confirmation_number . '.pdf';
         } else {
-            $pdf = Pdf::loadView('pdf.quote', compact('quote', 'company'))->setPaper('a4')->setOption('isPhpEnabled', true);
+            $pdf = Pdf::loadView('pdf.quote', compact('quote', 'company'))->setPaper('a4')->setOption('isPhpEnabled', true)
+                ->setOption('isFontSubsettingEnabled', true);
             $attachmentFilename = $quote->number . '.pdf';
         }
         $pdfBytes = $pdf->output();

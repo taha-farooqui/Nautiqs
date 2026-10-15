@@ -354,7 +354,9 @@ class QuoteController extends Controller
 
         $pdf = Pdf::loadView('pdf.quote', compact('quote', 'company'))
             ->setPaper('a4')
-            ->setOption('isPhpEnabled', true);
+            ->setOption('isPhpEnabled', true)
+            // Embed only the glyphs used: the icon font is 570 KB whole.
+            ->setOption('isFontSubsettingEnabled', true);
 
         $filename = $quote->number . '.pdf';
 

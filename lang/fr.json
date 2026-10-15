@@ -1381,5 +1381,7 @@
     "Selling price is missing or not a number.": "Le prix de vente est manquant ou n’est pas un nombre.",
     "Purchase price is not a number.": "Le prix d’achat n’est pas un nombre.",
     "VAT must be between 0 and 100.": "La TVA doit être comprise entre 0 et 100.",
-    "Currency must be EUR or USD.": "La devise doit être EUR ou USD."
+    "Currency must be EUR or USD.": "La devise doit être EUR ou USD.",
+    "Discount": "Remise",
+    "Line discounts": "Remises sur les lignes"
 }
