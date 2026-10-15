@@ -130,12 +130,11 @@
     table.items td.c-unit  { width: 31mm; text-align: right; }
     table.items td.c-total { width: 31mm; text-align: right; }
 
-    /* Category: a tinted band with a navy edge — one cell, so no seam. The
-       edge is on an inner block: a cell border would shift the column. */
+    /* Category: a tinted band — one cell, so no seam. Text lines up with
+       the item names below it. */
     table.items tr.cat td { padding: 0; background: #eef4f8; }
     table.items tr.cat td div {
-        padding: 1.9mm 2.5mm 1.9mm 2mm;
-        border-left: 1mm solid #0e4f79;
+        padding: 1.9mm 2.5mm;
         font-size: 8.4pt;
         font-weight: bold;
         color: #0e4f79;
