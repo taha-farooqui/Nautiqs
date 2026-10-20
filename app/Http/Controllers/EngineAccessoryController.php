@@ -112,6 +112,36 @@ class EngineAccessoryController extends Controller
         return back()->with('status', __('Kit or propeller removed.'));
     }
 
+    /**
+     * Delete several kits and propellers at once. Same rule as one: each is
+     * unlinked from its engines first. One pass over the engines for the
+     * whole batch, and models loaded one by one (tenant-scoped) rather than a
+     * bulk match on string ids, which this driver can silently miss.
+     */
+    public function bulkDestroy(Request $request)
+    {
+        $data = $request->validate([
+            'ids'   => 'required|array',
+            'ids.*' => 'string',
+        ]);
+
+        $accessories = collect($data['ids'])->unique()
+            ->map(fn ($id) => EngineAccessory::find($id))
+            ->filter();
+        $gone = $accessories->map(fn ($a) => (string) $a->_id)->all();
+
+        foreach (Engine::all() as $engine) {
+            $kept = array_values(array_diff($engine->accessoryIds(), $gone));
+            if (count($kept) !== count($engine->accessoryIds())) {
+                $engine->accessory_ids = $kept;
+                $engine->save();
+            }
+        }
+        $accessories->each->delete();
+
+        return back()->with('status', __(':count kit(s) or propeller(s) removed.', ['count' => count($gone)]));
+    }
+
     /* ------------------------------------------------------------ helpers */
 
     private function validated(Request $request): array

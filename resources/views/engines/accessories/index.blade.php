@@ -59,11 +59,39 @@
             @endif
         </div>
     @else
+        {{-- "Select all" takes what is listed: on the Kits tab or after a
+             search it never reaches the rows that aren't shown. --}}
+        <div x-data="{ selected: [], allIds: {{ Js::from($accessories->map(fn ($a) => (string) $a->_id)->values()) }} }">
+        <div x-show="selected.length > 0" x-cloak
+            class="mb-3 flex items-center justify-between gap-3 rounded-lg border border-primary-200 bg-primary-50/60 px-4 py-2.5">
+            <span class="text-sm font-medium text-primary-900">
+                <span x-text="selected.length"></span> {{ __('selected') }}
+            </span>
+            <form method="POST" action="{{ route('engine-accessories.bulk-destroy') }}"
+                data-confirm="{{ __('Delete the selected kits and propellers? They are unlinked from their engines; quotes already written keep them.') }}"
+                data-confirm-danger="1">
+                @csrf @method('DELETE')
+                <template x-for="id in selected" :key="id">
+                    <input type="hidden" name="ids[]" :value="id" />
+                </template>
+                <button type="submit"
+                    class="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-semibold bg-red-600 hover:bg-red-700 text-white rounded-lg">
+                    <i class="ri-delete-bin-line"></i> {{ __('Delete selected') }}
+                </button>
+            </form>
+        </div>
+
         <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
             <div class="overflow-x-auto">
                 <table class="w-full min-w-[760px] text-sm">
                     <thead class="bg-gray-50 text-left text-xs uppercase text-gray-500 tracking-wide">
                         <tr>
+                            <th class="pl-5 py-3 w-10">
+                                <input type="checkbox" title="{{ __('Select all') }}"
+                                    @change="selected = $event.target.checked ? [...allIds] : []"
+                                    :checked="allIds.length > 0 && selected.length === allIds.length"
+                                    class="rounded border-gray-300 text-primary-800 focus:ring-primary-800" />
+                            </th>
                             <th class="px-5 py-3 font-semibold">{{ __('Kit / propeller') }}</th>
                             <th class="px-5 py-3 font-semibold text-right">{{ __('Engines') }}</th>
                             <th class="px-5 py-3 font-semibold text-right">{{ __('Cost') }}</th>
@@ -75,7 +103,11 @@
                     <tbody class="divide-y divide-gray-100">
                         @foreach ($accessories as $a)
                             @php $n = $engineCount[(string) $a->_id] ?? 0; @endphp
-                            <tr class="hover:bg-gray-50">
+                            <tr class="hover:bg-gray-50" :class="selected.includes('{{ $a->_id }}') ? 'bg-primary-50/40' : ''">
+                                <td class="pl-5 py-3">
+                                    <input type="checkbox" x-model="selected" value="{{ $a->_id }}"
+                                        class="rounded border-gray-300 text-primary-800 focus:ring-primary-800" />
+                                </td>
                                 <td class="px-5 py-3">
                                     <div class="flex items-start gap-3">
                                         <span class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0
@@ -128,6 +160,7 @@
                     </tbody>
                 </table>
             </div>
+        </div>
         </div>
     @endif
 </x-app-layout>

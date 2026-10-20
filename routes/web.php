@@ -249,6 +249,9 @@ Route::middleware(['auth', 'verified', 'maintenance'])->group(function () {
     // Under /engines, before the engines resource, so /accessories is free for
     // the standalone accessories below.
     Route::prefix('engines')->group(function () {
+        // Before the resource, so DELETE /engines/kits/bulk isn't read as {id}.
+        Route::delete('/kits/bulk', [\App\Http\Controllers\EngineAccessoryController::class, 'bulkDestroy'])
+            ->name('engine-accessories.bulk-destroy');
         Route::resource('kits', \App\Http\Controllers\EngineAccessoryController::class)
             ->except(['show'])
             ->names('engine-accessories')

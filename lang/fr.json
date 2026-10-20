@@ -1383,5 +1383,7 @@
     "VAT must be between 0 and 100.": "La TVA doit être comprise entre 0 et 100.",
     "Currency must be EUR or USD.": "La devise doit être EUR ou USD.",
     "Discount": "Remise",
-    "Line discounts": "Remises sur les lignes"
+    "Line discounts": "Remises sur les lignes",
+    "Delete the selected kits and propellers? They are unlinked from their engines; quotes already written keep them.": "Supprimer les kits et hélices sélectionnés ? Ils sont retirés de leurs moteurs ; les devis déjà établis les conservent.",
+    ":count kit(s) or propeller(s) removed.": ":count kit(s) ou hélice(s) supprimé(s)."
 }
