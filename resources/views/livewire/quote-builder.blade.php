@@ -562,7 +562,7 @@
                         </ul>
                         <div class="p-2 border-t border-gray-100">
                             <p class="text-[11px] text-gray-500 text-center">
-                                {{ __('Select several engines for twin or triple installations, then set the quantity.') }}
+                                {{ __('Twin or triple installation? Set the quantity on the engine line.') }}
                             </p>
                         </div>
                     </div>
@@ -1357,6 +1357,10 @@
                     ? this.selectedIds.filter(id => id !== row.id)
                     : [...this.selectedIds, row.id];
                 this.$wire[method](row.id);
+                // Close once picked; the chosen line appears above. Reopen to
+                // add another (twin engines: set the quantity on the line).
+                this.open = false;
+                this.query = '';
             },
         };
     }

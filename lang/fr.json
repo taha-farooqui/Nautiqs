@@ -1390,5 +1390,6 @@
     "Choose a date": "Choisir une date",
     "Until :date": "Jusqu'au :date",
     "The validity date cannot be in the past.": "La date de validité ne peut pas être dans le passé.",
-    "Pick the date the quote is valid until.": "Choisissez la date de validité du devis."
+    "Pick the date the quote is valid until.": "Choisissez la date de validité du devis.",
+    "Twin or triple installation? Set the quantity on the engine line.": "Installation double ou triple ? Indiquez la quantité sur la ligne du moteur."
 }
