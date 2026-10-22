@@ -972,7 +972,7 @@
                     </span>
                 </div>
             </div>
-            {{-- Validity — printed on the PDF. One month by default; a custom
+            {{-- Validity — printed on the PDF. 30 days by default; a custom
                  date can't be in the past (min below, re-checked on save). --}}
             <div class="mt-5 pt-4 border-t border-gray-100">
                 <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-3">
@@ -981,9 +981,9 @@
                 </p>
                 <div class="flex flex-wrap items-center gap-3">
                     <div class="inline-flex rounded-lg border border-gray-200 bg-gray-50 p-0.5 text-sm">
-                        <button type="button" wire:click="$set('validity_mode', 'month')" @disabled(! $hasVariant)
-                            class="px-3 py-1.5 rounded-md font-medium {{ $validity_mode === 'month' ? 'bg-white shadow-sm text-primary-800' : 'text-gray-600 hover:text-gray-900' }}">
-                            {{ __('1 month') }}
+                        <button type="button" wire:click="$set('validity_mode', 'default')" @disabled(! $hasVariant)
+                            class="px-3 py-1.5 rounded-md font-medium {{ $validity_mode === 'default' ? 'bg-white shadow-sm text-primary-800' : 'text-gray-600 hover:text-gray-900' }}">
+                            {{ __('30 days') }}
                         </button>
                         <button type="button" wire:click="$set('validity_mode', 'custom')" @disabled(! $hasVariant)
                             class="px-3 py-1.5 rounded-md font-medium {{ $validity_mode === 'custom' ? 'bg-white shadow-sm text-primary-800' : 'text-gray-600 hover:text-gray-900' }}">

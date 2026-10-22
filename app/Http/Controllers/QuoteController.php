@@ -336,7 +336,7 @@ class QuoteController extends Controller
         $copy = $source->replicate([
             'sent_at', 'won_at', 'lost_at',
             'order_confirmation_number', 'order_confirmation_at',
-            // A copy starts with a fresh validity (one month), not the
+            // A copy starts with a fresh validity (30 days), not the
             // original's date, which may already have passed.
             'expires_at',
         ]);
