@@ -972,6 +972,37 @@
                     </span>
                 </div>
             </div>
+            {{-- Validity — printed on the PDF. One month by default; a custom
+                 date can't be in the past (min below, re-checked on save). --}}
+            <div class="mt-5 pt-4 border-t border-gray-100">
+                <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-3">
+                    {{ __('Quote valid until') }}
+                    <span class="text-gray-400 normal-case font-normal">— {{ __('printed on the PDF') }}</span>
+                </p>
+                <div class="flex flex-wrap items-center gap-3">
+                    <div class="inline-flex rounded-lg border border-gray-200 bg-gray-50 p-0.5 text-sm">
+                        <button type="button" wire:click="$set('validity_mode', 'month')" @disabled(! $hasVariant)
+                            class="px-3 py-1.5 rounded-md font-medium {{ $validity_mode === 'month' ? 'bg-white shadow-sm text-primary-800' : 'text-gray-600 hover:text-gray-900' }}">
+                            {{ __('1 month') }}
+                        </button>
+                        <button type="button" wire:click="$set('validity_mode', 'custom')" @disabled(! $hasVariant)
+                            class="px-3 py-1.5 rounded-md font-medium {{ $validity_mode === 'custom' ? 'bg-white shadow-sm text-primary-800' : 'text-gray-600 hover:text-gray-900' }}">
+                            {{ __('Choose a date') }}
+                        </button>
+                    </div>
+                    @if ($validity_mode === 'custom')
+                        <input type="date" wire:model.live="valid_until" min="{{ now()->format('Y-m-d') }}" @disabled(! $hasVariant)
+                            class="rounded border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800 disabled:bg-gray-100" />
+                    @else
+                        <span class="text-sm text-gray-700">
+                            <i class="ri-calendar-line text-gray-400"></i>
+                            {{ __('Until :date', ['date' => \Carbon\Carbon::parse($valid_until)->format('d/m/Y')]) }}
+                        </span>
+                    @endif
+                </div>
+                @error('valid_until') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
+            </div>
+
             {{-- Terms & conditions — printed on the PDF. Leave a field blank
                  to fall back to the system default for that line. --}}
             <div class="mt-5 pt-4 border-t border-gray-100">

@@ -132,6 +132,11 @@ class QuoteBuilder extends Component
     public string $terms_warranty  = '';
     public string $terms_notes     = '';
 
+    // Validity, printed on the PDF. 'month' = one month from today (the
+    // default); 'custom' = the date picked in $valid_until (never in the past).
+    public string $validity_mode = 'month';
+    public string $valid_until   = '';
+
     public function mount(?string $quoteId = null, ?string $preselectedClientId = null)
     {
         if ($quoteId) {
@@ -139,6 +144,7 @@ class QuoteBuilder extends Component
             $this->isEdit = true;
             $this->loadFromQuote();
         } else {
+            $this->valid_until  = $this->oneMonthFromToday();
             $this->vat_rate     = (float) (auth()->user()->company?->default_vat_rate ?? 20);
             $this->display_mode = auth()->user()->company?->default_display_mode ?? 'TTC';
             if ($preselectedClientId) {
@@ -225,6 +231,14 @@ class QuoteBuilder extends Component
         $this->terms_delivery      = $quote->terms['delivery'] ?? '';
         $this->terms_warranty      = $quote->terms['warranty'] ?? '';
         $this->terms_notes         = $quote->terms['notes']    ?? '';
+        // A saved date is kept as the dealer's choice; quotes from before
+        // validity existed start at the one-month default.
+        if ($quote->expires_at) {
+            $this->validity_mode = 'custom';
+            $this->valid_until   = $quote->expires_at->format('Y-m-d');
+        } else {
+            $this->valid_until   = $this->oneMonthFromToday();
+        }
 
         if (is_array($quote->trade_in) && (($quote->trade_in['value'] ?? 0) > 0)) {
             $this->hasTradeIn = true;
@@ -945,6 +959,13 @@ class QuoteBuilder extends Component
             $messages['client_id.required'] = 'Please select a client or switch to Guest.';
         }
 
+        if ($this->validity_mode === 'month') {
+            $this->valid_until = $this->oneMonthFromToday();
+        }
+        $rules['valid_until'] = 'required|date|after_or_equal:today';
+        $messages['valid_until.after_or_equal'] = __('The validity date cannot be in the past.');
+        $messages['valid_until.required']       = __('Pick the date the quote is valid until.');
+
         $this->validate($rules, $messages);
 
         $companyId = auth()->user()->company_id;
@@ -1039,6 +1060,7 @@ class QuoteBuilder extends Component
             'display_mode'        => $this->display_mode,
             'totals'              => $totals,
             'internal_notes'      => $this->internal_notes ?: null,
+            'expires_at'          => \Carbon\Carbon::parse($this->valid_until)->endOfDay(),
             'terms'               => [
                 'payment'  => trim($this->terms_payment)  ?: null,
                 'delivery' => trim($this->terms_delivery) ?: null,
@@ -1072,6 +1094,18 @@ class QuoteBuilder extends Component
             'id'      => (string) $quote->_id,
             'preview' => 1,
         ]));
+    }
+
+    public function updatedValidityMode(string $mode): void
+    {
+        if ($mode === 'month') {
+            $this->valid_until = $this->oneMonthFromToday();
+        }
+    }
+
+    private function oneMonthFromToday(): string
+    {
+        return now()->addMonthNoOverflow()->format('Y-m-d');
     }
 
     public function render()

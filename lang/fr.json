@@ -1385,5 +1385,10 @@
     "Discount": "Remise",
     "Line discounts": "Remises sur les lignes",
     "Delete the selected kits and propellers? They are unlinked from their engines; quotes already written keep them.": "Supprimer les kits et hélices sélectionnés ? Ils sont retirés de leurs moteurs ; les devis déjà établis les conservent.",
-    ":count kit(s) or propeller(s) removed.": ":count kit(s) ou hélice(s) supprimé(s)."
+    ":count kit(s) or propeller(s) removed.": ":count kit(s) ou hélice(s) supprimé(s).",
+    "1 month": "1 mois",
+    "Choose a date": "Choisir une date",
+    "Until :date": "Jusqu'au :date",
+    "The validity date cannot be in the past.": "La date de validité ne peut pas être dans le passé.",
+    "Pick the date the quote is valid until.": "Choisissez la date de validité du devis."
 }
