@@ -90,7 +90,6 @@
             @foreach ($levels as $n => $l)
                 @php $i = $n - 1; @endphp
                 <section class="rise lift bg-white rounded-2xl border border-gray-200 overflow-hidden" style="--d: {{ $n + 1 }}">
-                    <div class="h-1.5 bg-gradient-to-r {{ $tone[$n][1] }}"></div>
                     <div class="p-5">
                         <div class="flex items-center justify-between gap-2 mb-1">
                             <x-brand.level-badge :n="$n" :name="__('Level :n', ['n' => $n])" />

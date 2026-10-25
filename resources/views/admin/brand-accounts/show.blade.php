@@ -20,12 +20,13 @@
         <div class="h-24 bg-gradient-to-r from-primary-900 via-primary-800 to-primary-600 relative">
             <svg class="absolute right-6 bottom-0 h-20 text-white/10" viewBox="0 0 200 100" fill="currentColor" aria-hidden="true"><path d="M90 5 L90 80 L40 80 Z"/><path d="M98 20 L98 80 L140 80 Z"/><path d="M20 86 Q100 104 180 86 L172 96 Q100 110 28 96 Z"/></svg>
         </div>
-        <div class="px-6 pb-6 -mt-10 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
-            <div class="flex items-end gap-4" x-data="{ edit: false }">
-                <span class="w-20 h-20 rounded-2xl bg-white p-1 shadow-md shrink-0">
+        {{-- Only the avatar overlaps the banner; the name sits below it. --}}
+        <div class="px-6 pb-5 flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+            <div class="flex items-start gap-4" x-data="{ edit: false }">
+                <span class="relative z-10 -mt-10 w-20 h-20 rounded-2xl bg-white p-1 shadow-md shrink-0">
                     <span class="w-full h-full rounded-xl bg-primary-800 text-white text-2xl font-bold flex items-center justify-center">{{ mb_strtoupper($initials) }}</span>
                 </span>
-                <div class="pb-1 min-w-0">
+                <div class="pt-3 min-w-0">
                     <div x-show="!edit" class="flex items-center gap-2">
                         <h2 class="text-2xl font-bold text-gray-900 truncate">{{ $account->name }}</h2>
                         <button type="button" @click="edit = true; $nextTick(() => $refs.name.focus())" class="w-8 h-8 inline-flex items-center justify-center text-gray-400 hover:text-primary-800 hover:bg-gray-100 rounded-lg" title="{{ __('Rename') }}"><i class="ri-pencil-line"></i></button>
@@ -46,7 +47,7 @@
                     </div>
                 </div>
             </div>
-            <form method="POST" action="{{ route('admin.brand-accounts.toggle', $account->_id) }}"
+            <form method="POST" action="{{ route('admin.brand-accounts.toggle', $account->_id) }}" class="md:pt-4"
                 data-confirm="{{ $account->is_active ? __('Suspend this brand account? Its managers lose access to the portal; dealers keep their catalogue copies.') : __('Reactivate this brand account?') }}"
                 @if ($account->is_active) data-confirm-danger="1" @endif>
                 @csrf
