@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Brand;
 
 use App\Http\Controllers\Controller;
 use App\Models\BrandAccess;
+use App\Models\BrandEngine;
+use App\Models\BrandModel;
 use App\Models\ManagedBrand;
 use App\Models\Quote;
 use App\Services\Brand\BrandQuotePresenter;
@@ -79,12 +81,38 @@ class DashboardController extends Controller
             ];
         })->sortByDesc('quoted')->values();
 
+        // Quotes by status, for the donut.
+        $statuses = collect([Quote::STATUS_DRAFT, Quote::STATUS_SENT, Quote::STATUS_WON, Quote::STATUS_LOST])
+            ->mapWithKeys(fn ($s) => [$s => $rows->where('status', $s)->count()]);
+
+        // Getting started: what a new brand still has to do before stats appear.
+        $accesses  = BrandAccess::where('brand_account_id', (string) $account->_id)->get();
+        $connected = $accesses->where('status', BrandAccess::STATUS_ACTIVE)->count();
+        $items = $account->isEngine() ? BrandEngine::count() : BrandModel::count();
+        $levelsSet = collect($account->levelsResolved())->contains(fn ($l) => array_sum($l['pct']) > 0);
+        $steps = [
+            ['done' => $items > 0, 'icon' => $account->isEngine() ? 'ri-settings-3-line' : 'ri-sailboat-line',
+                'title' => __('Add your catalogue'), 'text' => __('By hand or from your Excel price list.'),
+                'href' => route($account->isEngine() ? 'brand.engines.index' : 'brand.catalogue.index')],
+            ['done' => $levelsSet, 'icon' => 'ri-price-tag-3-line',
+                'title' => __('Set your price levels'), 'text' => __('The discount each level of dealer gets.'),
+                'href' => route('brand.levels.edit')],
+            ['done' => $accesses->isNotEmpty(), 'icon' => 'ri-user-add-line',
+                'title' => __('Invite your dealers'), 'text' => __('They receive your catalogue at their level.'),
+                'href' => route('brand.dealers.index')],
+            ['done' => $connected > 0, 'icon' => 'ri-links-line',
+                'title' => __('First dealer connected'), 'text' => __('Their quotes start appearing here.'),
+                'href' => route('brand.dealers.index', ['tab' => 'waiting'])],
+        ];
+
         return view('brand.dashboard', [
             'account' => $account, 'period' => $period, 'brandId' => $brandId,
             'brands' => ManagedBrand::orderBy('position')->orderBy('name')->get(),
             'kpis' => $kpis, 'months' => array_values($months), 'top' => $top, 'dealers' => $dealers,
+            'statuses' => $statuses, 'steps' => $steps,
             'latest' => $rows->take(8),
-            'connected' => BrandAccess::where('brand_account_id', (string) $account->_id)->where('status', BrandAccess::STATUS_ACTIVE)->count(),
+            'connected' => $connected,
+            'pending' => $accesses->whereIn('status', [BrandAccess::STATUS_PENDING, BrandAccess::STATUS_INVITED])->count(),
         ]);
     }
 }

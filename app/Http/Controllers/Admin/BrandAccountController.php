@@ -90,7 +90,13 @@ class BrandAccountController extends Controller
         $accesses = BrandAccess::where('brand_account_id', $id)->orderBy('invited_at', 'desc')->get();
         $companies = \App\Models\Company::whereIn('_id', $accesses->pluck('company_id')->filter()->unique()->values()->all())->get()->keyBy(fn ($c) => (string) $c->_id);
 
-        return view('admin.brand-accounts.show', compact('account', 'brands', 'managers', 'invites', 'accesses', 'companies'));
+        // Catalogue size per brand, and quotes made with this account's products.
+        $itemClass = $account->isEngine() ? \App\Models\BrandEngine::class : \App\Models\BrandModel::class;
+        $itemCounts = $itemClass::withoutGlobalScopes()->where('brand_account_id', $id)->where('is_archived', '!=', true)
+            ->get(['managed_brand_id'])->countBy(fn ($m) => (string) $m->managed_brand_id);
+        $quoteCount = \App\Models\Quote::withoutGlobalScopes()->where('brand_account_ids', $id)->count();
+
+        return view('admin.brand-accounts.show', compact('account', 'brands', 'managers', 'invites', 'accesses', 'companies', 'itemCounts', 'quoteCount'));
     }
 
     public function update(string $id, Request $request)

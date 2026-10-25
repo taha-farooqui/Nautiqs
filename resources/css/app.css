@@ -1,3 +1,32 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ------------------------------------------------------------------
+ | Motion for the brand portal pages. Short and quiet: cards rise in on
+ | load (stagger with style="--d: 2"), bars grow, numbers count up (JS).
+ | Everything is switched off for people who asked for reduced motion.
+ ------------------------------------------------------------------ */
+@layer components {
+    .rise { animation: rise .45s cubic-bezier(.2, .7, .2, 1) both; animation-delay: calc(var(--d, 0) * 60ms); }
+    .pop  { animation: pop .3s cubic-bezier(.2, .7, .2, 1) both; }
+    .grow-x { transform-origin: left; animation: grow-x .8s cubic-bezier(.2, .7, .2, 1) both; animation-delay: calc(var(--d, 0) * 80ms); }
+    .bar-fill { transition: width .45s cubic-bezier(.2, .7, .2, 1); }
+    .lift { transition: transform .15s ease, box-shadow .15s ease; }
+    .lift:hover { transform: translateY(-2px); box-shadow: 0 8px 24px -12px rgb(14 79 121 / .35); }
+
+    /* Range slider in the primary colour. */
+    .range-primary { -webkit-appearance: none; appearance: none; height: 6px; border-radius: 9999px; background: #e5e7eb; outline: none; }
+    .range-primary::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; border-radius: 9999px; background: #fff; border: 3px solid #0e4f79; cursor: pointer; box-shadow: 0 1px 3px rgb(0 0 0 / .2); transition: transform .15s; }
+    .range-primary::-webkit-slider-thumb:hover { transform: scale(1.15); }
+    .range-primary::-moz-range-thumb { width: 14px; height: 14px; border-radius: 9999px; background: #fff; border: 3px solid #0e4f79; cursor: pointer; }
+}
+
+@keyframes rise   { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes pop    { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: none; } }
+@keyframes grow-x { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+@media (prefers-reduced-motion: reduce) {
+    .rise, .pop, .grow-x { animation: none; }
+    .bar-fill, .lift { transition: none; }
+}

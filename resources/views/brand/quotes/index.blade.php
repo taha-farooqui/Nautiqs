@@ -3,7 +3,8 @@
 
     <p class="mb-4 text-sm text-gray-600 max-w-3xl">{{ __('Every quote your connected dealers make with your products. End clients stay anonymous.') }}</p>
 
-    <form method="GET" class="mb-4 flex flex-wrap items-end gap-2">
+    <form method="GET" class="mb-5 flex flex-wrap items-end gap-3 bg-white rounded-2xl border border-gray-200 px-4 py-3">
+        <span class="w-9 h-9 rounded-lg bg-gray-50 text-gray-500 flex items-center justify-center self-end"><i class="ri-filter-3-line"></i></span>
         <label class="text-xs text-gray-500">{{ __('Dealer') }}
             <select name="dealer" onchange="this.form.submit()" class="block mt-1 rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800">
                 <option value="">{{ __('All dealers') }}</option>
@@ -43,11 +44,15 @@
         </label>
     </form>
 
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-        @foreach ([['total', __('Quotes')], ['open', __('Open (sent)')], ['won', __('Won')], ['lost', __('Lost')]] as [$k, $label])
-            <div class="bg-white rounded-xl border border-gray-200 px-4 py-3"><div class="text-xs text-gray-500">{{ $label }}</div><div class="text-2xl font-bold text-gray-900">{{ $stats[$k] }}</div></div>
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+        @foreach ([['total', __('Quotes'), 'ri-file-list-3-line', 'bg-primary-50 text-primary-800'], ['open', __('Open (sent)'), 'ri-send-plane-line', 'bg-sky-50 text-sky-700'],
+                   ['won', __('Won'), 'ri-trophy-line', 'bg-emerald-50 text-emerald-700'], ['lost', __('Lost'), 'ri-close-circle-line', 'bg-red-50 text-red-600']] as $i => [$k, $label, $icon, $tone])
+            <div class="rise lift bg-white rounded-2xl border border-gray-200 p-4 flex items-center gap-3" style="--d: {{ $i }}">
+                <span class="w-11 h-11 rounded-xl {{ $tone }} flex items-center justify-center shrink-0"><i class="{{ $icon }} text-xl"></i></span>
+                <div><div class="text-2xl font-bold text-gray-900 tabular-nums" x-data="countUp({{ (int) $stats[$k] }})" x-text="display">{{ $stats[$k] }}</div><div class="text-xs text-gray-500">{{ $label }}</div></div>
+            </div>
         @endforeach
     </div>
 
-    @include('brand.quotes.table', ['rows' => $rows])
+    <div class="rise" style="--d: 4">@include('brand.quotes.table', ['rows' => $rows])</div>
 </x-app-layout>

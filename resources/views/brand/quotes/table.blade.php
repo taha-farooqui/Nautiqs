@@ -3,11 +3,12 @@
     @isset($title)
         <div class="px-5 py-4 flex items-center justify-between">
             <h3 class="font-semibold text-gray-900">{{ $title }}</h3>
-            @if (! empty($more)) <a href="{{ route('brand.quotes.index') }}" class="text-sm font-medium text-primary-800 hover:underline">{{ __('All quotes') }} →</a> @endif
+            @if (! empty($more)) <a href="{{ route('brand.quotes.index') }}" class="text-sm font-medium text-primary-800 hover:underline">{{ __('All quotes') }} <i class="ri-arrow-right-line"></i></a> @endif
         </div>
     @endisset
     @if ($rows->isEmpty())
-        <p class="px-5 py-5 text-sm text-gray-500">{{ __('No quotes yet.') }}</p>
+        <x-app.empty-state icon="ri-file-list-3-line" size="sm" :title="__('No quotes yet')"
+            :message="__('Quotes your dealers make with your products appear here. End clients stay anonymous.')" />
     @else
         <div class="overflow-x-auto">
             <table class="w-full min-w-[900px] text-sm">
@@ -26,7 +27,12 @@
                     @foreach ($rows as $r)
                         <tr class="hover:bg-gray-50">
                             <td class="px-5 py-2.5 whitespace-nowrap">{{ $r['date']?->format('d/m/Y') }}</td>
-                            <td class="px-4 py-2.5"><div class="font-medium text-gray-900">{{ $r['dealer'] }}</div><div class="text-xs text-gray-500">{{ $r['salesperson'] }}</div></td>
+                            <td class="px-4 py-2.5">
+                                <div class="flex items-center gap-2.5">
+                                    <span class="w-8 h-8 rounded-full bg-primary-50 text-primary-800 text-xs font-bold flex items-center justify-center shrink-0">{{ mb_strtoupper(mb_substr($r['dealer'], 0, 2)) }}</span>
+                                    <span class="min-w-0"><span class="block font-medium text-gray-900 truncate">{{ $r['dealer'] }}</span><span class="block text-xs text-gray-500"><i class="ri-user-line"></i> {{ $r['salesperson'] ?: '—' }}</span></span>
+                                </div>
+                            </td>
                             <td class="px-4 py-2.5">
                                 <a href="{{ route('brand.quotes.show', $r['id']) }}" class="font-medium text-primary-800 hover:underline">
                                     {{ $r['is_boat'] ? ($r['version'] ?: $r['boat']) : (implode(', ', $r['engines']) ?: $r['boat']) }}

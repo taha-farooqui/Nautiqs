@@ -45,6 +45,9 @@ class DealerController extends Controller
             'companies' => $companies, 'quoteCounts' => $quoteCounts,
             'brands' => ManagedBrand::orderBy('position')->orderBy('name')->get(),
             'levels' => $account->levelsResolved(),
+            'categories' => $account->categories(),
+            'levelCounts' => $all->where('status', BrandAccess::STATUS_ACTIVE)->countBy('level'),
+            'openInvite' => $request->boolean('invite'),
         ]);
     }
 
@@ -52,7 +55,8 @@ class DealerController extends Controller
     {
         $account = $this->account();
         $data = $request->validate([
-            'emails'      => 'required|string|max:5000',
+            'emails'      => 'required|array|min:1|max:50',
+            'emails.*'    => 'nullable|string|max:200',
             'level'       => 'required|integer|min:1|max:' . BrandAccount::LEVEL_COUNT,
             'brand_ids'   => 'required|array|min:1',
             'brand_ids.*' => 'string',
@@ -63,7 +67,10 @@ class DealerController extends Controller
             return back()->withInput()->withErrors(['brand_ids' => __('Choose at least one brand to share.')]);
         }
 
-        $emails = collect(preg_split('/[\s,;]+/', $data['emails']))->map(fn ($e) => mb_strtolower(trim($e)))->filter()->unique()->values();
+        $emails = collect($data['emails'])->map(fn ($e) => mb_strtolower(trim((string) $e)))->filter()->unique()->values();
+        if ($emails->isEmpty()) {
+            return back()->withInput()->withErrors(['emails' => __('Enter at least one email.')]);
+        }
         $sent = []; $skipped = [];
         foreach ($emails as $email) {
             if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {

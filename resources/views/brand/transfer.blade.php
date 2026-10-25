@@ -18,9 +18,20 @@
         <section class="lg:col-span-2 bg-white rounded-2xl border border-gray-200 p-6">
             <h3 class="font-semibold text-gray-900 mb-1">{{ __('Import a price list') }}</h3>
             <p class="text-sm text-gray-500 mb-4">{{ __('Rows are matched by name: existing items are updated, new ones are added. Nothing is deleted — archive items in the catalogue instead.') }}</p>
-            <form method="POST" action="{{ route('brand.transfer.import') }}" enctype="multipart/form-data" class="space-y-4">@csrf
-                <input type="file" name="file" accept=".xlsx" required class="block w-full text-sm text-gray-700 file:mr-3 file:px-4 file:py-2 file:rounded-lg file:border-0 file:bg-gray-100 file:font-medium hover:file:bg-gray-200">
-                <button class="px-4 py-2 text-sm font-semibold bg-primary-800 hover:bg-primary-900 text-white rounded-lg">{{ __('Import and publish') }}</button>
+            <form method="POST" action="{{ route('brand.transfer.import') }}" enctype="multipart/form-data" class="space-y-4"
+                x-data="{ name: '', over: false, busy: false }" @submit="busy = true">@csrf
+                <label class="block cursor-pointer rounded-2xl border-2 border-dashed p-8 text-center transition"
+                    :class="over ? 'border-primary-800 bg-primary-50' : (name ? 'border-emerald-300 bg-emerald-50/50' : 'border-gray-300 hover:border-primary-400 hover:bg-gray-50')"
+                    @dragover.prevent="over = true" @dragleave.prevent="over = false"
+                    @drop.prevent="over = false; $refs.file.files = $event.dataTransfer.files; name = $event.dataTransfer.files[0]?.name || ''">
+                    <input x-ref="file" type="file" name="file" accept=".xlsx" required class="sr-only" @change="name = $event.target.files[0]?.name || ''">
+                    <span class="mx-auto w-14 h-14 rounded-2xl flex items-center justify-center mb-3 transition" :class="name ? 'bg-emerald-500 text-white' : 'bg-primary-50 text-primary-800'">
+                        <i class="text-2xl" :class="name ? 'ri-file-excel-2-line' : 'ri-upload-cloud-2-line'"></i></span>
+                    <span class="block font-semibold text-gray-900" x-text="name || @js(__('Drop your Excel file here'))"></span>
+                    <span class="block text-sm text-gray-500 mt-0.5" x-text="name ? @js(__('Ready to import')) : @js(__('or click to choose a .xlsx file'))"></span>
+                </label>
+                <button :disabled="!name || busy" class="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold bg-primary-800 hover:bg-primary-900 disabled:opacity-40 text-white rounded-lg">
+                    <i :class="busy ? 'ri-loader-4-line animate-spin' : 'ri-upload-2-line'"></i> {{ __('Import and publish') }}</button>
             </form>
         </section>
 
