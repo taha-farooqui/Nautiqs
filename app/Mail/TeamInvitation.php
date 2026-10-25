@@ -23,10 +23,21 @@ class TeamInvitation extends Mailable
     {
     }
 
+    /** The workspace being joined: a dealership, or a brand account. */
+    private function workspaceName(): string
+    {
+        if ($this->invite->brand_account_id) {
+            return optional(\App\Models\BrandAccount::find($this->invite->brand_account_id))->name
+                ?? config('app.name', 'Nautiqs');
+        }
+
+        return optional(\App\Models\Company::find($this->invite->company_id))->name
+            ?? config('app.name', 'Nautiqs');
+    }
+
     public function envelope(): Envelope
     {
-        $companyName = optional(\App\Models\Company::find($this->invite->company_id))->name
-            ?? config('app.name', 'Nautiqs');
+        $companyName = $this->workspaceName();
 
         return new Envelope(
             subject: __("You've been invited to join :company on Nautiqs", ['company' => $companyName]),
@@ -40,8 +51,7 @@ class TeamInvitation extends Mailable
             with: [
                 'invite'      => $this->invite,
                 'acceptUrl'   => route('invitations.accept', $this->invite->token),
-                'companyName' => optional(\App\Models\Company::find($this->invite->company_id))->name
-                    ?? config('app.name', 'Nautiqs'),
+                'companyName' => $this->workspaceName(),
             ],
         );
     }

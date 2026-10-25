@@ -18,7 +18,11 @@
                 {{ __(':inviter has invited you to join :company on Nautiqs as :role.', [
                     'inviter' => $invite->invited_by_name,
                     'company' => $companyName,
-                    'role'    => $invite->role === \App\Models\User::ROLE_TENANT_ADMIN ? __('Admin') : __('Salesperson'),
+                    'role'    => match ($invite->role) {
+                        \App\Models\User::ROLE_TENANT_ADMIN   => __('Admin'),
+                        \App\Models\User::ROLE_BRAND_MANAGER => __('Brand manager'),
+                        default                                => __('Salesperson'),
+                    },
                 ]) }}
             </p>
 

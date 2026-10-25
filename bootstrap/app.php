@@ -14,6 +14,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role'         => \App\Http\Middleware\EnsureUserHasRole::class,
             'superadmin'   => \App\Http\Middleware\RequireSuperadmin::class,
+            'brand'        => \App\Http\Middleware\RequireBrandManager::class,
+            'brand.contain' => \App\Http\Middleware\KeepBrandManagersInPortal::class,
+            'managed.lock'  => \App\Http\Middleware\ProtectManagedCatalogue::class,
             'maintenance'  => \App\Http\Middleware\MaintenanceGate::class,
         ]);
 

@@ -101,7 +101,7 @@ Route::get('/_diag/mail', function (\Illuminate\Http\Request $request) {
     }
 })->name('diag.mail');
 
-Route::middleware(['auth', 'verified', 'maintenance'])->group(function () {
+Route::middleware(['auth', 'verified', 'maintenance', 'brand.contain', 'managed.lock'])->group(function () {
 
     // Dashboard — §16.3
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
@@ -248,6 +248,16 @@ Route::middleware(['auth', 'verified', 'maintenance'])->group(function () {
     // Kits and propellers sold with an engine, linked to the engines they fit.
     // Under /engines, before the engines resource, so /accessories is free for
     // the standalone accessories below.
+    // Items a partner brand manages: read-only, except the dealer's special
+    // price. ProtectManagedCatalogue sends every edit link here.
+    $mc = \App\Http\Controllers\ManagedCatalogueController::class;
+    Route::get('/catalogue/managed/{modelId}',      [$mc, 'boat'])->name('catalogue.managed.boat');
+    Route::patch('/catalogue/managed/{modelId}',    [$mc, 'saveBoat'])->name('catalogue.managed.boat.save');
+    Route::get('/engines/managed/{id}',             [$mc, 'engine'])->name('engines.managed');
+    Route::patch('/engines/managed/{id}',           [$mc, 'saveEngine'])->name('engines.managed.save');
+    Route::get('/engines/kits/managed/{id}',        [$mc, 'kit'])->name('engine-accessories.managed');
+    Route::patch('/engines/kits/managed/{id}',      [$mc, 'saveKit'])->name('engine-accessories.managed.save');
+
     Route::prefix('engines')->group(function () {
         // Before the resource, so DELETE /engines/kits/bulk isn't read as {id}.
         Route::delete('/kits/bulk', [\App\Http\Controllers\EngineAccessoryController::class, 'bulkDestroy'])
@@ -276,6 +286,75 @@ Route::middleware(['auth', 'verified', 'maintenance'])->group(function () {
     // stale frontend reference doesn't throw a routing error.
     Route::post('/catalogue/brands/inline', fn () => abort(404))->name('catalogue.brands.inline');
 
+    // Partner brands — the dealer's side of the brand portal: invitations
+    // from brand accounts, accept/decline, disconnect, restore archived brands.
+    $pb = \App\Http\Controllers\PartnerBrandsController::class;
+    Route::get('/partner-brands',                   [$pb, 'index'])->name('partner-brands.index');
+    Route::post('/partner-brands/restore',          [$pb, 'restore'])->name('partner-brands.restore');
+    Route::get('/partner-brands/{id}',              [$pb, 'show'])->name('partner-brands.show');
+    Route::post('/partner-brands/{id}/accept',      [$pb, 'accept'])->name('partner-brands.accept');
+    Route::post('/partner-brands/{id}/decline',     [$pb, 'decline'])->name('partner-brands.decline');
+    Route::post('/partner-brands/{id}/disconnect',  [$pb, 'disconnect'])->name('partner-brands.disconnect');
+
+    /* -----------------------------------------------------------------
+     | Brand portal — brand accounts (manufacturers/importers) managing
+     | the catalogue their invited dealers quote from. RequireBrandManager
+     | 404s for everyone else; KeepBrandManagersInPortal (on the outer
+     | group) keeps brand managers out of the dealer screens.
+     ----------------------------------------------------------------- */
+    Route::prefix('brand')->name('brand.')->middleware('brand')->group(function () {
+        Route::get('/', \App\Http\Controllers\Brand\DashboardController::class)->name('dashboard');
+
+        $bc = \App\Http\Controllers\Brand\CatalogueController::class;
+        Route::get('/catalogue',                [$bc, 'index'])->name('catalogue.index');
+        Route::get('/catalogue/create',         [$bc, 'create'])->name('catalogue.create');
+        Route::post('/catalogue',               [$bc, 'store'])->name('catalogue.store');
+        Route::get('/catalogue/{id}/edit',      [$bc, 'edit'])->name('catalogue.edit');
+        Route::patch('/catalogue/{id}',         [$bc, 'update'])->name('catalogue.update');
+        Route::post('/catalogue/{id}/archive',  [$bc, 'toggleArchive'])->name('catalogue.archive');
+
+        $be = \App\Http\Controllers\Brand\EngineController::class;
+        Route::get('/engines',                        [$be, 'index'])->name('engines.index');
+        Route::get('/engines/create',                 [$be, 'create'])->name('engines.create');
+        Route::post('/engines',                       [$be, 'store'])->name('engines.store');
+        Route::get('/engines/kits/create',            [$be, 'createAccessory'])->name('engines.accessories.create');
+        Route::post('/engines/kits',                  [$be, 'storeAccessory'])->name('engines.accessories.store');
+        Route::get('/engines/kits/{id}/edit',         [$be, 'editAccessory'])->name('engines.accessories.edit');
+        Route::patch('/engines/kits/{id}',            [$be, 'updateAccessory'])->name('engines.accessories.update');
+        Route::delete('/engines/kits/{id}',           [$be, 'destroyAccessory'])->name('engines.accessories.destroy');
+        Route::get('/engines/{id}/edit',              [$be, 'edit'])->name('engines.edit');
+        Route::patch('/engines/{id}',                 [$be, 'update'])->name('engines.update');
+        Route::post('/engines/{id}/archive',          [$be, 'toggleArchive'])->name('engines.archive');
+
+        $bt = \App\Http\Controllers\Brand\TransferController::class;
+        Route::get('/transfer/export',          [$bt, 'export'])->name('transfer.export');
+        Route::get('/transfer/import',          [$bt, 'form'])->name('transfer.form');
+        Route::get('/transfer/template',        [$bt, 'template'])->name('transfer.template');
+        Route::post('/transfer/import',         [$bt, 'import'])->name('transfer.import');
+
+        $bl = \App\Http\Controllers\Brand\LevelsController::class;
+        Route::get('/levels',                   [$bl, 'edit'])->name('levels.edit');
+        Route::patch('/levels',                 [$bl, 'update'])->name('levels.update');
+
+        $bd = \App\Http\Controllers\Brand\DealerController::class;
+        Route::get('/dealers',                  [$bd, 'index'])->name('dealers.index');
+        Route::post('/dealers/invite',          [$bd, 'invite'])->name('dealers.invite');
+        Route::patch('/dealers/{id}',           [$bd, 'update'])->name('dealers.update');
+        Route::post('/dealers/{id}/revoke',     [$bd, 'revoke'])->name('dealers.revoke');
+        Route::post('/dealers/{id}/resend',     [$bd, 'resend'])->name('dealers.resend');
+
+        $bq = \App\Http\Controllers\Brand\QuoteController::class;
+        Route::get('/quotes',                   [$bq, 'index'])->name('quotes.index');
+        Route::get('/quotes/{id}',              [$bq, 'show'])->name('quotes.show');
+
+        $bm = \App\Http\Controllers\Brand\TeamController::class;
+        Route::get('/team',                     [$bm, 'index'])->name('team.index');
+        Route::post('/team/invite',             [$bm, 'invite'])->name('team.invite');
+        Route::post('/team/invite/{id}/resend', [$bm, 'resend'])->name('team.resend');
+        Route::delete('/team/invite/{id}',      [$bm, 'revoke'])->name('team.revoke');
+        Route::post('/team/{userId}/toggle',    [$bm, 'toggle'])->name('team.toggle');
+    });
+
     // Profile (Breeze default)
     Route::get('/profile',    [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile',  [ProfileController::class, 'update'])->name('profile.update');
@@ -302,6 +381,20 @@ Route::middleware(['auth', 'verified', 'maintenance'])->group(function () {
         Route::get('/account-requests',               [\App\Http\Controllers\Admin\AccountRequestController::class, 'index'])->name('account-requests.index');
         Route::post('/account-requests/{id}/approve', [\App\Http\Controllers\Admin\AccountRequestController::class, 'approve'])->name('account-requests.approve');
         Route::post('/account-requests/{id}/reject',  [\App\Http\Controllers\Admin\AccountRequestController::class, 'reject'])->name('account-requests.reject');
+
+        // Brand accounts — manufacturers/importers using the brand portal.
+        // Created here only; a brand cannot sign itself up.
+        $ba = \App\Http\Controllers\Admin\BrandAccountController::class;
+        Route::get('/brand-accounts',                                  [$ba, 'index'])->name('brand-accounts.index');
+        Route::get('/brand-accounts/create',                           [$ba, 'create'])->name('brand-accounts.create');
+        Route::post('/brand-accounts',                                 [$ba, 'store'])->name('brand-accounts.store');
+        Route::get('/brand-accounts/{id}',                             [$ba, 'show'])->name('brand-accounts.show');
+        Route::patch('/brand-accounts/{id}',                           [$ba, 'update'])->name('brand-accounts.update');
+        Route::post('/brand-accounts/{id}/toggle',                     [$ba, 'toggle'])->name('brand-accounts.toggle');
+        Route::post('/brand-accounts/{id}/brands',                     [$ba, 'addBrand'])->name('brand-accounts.brands.add');
+        Route::patch('/brand-accounts/{id}/brands/{brandId}',          [$ba, 'renameBrand'])->name('brand-accounts.brands.rename');
+        Route::post('/brand-accounts/{id}/managers',                   [$ba, 'inviteManager'])->name('brand-accounts.managers.invite');
+        Route::post('/brand-accounts/{id}/invites/{inviteId}/resend',  [$ba, 'resendInvite'])->name('brand-accounts.invites.resend');
 
         // Activity log (audit trail of superadmin actions).
         Route::get('/audit',                [\App\Http\Controllers\Admin\AuditController::class, 'index'])->name('audit.index');

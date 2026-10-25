@@ -46,8 +46,10 @@
             </div>
         </div>
 
-        {{-- Global ⌘K command palette --}}
-        <x-app.search-palette />
+        {{-- Global ⌘K command palette (searches dealer data — not for brand managers) --}}
+        @unless (auth()->user()?->isBrandManager())
+            <x-app.search-palette />
+        @endunless
 
         {{-- SweetAlert2 — used for every destructive confirmation across
              the app instead of the browser's native confirm(). Forms opt

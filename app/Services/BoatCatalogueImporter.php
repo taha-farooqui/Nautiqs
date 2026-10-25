@@ -451,6 +451,12 @@ class BoatCatalogueImporter
             /* -- brand ------------------------------------------------- */
             $brandKey = mb_strtolower(trim($boat['brand']));
             $existingBrand = $byName[$brandKey] ?? null;
+            // A partner brand's catalogue is the brand's to change, not the file's.
+            if ($existingBrand && $existingBrand->managed_brand_id) {
+                $errors[] = ['sheet' => BoatCatalogueExporter::SHEET_BOATS, 'row' => $boat['row'],
+                    'message' => __(':brand is managed by its brand — rows for it are skipped.', ['brand' => $existingBrand->name])];
+                continue;
+            }
             if ($existingBrand) {
                 $entry['brand_id'] = (string) $existingBrand->_id;
                 $entry['brand_action'] = 'existing';

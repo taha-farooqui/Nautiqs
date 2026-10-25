@@ -42,6 +42,10 @@ class EngineAccessory extends Model
         'price',       // selling price HT
         'vat_rate',    // %
         'currency',    // EUR
+        'brand_account_id',   // engine brand account managing this copy
+        'brand_accessory_id', // BrandEngineAccessory it follows
+        'managed_brand_id',
+        'cost_override',      // true: the dealer typed a special purchase price
     ];
 
     protected $casts = [

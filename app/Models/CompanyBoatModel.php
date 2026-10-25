@@ -30,6 +30,7 @@ class CompanyBoatModel extends Model
         'company_id',
         'company_brand_id',
         'global_model_id',    // null for private
+        'brand_model_id',    // BrandModel this copy follows (brand-managed)
         'source',             // global | private
 
         // Identity

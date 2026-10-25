@@ -90,11 +90,15 @@ class CatalogueController extends Controller
     {
         $q = trim((string) $request->query('q', ''));
 
-        $workspace = CompanyBrand::where('is_active', true)->where('company_id', auth()->user()->company_id)
+        $workspaceAll = CompanyBrand::where('is_active', true)->where('company_id', auth()->user()->company_id)
             ->when($q !== '', fn ($w) => $w->where('name', 'like', "%{$q}%"))
             ->orderBy('name')
             ->limit(30)
-            ->get(['_id', 'name'])
+            ->get(['_id', 'name', 'managed_brand_id']);
+
+        // Partner brands are not offered (their boats come from the brand),
+        // but their names still hide the global twin below.
+        $workspace = $workspaceAll->filter(fn ($b) => ! $b->managed_brand_id)->values()
             ->map(fn ($b) => [
                 'id'     => (string) $b->_id,
                 'name'   => $b->name,
@@ -103,7 +107,7 @@ class CatalogueController extends Controller
 
         // Names already in the workspace — don't surface their global twin
         // a second time. Compared case-insensitively.
-        $skip = $workspace->pluck('name')->map(fn ($n) => mb_strtolower($n));
+        $skip = $workspaceAll->pluck('name')->map(fn ($n) => mb_strtolower($n));
 
         $globals = \App\Models\GlobalBrand::where('is_active', true)
             ->when($q !== '', fn ($w) => $w->where('name', 'like', "%{$q}%"))
@@ -418,7 +422,8 @@ class CatalogueController extends Controller
      */
     public function createModel(Request $request)
     {
-        $brands   = CompanyBrand::where('is_active', true)->where('company_id', auth()->user()->company_id)->orderBy('name')->get();
+        $brands   = CompanyBrand::where('is_active', true)->where('company_id', auth()->user()->company_id)->orderBy('name')->get()
+            ->filter(fn ($b) => ! $b->managed_brand_id)->values();
         $variants = collect();
         $options  = collect();
 
@@ -1034,7 +1039,17 @@ class CatalogueController extends Controller
 
         // Workspace ID — findOrFail enforces tenant ownership via the
         // TenantScope on CompanyBrand.
-        return (string) CompanyBrand::findOrFail($id)->_id;
+        $brand = CompanyBrand::findOrFail($id);
+
+        // A partner brand's range is published by the brand; the dealer
+        // cannot add boats to it or move their own boats into it.
+        if ($brand->managed_brand_id) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'company_brand_id' => __(':brand is managed by its brand — its boats come from the brand.', ['brand' => $brand->name]),
+            ]);
+        }
+
+        return (string) $brand->_id;
     }
 
     /**

@@ -78,5 +78,19 @@ class AppServiceProvider extends ServiceProvider
                 'unreadNotificationsCount' => $svc->unreadCount($userId),
             ]);
         });
+
+        // Brand portal invitations waiting for this dealership. Claiming here
+        // means an invite sent before the dealer joined Nautiqs shows up on
+        // their very first page, with no login hook to forget.
+        View::composer('components.app.sidebar', function ($view) {
+            $user = auth()->user();
+            $count = 0;
+            if ($user && $user->belongsToTenant() && $user->company_id) {
+                $invitations = app(\App\Services\Brand\BrandInvitations::class);
+                $invitations->claimFor($user);
+                $count = $invitations->pendingFor((string) $user->company_id)->count();
+            }
+            $view->with('pendingBrandInvites', $count);
+        });
     }
 }

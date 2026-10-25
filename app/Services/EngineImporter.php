@@ -189,6 +189,12 @@ class EngineImporter
                 ])
                 ->first();
 
+            // Engines a partner brand publishes are the brand's to change.
+            if ($existing && $existing->brand_engine_id) {
+                $errors[] = ['row' => $rowNumber, 'message' => __(':engine is managed by its brand — row skipped.', ['engine' => trim($data['brand'] . ' ' . $data['code'])])];
+                continue;
+            }
+
             $payload = [
                 'brand'       => $data['brand'],
                 'code'        => $data['code'],
@@ -487,7 +493,8 @@ class EngineImporter
             ->where('company_id', $companyId)
             ->where('type', $type)
             ->get()
-            ->first(fn ($a) => mb_strtolower(trim(preg_replace('/\s+/u', ' ', (string) $a->label))) === mb_strtolower($label));
+            // Never a partner brand's kit — those prices are the brand's.
+            ->first(fn ($a) => ! $a->brand_accessory_id && mb_strtolower(trim(preg_replace('/\s+/u', ' ', (string) $a->label))) === mb_strtolower($label));
 
         if ($existing) {
             $existing->fill($payload);

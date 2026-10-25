@@ -135,7 +135,7 @@
             ctaHref="{{ route('engines.create') }}"
             size="lg" />
     @else
-        <div x-data="{ selected: [], allIds: {{ Js::from($engines->pluck('id')->values()) }} }">
+        <div x-data="{ selected: [], allIds: {{ Js::from(collect($engines->items())->reject(fn ($e) => $e->managed)->pluck('id')->values()) }} }">
             {{-- Bulk actions toolbar — appears once one or more rows are ticked. --}}
             <div x-show="selected.length > 0" x-cloak
                 class="mb-3 flex items-center justify-between gap-3 rounded-lg border border-primary-200 bg-primary-50/60 px-4 py-2.5">
@@ -181,10 +181,12 @@
                             @foreach ($engines as $engine)
                                 <tr class="hover:bg-gray-50" :class="selected.includes('{{ $engine->id }}') ? 'bg-primary-50/40' : ''">
                                     <td class="px-5 py-3">
-                                        <input type="checkbox" x-model="selected" value="{{ $engine->id }}"
-                                            class="rounded border-gray-300 text-primary-800 focus:ring-primary-800" />
+                                        @unless ($engine->managed)
+                                            <input type="checkbox" x-model="selected" value="{{ $engine->id }}"
+                                                class="rounded border-gray-300 text-primary-800 focus:ring-primary-800" />
+                                        @endunless
                                     </td>
-                                    <td class="px-5 py-3 font-medium text-gray-900">{{ $engine->brand }}</td>
+                                    <td class="px-5 py-3 font-medium text-gray-900">{{ $engine->brand }} @if ($engine->managed) <x-brand.managed-badge class="ml-1" /> @endif</td>
                                     <td class="px-5 py-3 text-gray-700">{{ $engine->code }}</td>
                                     <td class="px-5 py-3 text-right font-semibold text-gray-900">{{ number_format($engine->price, 2, ',', ' ') }} €</td>
                                     <td class="px-5 py-3 text-right text-gray-700">{{ number_format($engine->vat_rate, 2) }}%</td>
@@ -202,6 +204,7 @@
                                                 class="inline-flex items-center justify-center w-8 h-8 text-gray-500 hover:text-primary-800 hover:bg-gray-100 rounded-lg" title="{{ __('Edit') }}">
                                                 <i class="ri-pencil-line"></i>
                                             </a>
+                                            @unless ($engine->managed)
                                             <form method="POST" action="{{ route('engines.destroy', $engine->id) }}"
                                                 data-confirm="{{ __('Delete this engine?') }}"
                                                 data-confirm-danger="1"
@@ -211,6 +214,7 @@
                                                     <i class="ri-delete-bin-line"></i>
                                                 </button>
                                             </form>
+                                            @endunless
                                         </div>
                                     </td>
                                 </tr>

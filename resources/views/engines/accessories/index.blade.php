@@ -61,7 +61,7 @@
     @else
         {{-- "Select all" takes what is listed: on the Kits tab or after a
              search it never reaches the rows that aren't shown. --}}
-        <div x-data="{ selected: [], allIds: {{ Js::from($accessories->map(fn ($a) => (string) $a->_id)->values()) }} }">
+        <div x-data="{ selected: [], allIds: {{ Js::from($accessories->reject(fn ($a) => $a->brand_accessory_id)->map(fn ($a) => (string) $a->_id)->values()) }} }">
         <div x-show="selected.length > 0" x-cloak
             class="mb-3 flex items-center justify-between gap-3 rounded-lg border border-primary-200 bg-primary-50/60 px-4 py-2.5">
             <span class="text-sm font-medium text-primary-900">
@@ -105,8 +105,10 @@
                             @php $n = $engineCount[(string) $a->_id] ?? 0; @endphp
                             <tr class="hover:bg-gray-50" :class="selected.includes('{{ $a->_id }}') ? 'bg-primary-50/40' : ''">
                                 <td class="pl-5 py-3">
-                                    <input type="checkbox" x-model="selected" value="{{ $a->_id }}"
-                                        class="rounded border-gray-300 text-primary-800 focus:ring-primary-800" />
+                                    @unless ($a->brand_accessory_id)
+                                        <input type="checkbox" x-model="selected" value="{{ $a->_id }}"
+                                            class="rounded border-gray-300 text-primary-800 focus:ring-primary-800" />
+                                    @endunless
                                 </td>
                                 <td class="px-5 py-3">
                                     <div class="flex items-start gap-3">
@@ -116,7 +118,7 @@
                                         </span>
                                         <div class="min-w-0">
                                             <div class="text-[11px] font-semibold uppercase tracking-wide text-gray-400">{{ $a->typeLabel() }}</div>
-                                            <div class="font-medium text-gray-900 break-words">{{ $a->label }}</div>
+                                            <div class="font-medium text-gray-900 break-words">{{ $a->label }} @if ($a->brand_accessory_id) <x-brand.managed-badge class="ml-1" /> @endif</div>
                                             @if ($a->reference)
                                                 <div class="text-xs text-gray-500 font-mono">{{ $a->reference }}</div>
                                             @endif
@@ -145,6 +147,7 @@
                                             class="inline-flex items-center justify-center w-8 h-8 text-gray-500 hover:text-primary-800 hover:bg-gray-100 rounded-lg" title="{{ __('Edit') }}">
                                             <i class="ri-pencil-line"></i>
                                         </a>
+                                        @unless ($a->brand_accessory_id)
                                         <form method="POST" action="{{ route('engine-accessories.destroy', $a->_id) }}"
                                             data-confirm="{{ __('Delete this kit or propeller? It is unlinked from its engines; quotes already written keep it.') }}"
                                             data-confirm-danger="1" class="inline">
@@ -153,6 +156,7 @@
                                                 <i class="ri-delete-bin-line"></i>
                                             </button>
                                         </form>
+                                        @endunless
                                     </div>
                                 </td>
                             </tr>

@@ -23,10 +23,17 @@ class CompanyBrand extends Model
 
     public const SOURCE_GLOBAL  = 'global';
     public const SOURCE_PRIVATE = 'private';
+    // A brand's own catalogue, kept in sync by BrandSync for dealers it approved.
+    public const SOURCE_BRAND   = 'brand';
 
     protected $fillable = [
         'company_id',
         'global_brand_id',   // null for private
+        'brand_account_id',  // set when a brand account manages this catalogue
+        'managed_brand_id',  // the ManagedBrand it follows
+        // Set when accepting a brand's invitation archived this manual copy
+        // of the same brand (restorable from Partner brands).
+        'archived_by_brand_at',
         'source',            // global | private
         'name',
         'logo_path',

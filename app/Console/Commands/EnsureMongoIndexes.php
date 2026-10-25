@@ -60,6 +60,23 @@ class EnsureMongoIndexes extends Command
         ['email_templates',         ['company_id' => 1, 'type' => 1]],
         ['users',                   ['company_id' => 1]],
         ['users',                   ['email' => 1]],
+
+        // Brand portal
+        ['quotes',                  ['brand_account_ids' => 1, 'created_at' => -1]],
+        ['brand_accesses',          ['brand_account_id' => 1, 'status' => 1]],
+        ['brand_accesses',          ['company_id' => 1, 'status' => 1]],
+        ['brand_accesses',          ['email' => 1, 'status' => 1]],
+        ['managed_brands',          ['brand_account_id' => 1]],
+        ['brand_models',            ['brand_account_id' => 1, 'managed_brand_id' => 1]],
+        ['brand_variants',          ['brand_account_id' => 1, 'brand_model_id' => 1]],
+        ['brand_options',           ['brand_account_id' => 1, 'brand_model_id' => 1]],
+        ['brand_engines',           ['brand_account_id' => 1, 'managed_brand_id' => 1]],
+        ['brand_engine_accessories', ['brand_account_id' => 1, 'managed_brand_id' => 1]],
+        ['company_brands',          ['company_id' => 1, 'managed_brand_id' => 1]],
+        ['company_boat_variants',   ['company_id' => 1, 'brand_variant_id' => 1]],
+        ['company_options',         ['company_id' => 1, 'brand_option_id' => 1]],
+        ['engines',                 ['company_id' => 1, 'managed_brand_id' => 1]],
+        ['engine_accessories',      ['company_id' => 1, 'managed_brand_id' => 1]],
     ];
 
     public function handle(): int

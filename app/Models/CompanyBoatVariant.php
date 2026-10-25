@@ -24,6 +24,8 @@ class CompanyBoatVariant extends Model
         'company_id',
         'company_model_id',
         'global_variant_id',  // null for private
+        'brand_variant_id',   // BrandVariant this copy follows (brand-managed)
+        'cost_override',      // true: the dealer typed a special purchase price
         'source',             // global | private
         'name',
         'base_price',

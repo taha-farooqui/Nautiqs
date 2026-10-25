@@ -97,7 +97,7 @@
                             <tr class="hover:bg-gray-50 cursor-pointer"
                                 data-href="{{ route('catalogue.models.edit', $m?->_id) }}"
                                 onclick="if (!event.target.closest('a, button, form, input')) window.location = this.dataset.href">
-                                <td class="px-5 py-3 font-medium text-gray-900">{{ $b?->name ?? '—' }}</td>
+                                <td class="px-5 py-3 font-medium text-gray-900">{{ $b?->name ?? '—' }} @if ($b?->managed_brand_id) <x-brand.managed-badge class="ml-1" /> @endif</td>
                                 <td class="px-5 py-3">
                                     <p class="font-medium text-gray-900">{{ $m?->name ?? '—' }}{{ $m?->complement ? ' ' . $m->complement : '' }}</p>
                                     @if ($count > 0)

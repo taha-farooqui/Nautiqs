@@ -11,6 +11,24 @@
 {{-- Header date reads "day date month year" (jeudi 30 juillet 2026). --}}
 <x-app-layout :title="__('Dashboard')" :header="__('Dashboard')">
 
+    {{-- Partner brand invitations waiting for an answer. Read live, not from
+         the cached dashboard data, so it disappears as soon as it's answered. --}}
+    @php
+        $brandInvites = auth()->user()->company_id
+            ? app(\App\Services\Brand\BrandInvitations::class)->pendingFor((string) auth()->user()->company_id)
+            : collect();
+    @endphp
+    @if ($brandInvites->isNotEmpty())
+        <div class="mb-4 rounded-xl border border-primary-200 bg-primary-50 px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-start gap-2 text-sm text-primary-900">
+                <i class="ri-links-line text-lg"></i>
+                <span>{{ trans_choice('{1}A brand wants to share its catalogue with you.|[2,*]:count brands want to share their catalogue with you.', $brandInvites->count(), ['count' => $brandInvites->count()]) }}</span>
+            </div>
+            <a href="{{ $brandInvites->count() === 1 ? route('partner-brands.show', $brandInvites->first()->_id) : route('partner-brands.index') }}"
+                class="px-3 py-1.5 text-sm font-semibold bg-primary-800 hover:bg-primary-900 text-white rounded-lg">{{ __('See the invitation') }}</a>
+        </div>
+    @endif
+
     {{-- Catalogue update banner (only when there are pending updates) --}}
     @if ($pendingUpdatesCount > 0)
         <section class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary-900 to-primary-700 text-white p-5 mb-6">

@@ -2,7 +2,10 @@
     $user = auth()->user();
     $isSuperadmin = $user?->role === \App\Models\User::ROLE_SUPERADMIN;
     $isTenantAdmin = $user?->role === \App\Models\User::ROLE_TENANT_ADMIN;
+    $isBrand = $user?->isBrandManager() ?? false;
+    $brandAccount = $isBrand ? $user->brandAccount : null;
     $unreadCount = $unreadNotificationsCount ?? 0;
+    $brandInvites = $pendingBrandInvites ?? 0;
 
     $userInitials = collect(explode(' ', $user?->name ?? 'U'))
         ->map(fn ($p) => mb_substr($p, 0, 1))
@@ -39,6 +42,8 @@
                 ],
                 // Third-party add-ons (GPS, audio, fishing gear) sold on any quote.
                 ['label' => 'Accessories',       'icon' => 'ri-shopping-bag-3-line',     'route' => 'accessories.index', 'active' => 'accessories.*'],
+                // Brands that publish their catalogue to this dealership.
+                ['label' => 'Partner brands',    'icon' => 'ri-links-line',              'route' => 'partner-brands.index', 'active' => 'partner-brands.*', 'badge' => $brandInvites > 0 ? (string) $brandInvites : null],
             ],
         ],
         [
@@ -82,6 +87,7 @@
                 ['label' => 'Overview',        'icon' => 'ri-line-chart-line',      'route' => 'admin.dashboard',  'active' => 'admin.dashboard'],
                 ['label' => 'Dealers',         'icon' => 'ri-store-2-line',         'route' => 'admin.dealers.index', 'active' => 'admin.dealers.*'],
                 ['label' => 'Account requests', 'icon' => 'ri-user-received-line',  'route' => 'admin.account-requests.index', 'active' => 'admin.account-requests.*', 'badge' => $pendingAccountRequests > 0 ? (string) $pendingAccountRequests : null],
+                ['label' => 'Brand accounts',  'icon' => 'ri-award-line',           'route' => 'admin.brand-accounts.index', 'active' => 'admin.brand-accounts.*'],
             ],
         ],
         [
@@ -111,7 +117,31 @@
         ],
     ];
 
-    $nav = $isSuperadmin ? $superadminNav : $tenantNav;
+    // Brand portal — a brand manager sees only these screens.
+    $brandNav = [
+        [
+            'section' => 'Brand portal',
+            'items' => [
+                ['label' => 'Dashboard',       'icon' => 'ri-dashboard-3-line',     'route' => 'brand.dashboard', 'active' => 'brand.dashboard'],
+                $brandAccount?->isEngine()
+                    ? ['label' => 'Catalogue', 'icon' => 'ri-settings-3-line',      'route' => 'brand.engines.index',   'active' => ['brand.engines.*', 'brand.transfer.*']]
+                    : ['label' => 'Catalogue', 'icon' => 'ri-sailboat-line',        'route' => 'brand.catalogue.index', 'active' => ['brand.catalogue.*', 'brand.transfer.*']],
+                ['label' => 'Price levels',    'icon' => 'ri-price-tag-3-line',     'route' => 'brand.levels.edit',   'active' => 'brand.levels.*'],
+                ['label' => 'Dealers',         'icon' => 'ri-store-2-line',         'route' => 'brand.dealers.index', 'active' => 'brand.dealers.*'],
+                ['label' => 'Quotes',          'icon' => 'ri-file-list-3-line',     'route' => 'brand.quotes.index',  'active' => 'brand.quotes.*'],
+            ],
+        ],
+        [
+            'section' => 'Settings',
+            'items' => [
+                ['label' => 'Team',            'icon' => 'ri-team-line',            'route' => 'brand.team.index', 'active' => 'brand.team.*'],
+                ['label' => 'Profile',         'icon' => 'ri-user-settings-line',   'route' => 'profile.edit',     'active' => 'profile.*'],
+                ['label' => 'Notifications',   'icon' => 'ri-notification-3-line',  'route' => 'notifications.index', 'active' => 'notifications.*', 'badge' => $unreadCount > 0 ? ($unreadCount > 99 ? '99+' : (string) $unreadCount) : null],
+            ],
+        ],
+    ];
+
+    $nav = $isSuperadmin ? $superadminNav : ($isBrand ? $brandNav : $tenantNav);
 @endphp
 
 <aside
@@ -124,7 +154,7 @@
         <div class="leading-tight">
             <div class="font-bold text-lg">Nautiqs</div>
             <div class="text-[11px] text-white/60 uppercase tracking-wider">
-                {{ $isSuperadmin ? __('Superadmin') : __('Dealership') }}
+                {{ $isSuperadmin ? __('Superadmin') : ($isBrand ? ($brandAccount->name ?? __('Brand portal')) : __('Dealership')) }}
             </div>
         </div>
         <button @click="sidebarOpen = false" class="ml-auto xl:hidden text-white/70 hover:text-white">
@@ -219,10 +249,12 @@
                         class="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
                         <i class="ri-user-settings-line"></i> {{ __('Profile') }}
                     </a>
-                    <a href="{{ route('company.settings') }}"
-                        class="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                        <i class="ri-settings-3-line"></i> {{ __('Settings') }}
-                    </a>
+                    @unless ($isBrand)
+                        <a href="{{ route('company.settings') }}"
+                            class="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                            <i class="ri-settings-3-line"></i> {{ __('Settings') }}
+                        </a>
+                    @endunless
                 </div>
                 <div class="py-1 border-t border-gray-100">
                     <form method="POST" action="{{ route('logout') }}">

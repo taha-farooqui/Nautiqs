@@ -52,6 +52,7 @@ class EngineController extends Controller
             'vat_rate'   => (float) ($row->vat_rate ?? 0),
             'ttc'        => $row->priceTtc(),
             'accessories' => count($row->accessoryIds()),
+            'managed'    => (bool) $row->brand_engine_id,
         ];
     }
 

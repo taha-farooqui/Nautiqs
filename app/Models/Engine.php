@@ -36,6 +36,11 @@ class Engine extends Model
         // which on this driver would store it as a JSON string that no
         // query can look inside.
         'accessory_ids',
+        'brand_account_id', // engine brand account managing this copy
+        'managed_brand_id',
+        'brand_engine_id',  // BrandEngine it follows
+        'cost_override',    // true: the dealer typed a special purchase price
+        'archived_by_brand_at', // manual engine archived when its brand connected
     ];
 
     protected $casts = [

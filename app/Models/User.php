@@ -16,6 +16,9 @@ class User extends Authenticatable implements MustVerifyEmail
     public const ROLE_SUPERADMIN   = 'superadmin';
     public const ROLE_TENANT_ADMIN = 'tenant_admin';
     public const ROLE_TENANT_USER  = 'tenant_user';
+    // A boat or engine brand's staff: manage that account's catalogue, its
+    // dealers' access, and see their quotes (client identity hidden).
+    public const ROLE_BRAND_MANAGER = 'brand_manager';
 
     protected $fillable = [
         'name',
@@ -24,6 +27,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'password',
         'role',
         'company_id',
+        'brand_account_id', // brand managers only; they have no company
         'google_id',
         'avatar',
         'email_verified_at',
@@ -79,5 +83,15 @@ class User extends Authenticatable implements MustVerifyEmail
     public function belongsToTenant(): bool
     {
         return in_array($this->role, [self::ROLE_TENANT_ADMIN, self::ROLE_TENANT_USER], true);
+    }
+
+    public function isBrandManager(): bool
+    {
+        return $this->role === self::ROLE_BRAND_MANAGER;
+    }
+
+    public function brandAccount()
+    {
+        return $this->belongsTo(BrandAccount::class, 'brand_account_id');
     }
 }

@@ -44,6 +44,7 @@ class AcceptInvitationController extends Controller
             'password'               => $data['password'],
             'role'                   => $invite->role,
             'company_id'             => $invite->company_id,
+            'brand_account_id'       => $invite->brand_account_id,
             'is_active'              => true,
             'invited_by_user_id'     => $invite->invited_by_user_id,
             'invitation_accepted_at' => now(),
@@ -55,6 +56,13 @@ class AcceptInvitationController extends Controller
         $invite->update(['accepted_at' => now()]);
 
         Auth::login($user);
+
+        if ($user->isBrandManager()) {
+            return redirect()->route('brand.dashboard')
+                ->with('status', __('Welcome to :company.', [
+                    'company' => $user->brandAccount?->name ?? config('app.name'),
+                ]));
+        }
 
         return redirect()->route('dashboard')
             ->with('status', __('Welcome to :company.', [

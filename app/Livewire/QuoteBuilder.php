@@ -803,6 +803,10 @@ class QuoteBuilder extends Component
         $variant = $this->variant;
         if (! $variant) return null;
 
+        // Brand portal: the account managing this boat's brand, if any — its
+        // options' lines are tagged with it so the brand sees its share.
+        $modelBrandAccountId = $this->modelBrandAccountId();
+
         // Build options payload
         $optionsPayload = [];
         $allOptions = CompanyOption::whereIn('_id', array_keys($this->selectedOptions))->get()->keyBy(fn ($o) => (string) $o->_id);
@@ -810,6 +814,7 @@ class QuoteBuilder extends Component
             $opt = $allOptions[$optionId] ?? null;
             if (! $opt) continue;
             $optionsPayload[] = [
+                'brand_account_id' => $opt->brand_option_id ? $modelBrandAccountId : null,
                 'option_id'    => (string) $opt->_id,
                 'category'     => $opt->category,
                 'label'        => $opt->label,
@@ -858,6 +863,7 @@ class QuoteBuilder extends Component
             $eng = $allEngines[$engineId] ?? null;
             if (! $eng) continue;
             $optionsPayload[] = [
+                'brand_account_id' => $eng->brand_account_id ?? null,
                 'option_id'    => $engineId, // namespaced id preserved in the snapshot
                 'category'     => 'Engine',
                 'label'        => trim(($eng->brand ?? '') . ' ' . ($eng->code ?? '')),
@@ -876,6 +882,7 @@ class QuoteBuilder extends Component
             // PDF prints them in the engine block beneath this engine.
             foreach ($this->accessoryLinesOf($engineId, $accessoryModels) as [$key, $acc, $aQty]) {
                 $optionsPayload[] = [
+                    'brand_account_id' => $acc->brand_account_id ?? null,
                     'option_id'    => 'acc:' . (string) $acc->_id,
                     'parent_id'    => $engineId,
                     'category'     => 'Engine',
@@ -1024,8 +1031,12 @@ class QuoteBuilder extends Component
                 'code'   => $model->code,
                 'name'   => $model->name,
                 'brand'  => $brand?->name,
-                'source' => $model->source ?? 'global', // global (copied) | private
+                'source' => $model->source ?? 'global', // global (copied) | private | brand
+                // Brand portal: the account managing this boat's brand.
+                'brand_account_id' => $brand?->brand_account_id ? (string) $brand->brand_account_id : null,
+                'managed_brand_id' => $brand?->managed_brand_id ? (string) $brand->managed_brand_id : null,
             ],
+            ...$this->brandShares($totals, $brand?->brand_account_id ? (string) $brand->brand_account_id : null),
             'variant_id'       => (string) $variant->_id,
             'variant_snapshot' => ['name' => $variant->name, 'base_price' => (float) $variant->base_price, 'cost' => (float) $variant->cost, 'currency' => $variant->currency ?? 'EUR'],
             'included_equipment' => $variant->included_equipment ?? [],
@@ -1094,6 +1105,40 @@ class QuoteBuilder extends Component
             'id'      => (string) $quote->_id,
             'preview' => 1,
         ]));
+    }
+
+    /** The brand account managing the selected boat's brand, if any. */
+    private function modelBrandAccountId(): ?string
+    {
+        if (! $this->model_id) return null;
+        $model = CompanyBoatModel::find($this->model_id);
+        $brand = $model ? CompanyBrand::find($model->company_brand_id) : null;
+
+        return $brand?->brand_account_id ? (string) $brand->brand_account_id : null;
+    }
+
+    /**
+     * Which brand accounts' products are on the quote and what each came to
+     * (HT, after line discounts): the boat for its brand, plus every line
+     * tagged with an account. Their dashboards read these two fields.
+     */
+    private function brandShares(array $totals, ?string $boatAccountId): array
+    {
+        $shares = [];
+        if ($boatAccountId) {
+            $shares[$boatAccountId] = (float) ($totals['base_ht'] ?? 0);
+        }
+        foreach ($totals['options_rows'] ?? [] as $row) {
+            $acc = $row['brand_account_id'] ?? null;
+            if ($acc) {
+                $shares[$acc] = ($shares[$acc] ?? 0) + (float) ($row['line_after_cat'] ?? 0);
+            }
+        }
+
+        return [
+            'brand_account_ids' => array_keys($shares),
+            'brand_shares'      => array_map(fn ($id, $v) => ['brand_account_id' => $id, 'value_ht' => round($v, 2)], array_keys($shares), $shares),
+        ];
     }
 
     public function updatedValidityMode(string $mode): void

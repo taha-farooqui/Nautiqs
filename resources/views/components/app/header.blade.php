@@ -36,8 +36,8 @@
             <h1 class="text-lg font-semibold text-gray-900 truncate">{{ $title }}</h1>
         </div>
 
-        {{-- Search trigger (Cmd/Ctrl+K) --}}
-        <div class="hidden md:flex flex-1 min-w-0 max-w-md mx-auto">
+        {{-- Search trigger (Cmd/Ctrl+K) — dealer data only, so not for brand managers --}}
+        <div class="{{ $user?->isBrandManager() ? 'hidden' : 'hidden md:flex' }} flex-1 min-w-0 max-w-md mx-auto">
             <button type="button"
                 @click="$dispatch('open-search')"
                 class="group relative w-full text-left">
@@ -153,6 +153,7 @@
                                 \App\Models\User::ROLE_SUPERADMIN   => __('Superadmin'),
                                 \App\Models\User::ROLE_TENANT_ADMIN => __('Dealer'),
                                 \App\Models\User::ROLE_TENANT_USER  => __('Salesperson'),
+                                \App\Models\User::ROLE_BRAND_MANAGER => __('Brand manager'),
                                 default                             => __('User'),
                             } }}
                         </div>
@@ -171,10 +172,12 @@
                             class="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
                             <i class="ri-user-settings-line"></i> {{ __('Profile') }}
                         </a>
-                        <a href="{{ route('company.settings') }}"
-                            class="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                            <i class="ri-settings-3-line"></i> {{ __('Settings') }}
-                        </a>
+                        @unless ($user?->isBrandManager())
+                            <a href="{{ route('company.settings') }}"
+                                class="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                                <i class="ri-settings-3-line"></i> {{ __('Settings') }}
+                            </a>
+                        @endunless
                     </div>
                     <div class="py-1 border-t border-gray-100">
                         <form method="POST" action="{{ route('logout') }}">

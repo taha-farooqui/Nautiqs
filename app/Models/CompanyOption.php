@@ -21,6 +21,8 @@ class CompanyOption extends Model
         'company_id',
         'company_model_id',
         'global_option_id',   // null for private
+        'brand_option_id',    // BrandOption this copy follows (brand-managed)
+        'cost_override',      // true: the dealer typed a special purchase price
         'source',             // global | private
         'category',
         'label',

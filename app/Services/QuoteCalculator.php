@@ -111,6 +111,8 @@ class QuoteCalculator
                 // For an accessory: the engine line it was added under, so a
                 // reopened quote puts it back beneath the same engine.
                 'parent_id'          => $opt['parent_id'] ?? null,
+                // Brand portal: which brand account's managed product this is.
+                'brand_account_id'   => $opt['brand_account_id'] ?? null,
                 'category'           => $opt['category'] ?? 'Options',
                 'label'              => $opt['label'] ?? '',
                 'description'        => $opt['description'] ?? null,

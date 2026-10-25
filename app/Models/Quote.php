@@ -46,6 +46,10 @@ class Quote extends Model
 
         // Boat
         'model_id',          // company_boat_model or global model ref
+        // Brand portal: accounts whose managed products are on this quote, and
+        // what each one's products came to (HT, after discounts).
+        'brand_account_ids',
+        'brand_shares',      // [{brand_account_id, value_ht}]
         'model_snapshot',    // [code, name, brand, source]
         'variant_id',
         'variant_snapshot',  // [name, base_price, cost, currency]

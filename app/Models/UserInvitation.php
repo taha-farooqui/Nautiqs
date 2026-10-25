@@ -19,6 +19,7 @@ class UserInvitation extends Model
 
     protected $fillable = [
         'company_id',
+        'brand_account_id',      // brand manager invites (no company)
         'email',
         'name',
         'role',                  // tenant_admin | tenant_user
