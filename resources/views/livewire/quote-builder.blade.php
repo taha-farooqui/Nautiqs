@@ -378,8 +378,8 @@
             @if ($this->selectedEngineRows->isNotEmpty())
                 <div class="mb-3 space-y-2">
                     @foreach ($this->selectedEngineRows as $row)
-                        <div class="flex flex-wrap items-start gap-3 px-3 py-2 rounded-lg border border-primary-200 bg-primary-50/40" wire:key="eng-{{ $row->id }}">
-                            <i class="ri-settings-3-line text-primary-800 shrink-0 mt-1"></i>
+                        <div class="flex flex-wrap items-center gap-3 px-3 py-2 rounded-lg border border-primary-200 bg-primary-50/40" wire:key="eng-{{ $row->id }}">
+                            <i class="ri-settings-3-line text-primary-800 shrink-0"></i>
                             <div class="flex-1 min-w-0">
                                 <p class="text-sm font-medium text-gray-900 truncate">{{ $row->label }}</p>
                                 {{-- What the list price doesn't cover — the propeller,
@@ -590,8 +590,8 @@
                 <div class="mb-3 space-y-2">
                     @foreach ($this->selectedExtraRows as $row)
                         @php $sym = $row->currency === 'USD' ? '$' : '€'; @endphp
-                        <div class="flex flex-wrap items-start gap-3 px-3 py-2 rounded-lg border border-primary-200 bg-primary-50/40" wire:key="extra-{{ $row->id }}">
-                            <i class="ri-shopping-bag-3-line text-primary-800 shrink-0 mt-1"></i>
+                        <div class="flex flex-wrap items-center gap-3 px-3 py-2 rounded-lg border border-primary-200 bg-primary-50/40" wire:key="extra-{{ $row->id }}">
+                            <i class="ri-shopping-bag-3-line text-primary-800 shrink-0"></i>
                             <div class="flex-1 min-w-0">
                                 <p class="text-sm font-medium text-gray-900 break-words">{{ $row->label }}</p>
                             </div>
