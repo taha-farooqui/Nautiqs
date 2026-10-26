@@ -50,14 +50,17 @@
         <section class="bg-white rounded-2xl border border-gray-200 p-6">
             <div class="flex flex-wrap items-baseline justify-between gap-2 mb-3">
                 <h3 class="font-semibold text-gray-900">{{ __('Dealer purchase prices') }}</h3>
-                <span class="text-xs text-gray-500">{{ __('Leave a level empty to use its % (shown in grey); type a price to set it exactly.') }}</span>
+                <span class="text-xs text-gray-500">{{ $account->isExactPricing()
+                    ? __('Exact prices: type each level\'s purchase price. An empty level is sold at the public price.')
+                    : __('Leave a level empty to use its % (shown in grey); type a price to set it exactly.') }}</span>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 @foreach ($levels as $i => $lv)
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">{{ $lv['name'] }} <span class="font-normal text-gray-500">(−{{ $lv['pct'] }} %)</span></label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">{{ $lv['name'] }} @unless ($account->isExactPricing()) <span class="font-normal text-gray-500">(−{{ $lv['pct'] }} %)</span> @endunless</label>
                         <input name="levels[{{ $i }}]" type="number" step="0.01" min="0" value="{{ old('levels.' . $i, $lp[$i] ?? '') }}"
-                            :placeholder="price === '' ? '' : (price * (1 - {{ (float) $lv['pct'] }} / 100)).toFixed(2)"
+                            @if ($account->isExactPricing()) placeholder="{{ __('price required') }}"
+                            @else :placeholder="price === '' ? '' : (price * (1 - {{ (float) $lv['pct'] }} / 100)).toFixed(2)" @endif
                             class="w-full rounded-lg border-gray-300 text-right focus:border-primary-800 focus:ring-primary-800" />
                     </div>
                 @endforeach

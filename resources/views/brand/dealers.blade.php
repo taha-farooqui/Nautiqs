@@ -10,6 +10,8 @@
             'invited' => [__('Not on Nautiqs yet'), 'ri-mail-send-line', 'text-sky-700 bg-sky-50'],
             'ended'   => [__('Declined / ended'), 'ri-link-unlink', 'text-gray-600 bg-gray-100'],
         ];
+        // Unknown emails can no longer be invited; the tile only stays for old ones.
+        if (($counts['invited'] ?? 0) === 0) unset($tabs['invited']);
         $rows = $accesses->map(function ($a) use ($companies) {
             $co = $a->company_id ? ($companies[(string) $a->company_id] ?? null) : null;
             return ['id' => (string) $a->_id, 'name' => $co?->name ?? $a->email, 'email' => $a->email,
@@ -154,7 +156,7 @@
                         <span class="w-11 h-11 rounded-xl bg-primary-50 text-primary-800 flex items-center justify-center"><i class="ri-user-add-line text-xl"></i></span>
                         <div>
                             <h3 class="font-semibold text-gray-900 text-lg">{{ __('Invite dealers') }}</h3>
-                            <p class="text-sm text-gray-500">{{ __('Someone not on Nautiqs yet receives an invitation to request an account.') }}</p>
+                            <p class="text-sm text-gray-500">{{ __('Only dealerships already on Nautiqs can be invited. Use the email of their Nautiqs account.') }}</p>
                         </div>
                     </div>
                     <button type="button" @click="invite.open = false" class="w-8 h-8 inline-flex items-center justify-center text-gray-500 hover:bg-gray-100 rounded-lg" aria-label="{{ __('Close') }}"><i class="ri-close-line text-xl"></i></button>

@@ -6,7 +6,7 @@
     </div>
 
     <form method="POST" action="{{ $model ? route('brand.catalogue.update', $model->_id) : route('brand.catalogue.store') }}"
-        x-data="brandModelEditor(@js($versions), @js($options), @js($levels))" class="space-y-4">
+        x-data="brandModelEditor(@js($versions), @js($options), @js($levels), @js($account->isExactPricing()))" class="space-y-4">
         @csrf
         @if ($model) @method('PATCH') @else <input type="hidden" name="managed_brand_id" value="{{ $brand->_id }}"> @endif
 
@@ -39,7 +39,9 @@
         <section class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
             <div class="px-5 py-4 flex flex-wrap items-baseline justify-between gap-2">
                 <h3 class="font-semibold text-gray-900">{{ __('Versions') }}</h3>
-                <span class="text-xs text-gray-500">{{ __('Leave a level empty to use its % (shown in grey); type a price to set it exactly.') }}</span>
+                <span class="text-xs text-gray-500">{{ $account->isExactPricing()
+                    ? __('Exact prices: type each level\'s purchase price. An empty level is sold at the public price.')
+                    : __('Leave a level empty to use its % (shown in grey); type a price to set it exactly.') }}</span>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full min-w-[900px] text-sm">
@@ -48,7 +50,7 @@
                             <th class="px-4 py-2.5">{{ __('Version') }}</th>
                             <th class="px-3 py-2.5 text-right w-36">{{ __('Public HT') }}</th>
                             <template x-for="lv in levels" :key="lv.n">
-                                <th class="px-3 py-2.5 text-right w-36"><span x-text="lv.name"></span> <span class="normal-case font-normal" x-text="'(−' + lv.versions + '%)'"></span></th>
+                                <th class="px-3 py-2.5 text-right w-36"><span x-text="lv.name"></span> <span class="normal-case font-normal" x-text="hint(lv.versions)"></span></th>
                             </template>
                             <th class="w-10"></th>
                         </tr>
@@ -73,8 +75,9 @@
                                 <template x-for="(lv, li) in levels" :key="lv.n">
                                     <td class="px-3 py-2.5">
                                         <input type="number" step="0.01" min="0" :name="`versions[${i}][levels][${li}]`" x-model="v.levels[li]"
-                                            :placeholder="calc(v.price, lv.versions)" :aria-label="lv.name"
-                                            class="w-full text-right rounded-lg border-gray-300 text-sm placeholder:text-gray-400 focus:border-primary-800 focus:ring-primary-800" />
+                                            :placeholder="ph(v.price, lv.versions)" :aria-label="lv.name"
+                                            :class="missing(v.levels[li]) ? 'border-amber-300 bg-amber-50' : 'border-gray-300'"
+                                            class="w-full text-right rounded-lg text-sm placeholder:text-gray-400 focus:border-primary-800 focus:ring-primary-800" />
                                     </td>
                                 </template>
                                 <td class="px-2 py-2.5 text-right">
@@ -102,7 +105,7 @@
                             <th class="px-3 py-2.5 text-right w-32">{{ __('Public HT') }}</th>
                             <th class="px-3 py-2.5 text-right w-20">{{ __('VAT') }}</th>
                             <template x-for="lv in levels" :key="lv.n">
-                                <th class="px-3 py-2.5 text-right w-32"><span x-text="lv.name"></span> <span class="normal-case font-normal" x-text="'(−' + lv.options + '%)'"></span></th>
+                                <th class="px-3 py-2.5 text-right w-32"><span x-text="lv.name"></span> <span class="normal-case font-normal" x-text="hint(lv.options)"></span></th>
                             </template>
                             <th class="w-10"></th>
                         </tr>
@@ -132,8 +135,9 @@
                                 <template x-for="(lv, li) in levels" :key="lv.n">
                                     <td class="px-3 py-2.5">
                                         <input type="number" step="0.01" min="0" :name="`options[${i}][levels][${li}]`" x-model="o.levels[li]"
-                                            :placeholder="calc(o.price, lv.options)" :aria-label="lv.name"
-                                            class="w-full text-right rounded-lg border-gray-300 text-sm placeholder:text-gray-400 focus:border-primary-800 focus:ring-primary-800" />
+                                            :placeholder="ph(o.price, lv.options)" :aria-label="lv.name"
+                                            :class="missing(o.levels[li]) ? 'border-amber-300 bg-amber-50' : 'border-gray-300'"
+                                            class="w-full text-right rounded-lg text-sm placeholder:text-gray-400 focus:border-primary-800 focus:ring-primary-800" />
                                     </td>
                                 </template>
                                 <td class="px-2 py-2.5 text-right">
@@ -159,11 +163,15 @@
 
     @push('scripts')
     <script>
-        function brandModelEditor(versions, options, levels) {
+        function brandModelEditor(versions, options, levels, exact) {
             let k = 0;
             const lv = r => { const a = Array.isArray(r) ? r.slice(0, 3) : []; while (a.length < 3) a.push(''); return a; };
             return {
-                levels,
+                levels, exact,
+                // Exact-price mode: no % estimate; an empty level box is a price still to fill in.
+                hint(pct) { return this.exact ? '' : '(−' + pct + '%)'; },
+                ph(price, pct) { return this.exact ? @js(__('price required')) : this.calc(price, pct); },
+                missing(val) { return this.exact && (val === '' || val === null); },
                 versions: versions.map(v => ({ ...v, key: k++, open: false, levels: lv(v.levels), equipment: v.equipment || '' })),
                 options: options.map(o => ({ ...o, key: k++, levels: lv(o.levels) })),
                 addVersion() { this.versions.push({ key: k++, id: '', name: '', price: '', currency: 'EUR', levels: ['', '', ''], equipment: '', open: false }); },

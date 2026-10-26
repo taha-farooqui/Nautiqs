@@ -14,7 +14,9 @@
                 'pct' => collect($categories)->mapWithKeys(fn ($c) => [$c => (float) old("levels.$n.pct.$c", $l['pct'][$c])])])->values(),
             'categories' => collect($categories)->map(fn ($c) => ['key' => $c, 'label' => $catLabel($c), 'icon' => $catIcon($c)])->values(),
             'sample' => $account->isEngine() ? 15000 : 50000,
+            'mode' => old('pricing_mode', $account->isExactPricing() ? 'exact' : 'percent'),
         ];
+        $catalogueRoute = $account->isEngine() ? 'brand.engines.index' : 'brand.catalogue.index';
         $tone = [1 => ['bg-amber-500', 'from-amber-400 to-amber-500', 'bg-amber-50 text-amber-700'],
                  2 => ['bg-slate-500', 'from-slate-400 to-slate-500', 'bg-slate-100 text-slate-700'],
                  3 => ['bg-orange-600', 'from-orange-400 to-orange-600', 'bg-orange-50 text-orange-700']];
@@ -22,9 +24,44 @@
 
     <form method="POST" action="{{ route('brand.levels.update') }}" x-data="levelsEditor(@js($state))" class="space-y-5 pb-20">
         @csrf @method('PATCH')
+        <input type="hidden" name="pricing_mode" :value="mode">
 
-        {{-- Intro + simulator --}}
-        <div class="grid grid-cols-1 xl:grid-cols-5 gap-4">
+        {{-- How purchase prices are set --}}
+        <section class="rise bg-white rounded-2xl border border-gray-200 p-5">
+            <h3 class="font-semibold text-gray-900 mb-1">{{ __('How do you set your dealers\' purchase prices?') }}</h3>
+            <p class="text-sm text-gray-500 mb-4">{{ __('You can switch at any time; your dealers are re-priced when you save.') }}</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                @foreach (['percent' => ['ri-percent-line', __('A discount % per level'), __('One discount per level and category, applied to every product. Quick to set up.')],
+                           'exact' => ['ri-price-tag-3-line', __('An exact price per product'), __('Each product has its own Level 1, Level 2 and Level 3 price — typed in the catalogue or imported from Excel.')]] as $m => [$icon, $title, $text])
+                    <button type="button" @click="mode = '{{ $m }}'" class="lift relative text-left rounded-xl border-2 p-4 flex items-start gap-4 transition"
+                        :class="mode === '{{ $m }}' ? 'border-primary-800 bg-primary-50/60' : 'border-gray-200 hover:border-gray-300'">
+                        <span class="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition" :class="mode === '{{ $m }}' ? 'bg-primary-800 text-white' : 'bg-gray-100 text-gray-500'"><i class="{{ $icon }} text-xl"></i></span>
+                        <span><span class="block font-semibold text-gray-900">{{ $title }}</span><span class="block text-sm text-gray-500 mt-0.5">{{ $text }}</span></span>
+                        <i class="ri-checkbox-circle-fill absolute top-3 right-3 text-primary-800 text-lg" x-show="mode === '{{ $m }}'" x-transition></i>
+                    </button>
+                @endforeach
+            </div>
+
+            {{-- Exact mode: what still needs a price --}}
+            <div x-show="mode === 'exact'" x-collapse x-cloak>
+                @if ($missing > 0)
+                    <div class="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 flex flex-wrap items-center justify-between gap-3">
+                        <span class="flex items-start gap-2"><i class="ri-error-warning-line text-lg text-amber-500"></i>
+                            {{ trans_choice('{1}:count product has no price for at least one level. Until it does, dealers on that level pay the public price.|[2,*]:count products have no price for at least one level. Until they do, dealers on that level pay the public price.', $missing, ['count' => $missing]) }}</span>
+                        <span class="flex gap-2">
+                            <a href="{{ route($catalogueRoute) }}" class="px-3 py-1.5 rounded-lg bg-white border border-amber-200 font-semibold hover:bg-amber-100">{{ __('Open the catalogue') }}</a>
+                            <a href="{{ route('brand.transfer.form') }}" class="px-3 py-1.5 rounded-lg bg-white border border-amber-200 font-semibold hover:bg-amber-100"><i class="ri-file-excel-2-line"></i> {{ __('Import from Excel') }}</a>
+                        </span>
+                    </div>
+                @else
+                    <div class="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 flex items-center gap-2">
+                        <i class="ri-checkbox-circle-line text-lg"></i> {{ __('Every product has a price for each level.') }}</div>
+                @endif
+            </div>
+        </section>
+
+        {{-- Intro + simulator (percentage mode) --}}
+        <div x-show="mode === 'percent'" class="grid grid-cols-1 xl:grid-cols-5 gap-4">
             <section class="rise xl:col-span-2 rounded-2xl bg-gradient-to-br from-primary-900 to-primary-700 text-white p-6">
                 <span class="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center mb-4"><i class="ri-price-tag-3-line text-xl"></i></span>
                 <h2 class="text-xl font-bold">{{ __('How levels work') }}</h2>
@@ -102,7 +139,11 @@
                             <i class="ri-pencil-line absolute right-0 top-1/2 -translate-y-1/2 text-gray-300 group-hover:text-gray-500 pointer-events-none"></i>
                         </div>
 
-                        <div class="mt-4 space-y-5">
+                        <p x-show="mode === 'exact'" x-cloak class="mt-4 text-sm text-gray-500 flex items-start gap-2">
+                            <i class="ri-price-tag-3-line text-gray-400 mt-0.5"></i>
+                            <span>{{ __('Prices for this level come from each product (column :col in Excel).', ['col' => 'NIVEAU ' . $n . ' HT']) }}</span>
+                        </p>
+                        <div x-show="mode === 'percent'" class="mt-4 space-y-5">
                             <template x-for="c in categories" :key="c.key">
                                 <div>
                                     <div class="flex items-center justify-between mb-2">
@@ -127,7 +168,7 @@
 
         {{-- Per-brand overrides --}}
         @if ($brands->count() > 1)
-            <section class="rise bg-white rounded-2xl border border-gray-200 p-6" style="--d: 5">
+            <section x-show="mode === 'percent'" class="rise bg-white rounded-2xl border border-gray-200 p-6" style="--d: 5">
                 <div class="flex items-start gap-3 mb-4">
                     <span class="w-10 h-10 shrink-0 rounded-xl bg-primary-50 text-primary-800 flex items-center justify-center"><i class="ri-equalizer-line text-lg"></i></span>
                     <div>
@@ -197,11 +238,11 @@
         <script>
             function levelsEditor(s) {
                 return {
-                    levels: s.levels, categories: s.categories, sample: s.sample,
+                    levels: s.levels, categories: s.categories, sample: s.sample, mode: s.mode,
                     cat: s.categories[0].key,
                     initial: '',
-                    init() { this.initial = JSON.stringify(this.levels); },
-                    get dirty() { return JSON.stringify(this.levels) !== this.initial; },
+                    init() { this.initial = JSON.stringify([this.levels, this.mode]); },
+                    get dirty() { return JSON.stringify([this.levels, this.mode]) !== this.initial; },
                     pct(i) { return Number(this.levels[i].pct[this.cat]) || 0; },
                     priceAt(i) { return (Number(this.sample) || 0) * (1 - this.pct(i) / 100); },
                     eur(v) { return new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(Math.round(v || 0)) + ' €'; },

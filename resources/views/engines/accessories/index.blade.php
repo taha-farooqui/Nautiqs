@@ -143,9 +143,9 @@
                                 </td>
                                 <td class="px-5 py-3">
                                     <div class="flex items-center justify-end gap-1">
-                                        <a href="{{ route('engine-accessories.edit', $a->_id) }}"
-                                            class="inline-flex items-center justify-center w-8 h-8 text-gray-500 hover:text-primary-800 hover:bg-gray-100 rounded-lg" title="{{ __('Edit') }}">
-                                            <i class="ri-pencil-line"></i>
+                                        <a href="{{ $a->brand_accessory_id ? route('engine-accessories.managed', $a->_id) : route('engine-accessories.edit', $a->_id) }}"
+                                            class="inline-flex items-center justify-center w-8 h-8 text-gray-500 hover:text-primary-800 hover:bg-gray-100 rounded-lg" title="{{ $a->brand_accessory_id ? __('View') : __('Edit') }}">
+                                            <i class="{{ $a->brand_accessory_id ? 'ri-eye-line' : 'ri-pencil-line' }}"></i>
                                         </a>
                                         @unless ($a->brand_accessory_id)
                                         <form method="POST" action="{{ route('engine-accessories.destroy', $a->_id) }}"

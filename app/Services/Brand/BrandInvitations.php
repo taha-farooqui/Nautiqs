@@ -24,10 +24,14 @@ class BrandInvitations
         $email = mb_strtolower(trim($email));
         $user  = User::where('email', $email)->first();
 
-        if ($user && ! $user->belongsToTenant()) {
-            return ['skipped', __(':email is not a dealer account.', ['email' => $email])];
+        // Only dealerships already on Nautiqs can be invited — nothing is sent
+        // to an address that has no dealer account.
+        if (! $user || ! $user->belongsToTenant() || ! $user->company_id) {
+            return ['skipped', $user
+                ? __(':email is not a dealer account.', ['email' => $email])
+                : __(':email has no dealer account on Nautiqs. The dealership must create its account first.', ['email' => $email])];
         }
-        $companyId = $user?->company_id ? (string) $user->company_id : null;
+        $companyId = (string) $user->company_id;
 
         $q = BrandAccess::where('brand_account_id', (string) $account->_id);
         $existing = $companyId
@@ -44,7 +48,7 @@ class BrandInvitations
             'brand_account_id'  => (string) $account->_id,
             'email'             => $email,
             'company_id'        => $companyId,
-            'status'            => $companyId ? BrandAccess::STATUS_PENDING : BrandAccess::STATUS_INVITED,
+            'status'            => BrandAccess::STATUS_PENDING,
             'level'             => $level,
             'managed_brand_ids' => array_values($brandIds),
             'message'           => $message ?: null,
@@ -61,9 +65,7 @@ class BrandInvitations
         $access = $existing ? tap($existing)->update($fields) : BrandAccess::create($fields);
 
         $this->sendEmail($access, $account);
-        if ($companyId) {
-            $this->notifyInvitation($access, $account);
-        }
+        $this->notifyInvitation($access, $account);
 
         return ['sent', $email];
     }

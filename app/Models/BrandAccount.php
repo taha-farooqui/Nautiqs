@@ -26,6 +26,11 @@ class BrandAccount extends Model
 
     public const LEVEL_COUNT = 3;
 
+    // How purchase prices are set: a % per level and category, or an exact
+    // price per level typed (or imported) on every product.
+    public const PRICING_PERCENT = 'percent';
+    public const PRICING_EXACT   = 'exact';
+
     protected $connection = 'mongodb';
     protected $table = 'brand_accounts';
 
@@ -36,6 +41,7 @@ class BrandAccount extends Model
         // A plain array on purpose — this driver stores 'array' casts as JSON
         // strings.
         'levels',
+        'pricing_mode', // percent (default) | exact
         'is_active',
         'created_by_user_id',
     ];
@@ -47,6 +53,11 @@ class BrandAccount extends Model
     public function isEngine(): bool
     {
         return $this->kind === self::KIND_ENGINE;
+    }
+
+    public function isExactPricing(): bool
+    {
+        return $this->pricing_mode === self::PRICING_EXACT;
     }
 
     public function categories(): array

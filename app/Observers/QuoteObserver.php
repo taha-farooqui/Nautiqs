@@ -2,8 +2,14 @@
 
 namespace App\Observers;
 
+use App\Mail\BrandQuoteWon;
+use App\Models\BrandAccount;
 use App\Models\Quote;
+use App\Models\User;
+use App\Services\Brand\BrandQuotePresenter;
 use App\Services\NotificationService;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class QuoteObserver
 {
@@ -56,6 +62,7 @@ class QuoteObserver
                     'color'   => 'emerald',
                     'link'    => route('quotes.show', $quote->_id),
                 ]);
+                $this->emailBrands($quote);
                 break;
 
             case Quote::STATUS_LOST:
@@ -81,6 +88,32 @@ class QuoteObserver
             'color'   => 'gray',
             'link'    => null,
         ]);
+    }
+
+    /**
+     * A won quote with partner-brand products: email each brand's managers the
+     * brand-safe detail (BrandQuotePresenter — no client identity, no margins).
+     * Never allowed to break marking the quote as won.
+     */
+    private function emailBrands(Quote $quote): void
+    {
+        foreach ((array) ($quote->brand_account_ids ?? []) as $accountId) {
+            try {
+                $account = BrandAccount::find($accountId);
+                if (! $account || ! $account->is_active) continue;
+
+                $managers = User::withoutGlobalScopes()->where('role', User::ROLE_BRAND_MANAGER)
+                    ->where('brand_account_id', (string) $accountId)->where('is_active', '!=', false)->get();
+                if ($managers->isEmpty()) continue;
+
+                $detail = (new BrandQuotePresenter($account))->detail($quote);
+                foreach ($managers as $m) {
+                    Mail::to($m->email)->send(new BrandQuoteWon($account, $detail));
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Brand quote-won email failed', ['quote_id' => (string) $quote->_id, 'brand_account_id' => (string) $accountId, 'error' => $e->getMessage()]);
+            }
+        }
     }
 
     private function clientName(Quote $quote): string

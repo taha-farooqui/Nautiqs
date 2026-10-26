@@ -34,7 +34,7 @@ class ManagedCatalogueController extends Controller
         $ctx = $this->context($model->brand?->brand_account_id, $model->brand?->managed_brand_id);
 
         $versions = CompanyBoatVariant::where('company_model_id', (string) $model->_id)->where('is_archived', '!=', true)->get()
-            ->map(fn ($v) => (object) ['id' => (string) $v->_id, 'name' => $v->name, 'public' => (float) $v->base_price, 'cost' => $v->cost,
+            ->map(fn ($v) => (object) ['id' => (string) $v->_id, 'name' => $v->name, 'category' => null, 'public' => (float) $v->base_price, 'cost' => $v->cost,
                 'override' => (bool) $v->cost_override, 'level' => $this->levelPrice($ctx, BrandVariant::class, $v->brand_variant_id, 'versions')]);
         $options = CompanyOption::where('company_model_id', (string) $model->_id)->where('is_archived', '!=', true)->orderBy('position')->get()
             ->map(fn ($o) => (object) ['id' => (string) $o->_id, 'name' => $o->label, 'category' => $o->category, 'public' => (float) $o->price, 'cost' => $o->cost,

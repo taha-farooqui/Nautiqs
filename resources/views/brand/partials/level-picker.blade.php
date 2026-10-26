@@ -17,12 +17,16 @@
                 :class="{{ $model }} == {{ $n }} ? 'bg-primary-800 text-white scale-100' : 'bg-gray-100 text-transparent scale-90'"><i class="ri-check-line text-xs"></i></span>
             <x-brand.level-badge :n="$n" :name="$lvl['name']" />
             <div class="mt-2.5 space-y-1">
+                @if ($account->isExactPricing())
+                    <div class="text-xs text-gray-500"><i class="ri-price-tag-3-line"></i> {{ __('Exact price per product') }}</div>
+                @else
                 @foreach ($categories as $c)
                     <div class="flex items-center justify-between text-xs">
                         <span class="text-gray-500">{{ $catShort($c) }}</span>
                         <span class="font-semibold {{ $lvl['pct'][$c] > 0 ? 'text-gray-900' : 'text-gray-400' }}">−{{ rtrim(rtrim(number_format($lvl['pct'][$c], 1, ',', ''), '0'), ',') }} %</span>
                     </div>
                 @endforeach
+                @endif
             </div>
             <div class="mt-2 pt-2 border-t border-gray-100 text-[11px] text-gray-500">
                 <i class="ri-store-2-line"></i> {{ trans_choice('{0}no dealer|{1}:count dealer|[2,*]:count dealers', $levelCounts[$n] ?? 0, ['count' => $levelCounts[$n] ?? 0]) }}

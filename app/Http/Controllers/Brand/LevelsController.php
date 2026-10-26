@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\BrandAccess;
 use App\Models\BrandAccount;
 use App\Models\ManagedBrand;
+use App\Services\Brand\BrandPricing;
 use App\Services\Brand\BrandSync;
 use Illuminate\Http\Request;
 
@@ -26,6 +27,7 @@ class LevelsController extends Controller
         return view('brand.levels', [
             'account' => $account, 'levels' => $account->levelsResolved(), 'categories' => $account->categories(),
             'brands' => $brands, 'counts' => $counts,
+            'missing' => (new BrandPricing($account))->itemsMissingLevelPrices(),
         ]);
     }
 
@@ -34,7 +36,7 @@ class LevelsController extends Controller
         $account = auth()->user()->brandAccount;
         $cats = $account->categories();
 
-        $rules = ['levels' => 'required|array'];
+        $rules = ['levels' => 'required|array', 'pricing_mode' => 'nullable|in:' . BrandAccount::PRICING_PERCENT . ',' . BrandAccount::PRICING_EXACT];
         for ($n = 1; $n <= BrandAccount::LEVEL_COUNT; $n++) {
             $rules["levels.$n.name"] = 'required|string|max:60';
             foreach ($cats as $c) $rules["levels.$n.pct.$c"] = 'nullable|numeric|min:0|max:100';
@@ -51,7 +53,7 @@ class LevelsController extends Controller
             foreach ($cats as $c) $pct[$c] = round((float) ($data['levels'][$n]['pct'][$c] ?? 0), 2);
             $levels[] = ['name' => trim($data['levels'][$n]['name']), 'pct' => $pct];
         }
-        $account->update(['levels' => $levels]);
+        $account->update(['levels' => $levels, 'pricing_mode' => $data['pricing_mode'] ?? BrandAccount::PRICING_PERCENT]);
 
         foreach (ManagedBrand::all() as $brand) {
             $o = $data['overrides'][(string) $brand->_id] ?? null;

@@ -126,6 +126,7 @@
                 $brandAccount?->isEngine()
                     ? ['label' => 'Catalogue', 'icon' => 'ri-settings-3-line',      'route' => 'brand.engines.index',   'active' => ['brand.engines.*', 'brand.transfer.*']]
                     : ['label' => 'Catalogue', 'icon' => 'ri-sailboat-line',        'route' => 'brand.catalogue.index', 'active' => ['brand.catalogue.*', 'brand.transfer.*']],
+                ['label' => 'Brands',          'icon' => 'ri-building-4-line',      'route' => 'brand.brands.index',  'active' => 'brand.brands.*'],
                 ['label' => 'Price levels',    'icon' => 'ri-price-tag-3-line',     'route' => 'brand.levels.edit',   'active' => 'brand.levels.*'],
                 ['label' => 'Dealers',         'icon' => 'ri-store-2-line',         'route' => 'brand.dealers.index', 'active' => 'brand.dealers.*'],
                 ['label' => 'Quotes',          'icon' => 'ri-file-list-3-line',     'route' => 'brand.quotes.index',  'active' => 'brand.quotes.*'],

@@ -89,7 +89,7 @@ class DashboardController extends Controller
         $accesses  = BrandAccess::where('brand_account_id', (string) $account->_id)->get();
         $connected = $accesses->where('status', BrandAccess::STATUS_ACTIVE)->count();
         $items = $account->isEngine() ? BrandEngine::count() : BrandModel::count();
-        $levelsSet = collect($account->levelsResolved())->contains(fn ($l) => array_sum($l['pct']) > 0);
+        $levelsSet = $account->isExactPricing() || collect($account->levelsResolved())->contains(fn ($l) => array_sum($l['pct']) > 0);
         $steps = [
             ['done' => $items > 0, 'icon' => $account->isEngine() ? 'ri-settings-3-line' : 'ri-sailboat-line',
                 'title' => __('Add your catalogue'), 'text' => __('By hand or from your Excel price list.'),

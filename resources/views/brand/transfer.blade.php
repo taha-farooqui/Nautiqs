@@ -46,7 +46,9 @@
             <ul class="text-gray-600 space-y-0.5">
                 @foreach ($levels as $n => $l) <li><span class="font-mono text-xs">NIVEAU {{ $n }} HT</span> = {{ $l['name'] }}</li> @endforeach
             </ul>
-            <p class="text-gray-500">{{ __('Leave a level empty to use its %.') }}</p>
+            <p class="text-gray-500">{{ $account->isExactPricing()
+                ? __('Exact prices: fill the three NIVEAU columns for every row. An empty level is sold at the public price.')
+                : __('Leave a level empty to use its %.') }}</p>
             <div class="flex flex-wrap gap-2 pt-1">
                 <a href="{{ route('brand.transfer.template') }}" class="inline-flex items-center gap-1 px-3 py-1.5 font-medium border border-gray-300 rounded-lg hover:bg-gray-50"><i class="ri-file-excel-2-line"></i> {{ __('Template') }}</a>
                 <a href="{{ route('brand.transfer.export') }}" class="inline-flex items-center gap-1 px-3 py-1.5 font-medium border border-gray-300 rounded-lg hover:bg-gray-50"><i class="ri-download-2-line"></i> {{ __('Export current') }}</a>

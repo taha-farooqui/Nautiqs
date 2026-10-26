@@ -200,9 +200,9 @@
                                     </td>
                                     <td class="px-5 py-3">
                                         <div class="flex items-center justify-end gap-1">
-                                            <a href="{{ route('engines.edit', $engine->id) }}"
-                                                class="inline-flex items-center justify-center w-8 h-8 text-gray-500 hover:text-primary-800 hover:bg-gray-100 rounded-lg" title="{{ __('Edit') }}">
-                                                <i class="ri-pencil-line"></i>
+                                            <a href="{{ $engine->managed ? route('engines.managed', $engine->id) : route('engines.edit', $engine->id) }}"
+                                                class="inline-flex items-center justify-center w-8 h-8 text-gray-500 hover:text-primary-800 hover:bg-gray-100 rounded-lg" title="{{ $engine->managed ? __('View') : __('Edit') }}">
+                                                <i class="{{ $engine->managed ? 'ri-eye-line' : 'ri-pencil-line' }}"></i>
                                             </a>
                                             @unless ($engine->managed)
                                             <form method="POST" action="{{ route('engines.destroy', $engine->id) }}"

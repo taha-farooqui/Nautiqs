@@ -332,6 +332,11 @@ Route::middleware(['auth', 'verified', 'maintenance', 'brand.contain', 'managed.
         Route::get('/transfer/template',        [$bt, 'template'])->name('transfer.template');
         Route::post('/transfer/import',         [$bt, 'import'])->name('transfer.import');
 
+        $bb = \App\Http\Controllers\Brand\BrandsController::class;
+        Route::get('/brands',                   [$bb, 'index'])->name('brands.index');
+        Route::post('/brands',                  [$bb, 'store'])->name('brands.store');
+        Route::patch('/brands/{id}',            [$bb, 'update'])->name('brands.update');
+
         $bl = \App\Http\Controllers\Brand\LevelsController::class;
         Route::get('/levels',                   [$bl, 'edit'])->name('levels.edit');
         Route::patch('/levels',                 [$bl, 'update'])->name('levels.update');
