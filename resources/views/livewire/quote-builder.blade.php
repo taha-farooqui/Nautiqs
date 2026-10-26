@@ -382,10 +382,6 @@
                             <i class="ri-settings-3-line text-primary-800 shrink-0 mt-1"></i>
                             <div class="flex-1 min-w-0">
                                 <p class="text-sm font-medium text-gray-900 truncate">{{ $row->label }}</p>
-                                <p class="text-xs text-gray-500">
-                                    @if ($row->hp) {{ (int) $row->hp }} HP · @endif
-                                    {{ number_format($row->price, 0, ',', ' ') }} € {{ __('each') }}
-                                </p>
                                 {{-- What the list price doesn't cover — the propeller,
                                      typically. Printed on the quote under the engine. --}}
                                 @if (! empty($row->description))
@@ -598,7 +594,6 @@
                             <i class="ri-shopping-bag-3-line text-primary-800 shrink-0 mt-1"></i>
                             <div class="flex-1 min-w-0">
                                 <p class="text-sm font-medium text-gray-900 break-words">{{ $row->label }}</p>
-                                <p class="text-xs text-gray-500">{{ number_format($row->price, 2, ',', ' ') }} {{ $sym }} {{ __('each') }}</p>
                             </div>
                             <div class="flex w-full sm:w-auto flex-wrap items-center justify-end gap-x-3 gap-y-2">
                                 <div class="flex items-center gap-1.5 shrink-0">
