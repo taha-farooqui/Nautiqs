@@ -1781,5 +1781,7 @@
     "No options yet.": "Aucune option.",
     "not your product": "autre marque",
     "Add new brand": "Ajouter une nouvelle marque",
-    "Pick from the brand list. Once a brand belongs to this account, dealers can no longer add it themselves — they receive it from the brand.": "Choisissez dans la liste des marques. Une fois la marque attribuée à ce compte, les concessionnaires ne peuvent plus l'ajouter eux-mêmes — ils la reçoivent de la marque."
+    "Pick from the brand list. Once a brand belongs to this account, dealers can no longer add it themselves — they receive it from the brand.": "Choisissez dans la liste des marques. Une fois la marque attribuée à ce compte, les concessionnaires ne peuvent plus l'ajouter eux-mêmes — ils la reçoivent de la marque.",
+    "{1}:names is already being managed.|[2,*]:names are already being managed.": "{1}:names est déjà gérée.|[2,*]:names sont déjà gérées.",
+    ":names is already being managed.": ":names est déjà gérée."
 }

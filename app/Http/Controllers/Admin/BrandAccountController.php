@@ -56,7 +56,7 @@ class BrandAccountController extends Controller
             return back()->withInput()->withErrors(['brands' => __('Enter at least one brand.')]);
         }
         if ($taken = $this->takenBrandNames($brandNames)) {
-            return back()->withInput()->withErrors(['brands' => __('Already managed by another account: :names', ['names' => implode(', ', $taken)])]);
+            return back()->withInput()->withErrors(['brands' => trans_choice('{1}:names is already being managed.|[2,*]:names are already being managed.', count($taken), ['names' => implode(', ', $taken)])]);
         }
         $email = mb_strtolower(trim($data['manager_email']));
         if (User::where('email', $email)->exists()) {
@@ -125,7 +125,7 @@ class BrandAccountController extends Controller
         $data = $request->validate(['brand' => 'required|string|max:120']);
         $name = trim($data['brand']);
         if ($this->takenBrandNames([$name])) {
-            return back()->withErrors(['brand' => __('Already managed by an account: :names', ['names' => $name])]);
+            return back()->withErrors(['brand' => __(':names is already being managed.', ['names' => $name])]);
         }
         $count = ManagedBrand::withoutGlobalScopes()->where('brand_account_id', $id)->count();
         ManagedBrand::create(ManagedBrand::fromName($name) + ['brand_account_id' => $id, 'position' => $count, 'is_active' => true]);
@@ -139,7 +139,7 @@ class BrandAccountController extends Controller
         $data = $request->validate(['name' => 'required|string|max:120']);
         $name = trim($data['name']);
         if (mb_strtolower($name) !== mb_strtolower((string) $brand->name) && $this->takenBrandNames([$name])) {
-            return back()->withErrors(['brand' => __('Already managed by an account: :names', ['names' => $name])]);
+            return back()->withErrors(['brand' => __(':names is already being managed.', ['names' => $name])]);
         }
         $brand->update(['name' => $name]);
         // Dealers see the new name on their next sync.

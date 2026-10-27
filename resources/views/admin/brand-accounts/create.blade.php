@@ -12,7 +12,8 @@
         @submit="add(); $refs.brandsField.value = brands.join('\n')">
         @csrf
 
-        <section class="rise bg-white rounded-2xl border border-gray-200 p-6 space-y-6">
+        {{-- relative z-10: the brand dropdown must paint over the next card. --}}
+        <section class="rise relative z-10 bg-white rounded-2xl border border-gray-200 p-6 space-y-6">
             <div class="flex items-center gap-3">
                 <span class="w-6 h-6 rounded-full bg-primary-800 text-white text-xs font-bold flex items-center justify-center">1</span>
                 <h3 class="font-semibold text-gray-900">{{ __('Account') }}</h3>
