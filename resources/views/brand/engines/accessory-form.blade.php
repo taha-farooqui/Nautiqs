@@ -33,7 +33,7 @@
                 <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Name') }} <span class="text-red-500">*</span></label>
                 <input name="label" required maxlength="500" value="{{ old('label', $acc->label ?? '') }}" class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />
             </div>
-            <div class="grid grid-cols-2 gap-4 max-w-md">
+            <div class="grid grid-cols-3 gap-4 max-w-lg">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Public price HT') }} <span class="text-red-500">*</span></label>
                     <input name="price" type="number" step="0.01" min="0" required x-model="price" class="w-full rounded-lg border-gray-300 text-right focus:border-primary-800 focus:ring-primary-800" />
@@ -41,6 +41,12 @@
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('VAT %') }}</label>
                     <input name="vat_rate" type="number" step="0.1" min="0" max="100" value="{{ old('vat_rate', $acc->vat_rate ?? 20) }}" class="w-full rounded-lg border-gray-300 text-right focus:border-primary-800 focus:ring-primary-800" />
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Currency') }}</label>
+                    <select name="currency" class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800">
+                        @foreach (['EUR', 'USD'] as $c) <option value="{{ $c }}" @selected(old('currency', $acc->currency ?? 'EUR') === $c)>{{ $c }}</option> @endforeach
+                    </select>
                 </div>
             </div>
         </section>

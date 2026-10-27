@@ -141,8 +141,9 @@
                     @csrf
                     <div class="relative flex-1">
                         <i class="ri-add-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                        <input name="brand" required maxlength="120" placeholder="{{ __('Add a brand…') }}" aria-label="{{ __('Brand name') }}"
+                        <input name="brand" required maxlength="120" placeholder="{{ __('Add a brand…') }}" aria-label="{{ __('Brand name') }}" list="global-brand-list" autocomplete="off"
                             class="w-full pl-9 rounded-lg border-dashed border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
+                        <datalist id="global-brand-list">@foreach ($globalBrands as $g)<option value="{{ $g }}">@endforeach</datalist>
                     </div>
                     <button class="px-3 py-2 text-sm font-semibold border border-gray-300 hover:bg-gray-50 rounded-lg">{{ __('Add') }}</button>
                 </form>

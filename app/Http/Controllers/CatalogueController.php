@@ -98,7 +98,10 @@ class CatalogueController extends Controller
 
         // Partner brands are not offered (their boats come from the brand),
         // but their names still hide the global twin below.
-        $workspace = $workspaceAll->filter(fn ($b) => ! $b->managed_brand_id)->values()
+        // Brands owned by a brand account are not offered either: only that
+        // account publishes them.
+        $claimed = fn ($name) => \App\Services\Brand\ClaimedBrands::isClaimed($name, \App\Models\BrandAccount::KIND_BOAT);
+        $workspace = $workspaceAll->filter(fn ($b) => ! $b->managed_brand_id && ! $claimed($b->name))->values()
             ->map(fn ($b) => [
                 'id'     => (string) $b->_id,
                 'name'   => $b->name,
@@ -114,7 +117,7 @@ class CatalogueController extends Controller
             ->orderBy('name')
             ->limit(30)
             ->get(['_id', 'name'])
-            ->reject(fn ($b) => $skip->contains(mb_strtolower($b->name)))
+            ->reject(fn ($b) => $skip->contains(mb_strtolower($b->name)) || $claimed($b->name))
             ->map(fn ($b) => [
                 'id'     => 'global:' . (string) $b->_id,
                 'name'   => $b->name,
@@ -423,7 +426,8 @@ class CatalogueController extends Controller
     public function createModel(Request $request)
     {
         $brands   = CompanyBrand::where('is_active', true)->where('company_id', auth()->user()->company_id)->orderBy('name')->get()
-            ->filter(fn ($b) => ! $b->managed_brand_id)->values();
+            ->filter(fn ($b) => ! $b->managed_brand_id
+                && ! \App\Services\Brand\ClaimedBrands::isClaimed($b->name, \App\Models\BrandAccount::KIND_BOAT))->values();
         $variants = collect();
         $options  = collect();
 
@@ -631,7 +635,7 @@ class CatalogueController extends Controller
         // If the brand changed, resolve `global:<id>` references and verify
         // ownership of any workspace brand id.
         if (! empty($data['company_brand_id'])) {
-            $data['company_brand_id'] = $this->resolveBrandId($data['company_brand_id']);
+            $data['company_brand_id'] = $this->resolveBrandId($data['company_brand_id'], (string) $model->company_brand_id);
         } else {
             unset($data['company_brand_id']);
         }
@@ -986,7 +990,7 @@ class CatalogueController extends Controller
             $boat['default_margin_pct'] = $data['default_margin_pct'];
         }
         if (! empty($data['company_brand_id'])) {
-            $boat['company_brand_id'] = $this->resolveBrandId($data['company_brand_id']);
+            $boat['company_brand_id'] = $this->resolveBrandId($data['company_brand_id'], (string) $model->company_brand_id);
         }
         $model->update($boat);
 
@@ -1012,12 +1016,24 @@ class CatalogueController extends Controller
      *
      * Throws ModelNotFoundException for unknown IDs.
      */
-    private function resolveBrandId(string $id): string
+    private function resolveBrandId(string $id, ?string $currentBrandId = null): string
     {
+        // A brand owned by a brand account is published by that account only:
+        // the dealer cannot start using it for a boat. Their existing boats of
+        // that brand ($currentBrandId unchanged) stay editable.
+        $refuseClaimed = function (string $name) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'company_brand_id' => __(':brand is published on Nautiqs by its manufacturer. Ask them to invite you to receive its catalogue.', ['brand' => $name]),
+            ]);
+        };
+
         if (str_starts_with($id, 'global:')) {
             $globalId = substr($id, strlen('global:'));
             $global   = \App\Models\GlobalBrand::findOrFail($globalId);
             $companyId = auth()->user()->company_id;
+            if (\App\Services\Brand\ClaimedBrands::isClaimed($global->name, \App\Models\BrandAccount::KIND_BOAT)) {
+                $refuseClaimed($global->name);
+            }
 
             // Re-use an existing CompanyBrand row that snapshots this
             // global (whether active or not) so dealers don't end up with
@@ -1047,6 +1063,10 @@ class CatalogueController extends Controller
             throw \Illuminate\Validation\ValidationException::withMessages([
                 'company_brand_id' => __(':brand is managed by its brand — its boats come from the brand.', ['brand' => $brand->name]),
             ]);
+        }
+        if ((string) $brand->_id !== (string) $currentBrandId
+            && \App\Services\Brand\ClaimedBrands::isClaimed($brand->name, \App\Models\BrandAccount::KIND_BOAT)) {
+            $refuseClaimed($brand->name);
         }
 
         return (string) $brand->_id;

@@ -154,6 +154,7 @@ class EngineController extends Controller
             'description'   => 'nullable|string|max:2000',
             'price'         => 'required|numeric|min:0',
             'vat_rate'      => 'nullable|numeric|min:0|max:100',
+            'currency'      => 'nullable|in:EUR,USD',
             'levels'        => 'nullable|array',
             'levels.*'      => 'nullable|numeric|min:0',
             'accessory_ids' => 'nullable|array',
@@ -171,7 +172,8 @@ class EngineController extends Controller
             'fuel' => $d['fuel'] ?? null, 'description' => $d['description'] ?? null,
             'price' => round((float) $d['price'], 2),
             'vat_rate' => isset($d['vat_rate']) && $d['vat_rate'] !== '' ? (float) $d['vat_rate'] : 20,
-            'currency' => 'EUR', 'level_prices' => BrandEngine::cleanLevelPrices($d['levels'] ?? []),
+            'currency' => in_array($d['currency'] ?? 'EUR', ['EUR', 'USD'], true) ? ($d['currency'] ?? 'EUR') : 'EUR',
+            'level_prices' => BrandEngine::cleanLevelPrices($d['levels'] ?? [], $this->account()->levelCount()),
             'accessory_ids' => array_values(array_intersect(array_map('strval', $d['accessory_ids'] ?? []), $own)),
         ];
     }
@@ -185,6 +187,7 @@ class EngineController extends Controller
             'reference'   => 'nullable|string|max:120',
             'price'       => 'required|numeric|min:0',
             'vat_rate'    => 'nullable|numeric|min:0|max:100',
+            'currency'    => 'nullable|in:EUR,USD',
             'levels'      => 'nullable|array',
             'levels.*'    => 'nullable|numeric|min:0',
             'engine_ids'  => 'nullable|array',
@@ -198,7 +201,8 @@ class EngineController extends Controller
             'managed_brand_id' => $d['managed_brand_id'], 'type' => $d['type'], 'label' => trim($d['label']),
             'reference' => $d['reference'] ?? null, 'price' => round((float) $d['price'], 2),
             'vat_rate' => isset($d['vat_rate']) && $d['vat_rate'] !== '' ? (float) $d['vat_rate'] : 20,
-            'currency' => 'EUR', 'level_prices' => BrandEngineAccessory::cleanLevelPrices($d['levels'] ?? []),
+            'currency' => in_array($d['currency'] ?? 'EUR', ['EUR', 'USD'], true) ? ($d['currency'] ?? 'EUR') : 'EUR',
+            'level_prices' => BrandEngineAccessory::cleanLevelPrices($d['levels'] ?? [], $this->account()->levelCount()),
         ];
     }
 

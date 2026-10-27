@@ -24,7 +24,10 @@ class BrandAccount extends Model
         self::KIND_ENGINE => ['engines', 'kits', 'propellers'],
     ];
 
-    public const LEVEL_COUNT = 3;
+    // Levels: 3 to start with; a brand can add more (up to MAX_LEVELS) or
+    // remove the last ones. The stored "levels" array is the source of truth.
+    public const LEVEL_COUNT = 3;   // default for a new account
+    public const MAX_LEVELS  = 10;
 
     // How purchase prices are set: a % per level and category, or an exact
     // price per level typed (or imported) on every product.
@@ -81,11 +84,18 @@ class BrandAccount extends Model
      *
      * @return array<int, array{name: string, pct: array<string, float>}>  keyed 1..3
      */
+    public function levelCount(): int
+    {
+        $n = is_array($this->levels) ? count($this->levels) : 0;
+
+        return $n > 0 ? min($n, self::MAX_LEVELS) : self::LEVEL_COUNT;
+    }
+
     public function levelsResolved(): array
     {
         $stored = is_array($this->levels) ? array_values($this->levels) : [];
         $out = [];
-        for ($i = 1; $i <= self::LEVEL_COUNT; $i++) {
+        for ($i = 1; $i <= $this->levelCount(); $i++) {
             $row = $stored[$i - 1] ?? [];
             $pct = [];
             foreach ($this->categories() as $cat) {

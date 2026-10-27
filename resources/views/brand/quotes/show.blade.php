@@ -43,7 +43,11 @@
                 <tbody class="divide-y divide-gray-100">
                     @foreach ($q['lines'] as $l)
                         <tr>
-                            <td class="px-5 py-2.5 {{ $l['kind'] === 'boat' ? 'font-semibold text-gray-900' : 'text-gray-800' }} {{ $l['kind'] === 'accessory' ? 'pl-9' : '' }}">{{ $l['label'] }}</td>
+                            <td class="px-5 py-2.5 {{ $l['kind'] === 'boat' ? 'font-semibold text-gray-900' : 'text-gray-800' }} {{ $l['kind'] === 'accessory' ? 'pl-9' : '' }}">
+                                @if ($l['kind'] === 'engine') <i class="ri-settings-3-line text-gray-400"></i> @endif
+                                {{ $l['label'] }}
+                                @if (! empty($l['other'])) <span class="ml-1 text-[11px] font-medium text-gray-500 bg-gray-100 rounded px-1.5 py-0.5">{{ __('not your product') }}</span> @endif
+                            </td>
                             <td class="px-4 py-2.5 text-center">{{ $l['qty'] }}</td>
                             <td class="px-4 py-2.5 text-right">{{ $eur($l['unit']) }}</td>
                             <td class="px-4 py-2.5 text-right {{ $l['discount_pct'] > 0 ? 'text-red-600' : 'text-gray-400' }}">{{ $l['discount_pct'] > 0 ? '−' . $l['discount_pct'] . ' %' : '—' }}</td>

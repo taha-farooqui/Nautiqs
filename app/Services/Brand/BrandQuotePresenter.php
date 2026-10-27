@@ -47,6 +47,9 @@ class BrandQuotePresenter
             'is_boat'     => ($q->model_snapshot['brand_account_id'] ?? null) === $acc,
             'engines'     => collect($q->options ?? [])->where('source', 'engine')
                                 ->filter(fn ($r) => ($r['brand_account_id'] ?? null) === $acc)->pluck('label')->values()->all(),
+            // Every engine on the quote — for a boat brand, what its boat was rigged with.
+            'fitted_engines' => collect($q->options ?? [])->where('source', 'engine')
+                                ->map(fn ($r) => ((int) ($r['quantity'] ?? 1) > 1 ? (int) $r['quantity'] . ' × ' : '') . ($r['label'] ?? ''))->values()->all(),
             'client'      => $this->clientType($q),
             'value_ht'    => round($net, 2),
             'gross_ht'    => round($gross, 2),
@@ -76,14 +79,19 @@ class BrandQuotePresenter
             $otherCount++; $otherTotal += (float) ($t['base_ht'] ?? 0);
         }
 
+        // On the brand's own boat, the engines (and their kits) fitted to it are
+        // shown too, whoever makes them — the rig matters to the boat brand.
+        $ownBoat = ($q->model_snapshot['brand_account_id'] ?? null) === $acc;
         foreach ($q->options ?? [] as $r) {
-            if (($r['brand_account_id'] ?? null) === $acc) {
+            $mine = ($r['brand_account_id'] ?? null) === $acc;
+            $rig  = $ownBoat && in_array($r['source'] ?? null, ['engine', 'accessory'], true);
+            if ($mine || $rig) {
                 $item = (float) ($r['item_discount_pct'] ?? 0);
                 $cat  = (float) ($r['cat_discount_pct'] ?? 0);
                 $lines[] = ['label' => $r['label'] ?? '', 'kind' => $r['source'] ?? 'option', 'category' => $r['category'] ?? null,
                     'qty' => (int) ($r['quantity'] ?? 1), 'unit' => (float) ($r['unit_price'] ?? 0),
                     'discount_pct' => round((1 - (1 - $item / 100) * (1 - $cat / 100)) * 100, 1),
-                    'total' => (float) ($r['line_after_cat'] ?? 0)];
+                    'total' => (float) ($r['line_after_cat'] ?? 0), 'other' => ! $mine];
             } else {
                 $otherCount++; $otherTotal += (float) ($r['line_after_cat'] ?? 0);
             }

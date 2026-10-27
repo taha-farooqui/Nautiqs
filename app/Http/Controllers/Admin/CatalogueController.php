@@ -70,6 +70,8 @@ class CatalogueController extends Controller
      */
     private function fanOutBrandToAllDealers(GlobalBrand $brand): void
     {
+        // A brand owned by a brand account reaches dealers only through it.
+        if (\App\Services\Brand\ClaimedBrands::isClaimed($brand->name, \App\Models\BrandAccount::KIND_BOAT)) return;
         $svc = app(\App\Services\CatalogueService::class);
         foreach (\App\Models\Company::all(['_id']) as $co) {
             $svc->activateGlobalBrand((string) $co->_id, $brand);
@@ -231,6 +233,8 @@ class CatalogueController extends Controller
         $svc   = app(\App\Services\CatalogueService::class);
         $brand = GlobalBrand::where('_id', $model->brand_id)->first();
         if (! $brand) return;
+        // A brand owned by a brand account reaches dealers only through it.
+        if (\App\Services\Brand\ClaimedBrands::isClaimed($brand->name, \App\Models\BrandAccount::KIND_BOAT)) return;
         foreach (\App\Models\Company::all(['_id']) as $co) {
             $companyBrand = \App\Models\CompanyBrand::where('company_id', (string) $co->_id)
                 ->where('global_brand_id', (string) $brand->_id)
@@ -357,6 +361,7 @@ class CatalogueController extends Controller
         if (! $model) return;
         $brand = GlobalBrand::where('_id', $model->brand_id)->first();
         if (! $brand) return;
+        if (\App\Services\Brand\ClaimedBrands::isClaimed($brand->name, \App\Models\BrandAccount::KIND_BOAT)) return;
         $svc = app(\App\Services\CatalogueService::class);
         foreach (\App\Models\Company::all(['_id']) as $co) {
             $companyBrand = \App\Models\CompanyBrand::where('company_id', (string) $co->_id)

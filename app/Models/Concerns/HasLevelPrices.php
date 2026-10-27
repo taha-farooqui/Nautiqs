@@ -18,12 +18,12 @@ trait HasLevelPrices
         return ($v === null || $v === '') ? null : (float) $v;
     }
 
-    /** Normalise posted level prices to [float|null, float|null, float|null]. */
-    public static function cleanLevelPrices($posted): array
+    /** Normalise posted level prices to one float|null per level. */
+    public static function cleanLevelPrices($posted, int $count = \App\Models\BrandAccount::LEVEL_COUNT): array
     {
         $posted = is_array($posted) ? array_values($posted) : [];
         $out = [];
-        for ($i = 0; $i < \App\Models\BrandAccount::LEVEL_COUNT; $i++) {
+        for ($i = 0; $i < $count; $i++) {
             $v = $posted[$i] ?? null;
             $v = is_string($v) ? str_replace([' ', "\u{00A0}", ','], ['', '', '.'], trim($v)) : $v;
             $out[] = ($v === null || $v === '' || ! is_numeric($v)) ? null : round((float) $v, 2);

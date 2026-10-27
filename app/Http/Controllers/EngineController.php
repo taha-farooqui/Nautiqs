@@ -64,6 +64,7 @@ class EngineController extends Controller
     public function store(Request $request)
     {
         $data = $this->validated($request);
+        $this->refuseClaimedBrand($data['brand']);
         $data['code'] = $this->resolveCode($data);
         if (empty($data['horsepower'])) {
             $data['horsepower'] = Engine::horsepowerFromCode($data['code']);
@@ -124,6 +125,9 @@ class EngineController extends Controller
     {
         $engine = Engine::findOrFail($id);
         $data = $this->validated($request);
+        if (mb_strtolower(trim($data['brand'])) !== mb_strtolower(trim((string) $engine->brand))) {
+            $this->refuseClaimedBrand($data['brand']);
+        }
         if (($ids = $this->postedAccessoryIds($request)) !== null) {
             $data['accessory_ids'] = $ids;
         }
@@ -153,6 +157,16 @@ class EngineController extends Controller
         $count = Engine::whereIn('_id', $data['ids'])->delete();
 
         return back()->with('status', __(':count engine(s) removed.', ['count' => $count]));
+    }
+
+    /** An engine brand owned by a brand account is published by it only. */
+    private function refuseClaimedBrand(string $brand): void
+    {
+        if (\App\Services\Brand\ClaimedBrands::isClaimed($brand, \App\Models\BrandAccount::KIND_ENGINE)) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'brand' => __(':brand is published on Nautiqs by its manufacturer. Ask them to invite you to receive its catalogue.', ['brand' => trim($brand)]),
+            ]);
+        }
     }
 
     private function validated(Request $request): array

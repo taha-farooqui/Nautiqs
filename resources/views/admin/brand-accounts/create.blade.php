@@ -5,8 +5,10 @@
     @php $oldBrands = collect(preg_split('/[\r\n,;]+/', (string) old('brands')))->map(fn ($b) => trim($b))->filter()->values(); @endphp
 
     <form method="POST" action="{{ route('admin.brand-accounts.store') }}" class="max-w-3xl space-y-4"
-        x-data="{ kind: @js(old('kind', 'boat')), brands: @js($oldBrands), draft: '',
-                  add() { const v = this.draft.trim(); if (v && !this.brands.some(b => b.toLowerCase() === v.toLowerCase())) this.brands.push(v); this.draft = ''; } }"
+        x-data="{ kind: @js(old('kind', 'boat')), brands: @js($oldBrands), draft: '', list: @js($globalBrands), open: false, hi: 0,
+                  add(v = null) { v = (v ?? this.draft).trim(); if (v && !this.brands.some(b => b.toLowerCase() === v.toLowerCase())) this.brands.push(v); this.draft = ''; this.hi = 0; },
+                  get matches() { const q = this.draft.trim().toLowerCase(); return this.list.filter(n => !this.brands.some(b => b.toLowerCase() === n.toLowerCase()) && (q === '' || n.toLowerCase().includes(q))).slice(0, 8); },
+                  enter() { this.open && this.matches[this.hi] ? this.add(this.matches[this.hi]) : this.add(); } }"
         @submit="add(); $refs.brandsField.value = brands.join('\n')">
         @csrf
 
@@ -39,6 +41,7 @@
 
             <div>
                 <label for="brand-draft" class="block text-sm font-medium text-gray-700 mb-1">{{ __('Brands it manages') }} <span class="text-red-500">*</span></label>
+                <div class="relative" @click.outside="open = false">
                 <div class="rounded-lg border border-gray-300 focus-within:border-primary-800 focus-within:ring-1 focus-within:ring-primary-800 p-2 flex flex-wrap gap-1.5 bg-white">
                     <template x-for="(b, i) in brands" :key="b">
                         <span class="pop inline-flex items-center gap-1 rounded-lg bg-primary-800 text-white text-sm pl-2.5 pr-1 py-1">
@@ -46,13 +49,29 @@
                             <button type="button" @click="brands.splice(i, 1)" class="w-5 h-5 rounded hover:bg-white/20 inline-flex items-center justify-center" aria-label="{{ __('Remove') }}"><i class="ri-close-line text-sm"></i></button>
                         </span>
                     </template>
-                    <input id="brand-draft" x-model="draft" @keydown.enter.prevent="add()" @keydown.comma.prevent="add()" @blur="add()"
+                    <input id="brand-draft" x-model="draft" autocomplete="off" @focus="open = true" @input="open = true; hi = 0"
+                        @keydown.enter.prevent="enter()" @keydown.comma.prevent="add()" @keydown.escape="open = false"
+                        @keydown.arrow-down.prevent="hi = Math.min(hi + 1, matches.length - 1)" @keydown.arrow-up.prevent="hi = Math.max(hi - 1, 0)"
                         @keydown.backspace="if (draft === '' && brands.length) brands.pop()"
-                        :placeholder="brands.length ? '{{ __('Add another…') }}' : '{{ __('Type a brand and press Enter') }}'"
+                        :placeholder="brands.length ? '{{ __('Add another…') }}' : '{{ __('Search the brand list…') }}'"
                         class="flex-1 min-w-[180px] border-0 p-1 text-sm focus:ring-0">
                 </div>
+                {{-- Platform brand list (Admin → Brands), minus brands already owned by an account. --}}
+                <ul x-show="open && (matches.length || draft.trim())" x-cloak x-transition.opacity
+                    class="absolute z-20 mt-1 w-full max-h-64 overflow-y-auto bg-white border border-gray-200 rounded-xl shadow-lg py-1 text-sm">
+                    <template x-for="(n, i) in matches" :key="n">
+                        <li><button type="button" @mousedown.prevent="add(n)" @mouseenter="hi = i"
+                            class="w-full text-left px-3 py-2 flex items-center gap-2" :class="hi === i ? 'bg-primary-50 text-primary-900' : 'text-gray-700'">
+                            <i class="ri-building-4-line text-gray-400"></i><span x-text="n"></span></button></li>
+                    </template>
+                    <li x-show="draft.trim() && !list.some(n => n.toLowerCase() === draft.trim().toLowerCase())">
+                        <button type="button" @mousedown.prevent="add()" class="w-full text-left px-3 py-2 flex items-center gap-2 text-gray-600 hover:bg-gray-50 border-t border-gray-100">
+                            <i class="ri-add-line"></i><span>{{ __('Add new brand') }} «<span x-text="draft.trim()"></span>»</span></button>
+                    </li>
+                </ul>
+                </div>
                 <input type="hidden" name="brands" x-ref="brandsField" :value="brands.join('\n')">
-                <p class="text-xs text-gray-500 mt-1">{{ __('One brand for a manufacturer, several for an importer. A brand can belong to one account only.') }}</p>
+                <p class="text-xs text-gray-500 mt-1">{{ __('Pick from the brand list. Once a brand belongs to this account, dealers can no longer add it themselves — they receive it from the brand.') }}</p>
                 <x-input-error :messages="$errors->get('brands')" class="mt-1" />
             </div>
         </section>

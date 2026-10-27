@@ -18,8 +18,9 @@ use Illuminate\Support\Str;
  *   boat account    BATEAUX (one row per version) + OPTIONS (one row per option)
  *   engine account  MOTEURS + KITS (kits and propellers, TYPE column)
  *
- * Prices: PRIX PUBLIC HT, then NIVEAU 1..3 HT. A level cell left empty means
- * "use the level %", exactly like an empty box in the editor.
+ * Prices: PRIX PUBLIC HT and DEVISE (EUR or USD), then one NIVEAU n HT column
+ * per level of the account. A level cell left empty means "use the level %",
+ * exactly like an empty box in the editor.
  *
  * Import only creates and updates, matching on names (brand → model →
  * version / famille + désignation; brand → engine code; type + désignation).
@@ -29,33 +30,41 @@ use Illuminate\Support\Str;
  */
 class BrandTransfer
 {
-    public const L = ['NIVEAU 1 HT', 'NIVEAU 2 HT', 'NIVEAU 3 HT'];
+    /** "NIVEAU 1 HT" … "NIVEAU n HT" — one column per level of the account. */
+    public static function levelHeaders(int $count): array
+    {
+        return array_map(fn ($n) => "NIVEAU $n HT", range(1, max(1, $count)));
+    }
 
     public function export(BrandAccount $account, bool $template = false): string
     {
+        $count = $account->levelCount();
+        $L = self::levelHeaders($count);
+        $lw = array_fill(0, $count, 14);
         $brands = ManagedBrand::orderBy('position')->orderBy('name')->get();
         $name = fn ($id) => optional($brands->first(fn ($b) => (string) $b->_id === (string) $id))->name ?? '';
-        $lv = fn ($item) => array_map(fn ($n) => $item->exactLevelPrice($n), [1, 2, 3]);
+        $lv = fn ($item) => array_map(fn ($n) => $item->exactLevelPrice($n), range(1, $count));
+        // Template rows: the first level filled, the others left to the %.
+        $tl = fn ($first) => array_merge([$first], array_fill(0, $count - 1, null));
+        $first = $brands->first()->name ?? 'MARQUE';
 
         if ($account->isEngine()) {
             $engines = $template ? collect() : BrandEngine::where('is_archived', '!=', true)->orderBy('horsepower')->get();
             $accs = $template ? collect() : BrandEngineAccessory::orderBy('type')->orderBy('label')->get();
-            $codes = $engines->mapWithKeys(fn ($e) => [(string) $e->_id => $e->code]);
-            $first = $brands->first()->name ?? 'MARQUE';
 
-            $eRows = $engines->map(fn ($e) => [$name($e->managed_brand_id), $e->code, $e->horsepower, $e->fuel, (float) $e->price, (float) ($e->vat_rate ?? 20), ...$lv($e), $e->description])->all();
+            $eRows = $engines->map(fn ($e) => [$name($e->managed_brand_id), $e->code, $e->horsepower, $e->fuel, (float) $e->price, $e->currency ?: 'EUR', (float) ($e->vat_rate ?? 20), ...$lv($e), $e->description])->all();
             $linked = [];
             foreach ($engines as $e) foreach ($e->accessoryIds() as $aid) $linked[$aid][] = $e->code;
-            $aRows = $accs->map(fn ($a) => [$a->type === 'propeller' ? 'HELICE' : 'KIT', $name($a->managed_brand_id), $a->label, $a->reference, (float) $a->price, (float) ($a->vat_rate ?? 20), ...$lv($a), implode('; ', $linked[(string) $a->_id] ?? [])])->all();
+            $aRows = $accs->map(fn ($a) => [$a->type === 'propeller' ? 'HELICE' : 'KIT', $name($a->managed_brand_id), $a->label, $a->reference, (float) $a->price, $a->currency ?: 'EUR', (float) ($a->vat_rate ?? 20), ...$lv($a), implode('; ', $linked[(string) $a->_id] ?? [])])->all();
             if ($template) {
-                $eRows = [[$first, 'DF150APX', 150, 'Essence', 18990, 20, 15200, null, null, '4 temps, injection']];
-                $aRows = [['KIT', $first, 'Kit de commande DF150', 'KIT-150', 1250, 20, null, null, null, 'DF150APX'],
-                          ['HELICE', $first, 'Hélice inox 15 1/4 x 20', 'H-1520', 690, 20, null, null, null, 'DF150APX']];
+                $eRows = [[$first, 'DF150APX', 150, 'Essence', 18990, 'EUR', 20, ...$tl(15200), '4 temps, injection']];
+                $aRows = [['KIT', $first, 'Kit de commande DF150', 'KIT-150', 1250, 'EUR', 20, ...$tl(null), 'DF150APX'],
+                          ['HELICE', $first, 'Hélice inox 15 1/4 x 20', 'H-1520', 690, 'EUR', 20, ...$tl(null), 'DF150APX']];
             }
 
             return Xlsx::write([
-                'MOTEURS' => ['headers' => ['MARQUE', 'MODELE', 'PUISSANCE', 'CARBURANT', 'PRIX PUBLIC HT', 'TVA', ...self::L, 'DESCRIPTION'], 'rows' => $eRows, 'widths' => [18, 22, 11, 12, 15, 7, 14, 14, 14, 50]],
-                'KITS'    => ['headers' => ['TYPE', 'MARQUE', 'DESIGNATION', 'REFERENCE', 'PRIX PUBLIC HT', 'TVA', ...self::L, 'MOTEURS'], 'rows' => $aRows, 'widths' => [9, 18, 44, 16, 15, 7, 14, 14, 14, 40]],
+                'MOTEURS' => ['headers' => ['MARQUE', 'MODELE', 'PUISSANCE', 'CARBURANT', 'PRIX PUBLIC HT', 'DEVISE', 'TVA', ...$L, 'DESCRIPTION'], 'rows' => $eRows, 'widths' => [18, 22, 11, 12, 15, 9, 7, ...$lw, 50]],
+                'KITS'    => ['headers' => ['TYPE', 'MARQUE', 'DESIGNATION', 'REFERENCE', 'PRIX PUBLIC HT', 'DEVISE', 'TVA', ...$L, 'MOTEURS'], 'rows' => $aRows, 'widths' => [9, 18, 44, 16, 15, 9, 7, ...$lw, 40]],
             ], 'nautiqs-brand-');
         }
 
@@ -65,23 +74,22 @@ class BrandTransfer
             $vs = BrandVariant::where('brand_model_id', (string) $m->_id)->where('is_archived', '!=', true)->orderBy('position')->get();
             foreach ($vs as $v) {
                 $eq = collect($v->included_equipment ?? [])->map(fn ($e) => is_array($e) ? ($e['label'] ?? '') : (string) $e)->filter()->implode('; ');
-                $bRows[] = [$name($m->managed_brand_id), $m->name, $v->name, (float) $v->price, ...$lv($v), $eq];
+                $bRows[] = [$name($m->managed_brand_id), $m->name, $v->name, (float) $v->price, $v->currency ?: 'EUR', ...$lv($v), $eq];
             }
-            if ($vs->isEmpty()) $bRows[] = [$name($m->managed_brand_id), $m->name, null, null, null, null, null, null];
+            if ($vs->isEmpty()) $bRows[] = array_merge([$name($m->managed_brand_id), $m->name], array_fill(0, 4 + $count, null));
             foreach (BrandOption::where('brand_model_id', (string) $m->_id)->where('is_archived', '!=', true)->orderBy('position')->get() as $o) {
-                $oRows[] = [$name($m->managed_brand_id), $m->name, $o->category, $o->label, $o->description, (float) $o->price, (float) ($o->vat_rate ?? 20), ...$lv($o)];
+                $oRows[] = [$name($m->managed_brand_id), $m->name, $o->category, $o->label, $o->description, (float) $o->price, $o->currency ?: 'EUR', (float) ($o->vat_rate ?? 20), ...$lv($o)];
             }
         }
         if ($template) {
-            $first = $brands->first()->name ?? 'MARQUE';
-            $bRows = [[$first, 'Nordvik 690', 'Open', 52900, 44900, null, null, 'Taud de mouillage; Échelle de bain'],
-                      [$first, 'Nordvik 690', 'Cabin', 58900, null, null, null, 'Taud de mouillage; Couchette double']];
-            $oRows = [[$first, 'Nordvik 690', 'Confort', 'Bimini', 'Bimini inox, toile grise', 1450, 20, null, null, null]];
+            $bRows = [[$first, 'Nordvik 690', 'Open', 52900, 'EUR', ...$tl(44900), 'Taud de mouillage; Échelle de bain'],
+                      [$first, 'Nordvik 690', 'Cabin', 58900, 'EUR', ...$tl(null), 'Taud de mouillage; Couchette double']];
+            $oRows = [[$first, 'Nordvik 690', 'Confort', 'Bimini', 'Bimini inox, toile grise', 1450, 'EUR', 20, ...$tl(null)]];
         }
 
         return Xlsx::write([
-            'BATEAUX' => ['headers' => ['MARQUE', 'MODELE', 'VERSION', 'PRIX PUBLIC HT', ...self::L, 'EQUIPEMENTS INCLUS'], 'rows' => $bRows, 'widths' => [18, 28, 22, 15, 14, 14, 14, 70]],
-            'OPTIONS' => ['headers' => ['MARQUE', 'MODELE', 'FAMILLE', 'DESIGNATION', 'DESCRIPTION', 'PRIX PUBLIC HT', 'TVA', ...self::L], 'rows' => $oRows, 'widths' => [18, 28, 18, 40, 50, 15, 7, 14, 14, 14]],
+            'BATEAUX' => ['headers' => ['MARQUE', 'MODELE', 'VERSION', 'PRIX PUBLIC HT', 'DEVISE', ...$L, 'EQUIPEMENTS INCLUS'], 'rows' => $bRows, 'widths' => [18, 28, 22, 15, 9, ...$lw, 70]],
+            'OPTIONS' => ['headers' => ['MARQUE', 'MODELE', 'FAMILLE', 'DESIGNATION', 'DESCRIPTION', 'PRIX PUBLIC HT', 'DEVISE', 'TVA', ...$L], 'rows' => $oRows, 'widths' => [18, 28, 18, 40, 50, 15, 9, 7, ...$lw]],
         ], 'nautiqs-brand-');
     }
 
@@ -91,6 +99,7 @@ class BrandTransfer
     public function import(BrandAccount $account, string $path): array
     {
         $book = Xlsx::read($path);
+        $this->levelCount = $account->levelCount();
         $this->brands = ManagedBrand::all()->mapWithKeys(fn ($b) => [$this->key($b->name) => $b]);
         $this->out = ['created' => 0, 'updated' => 0, 'errors' => []];
 
@@ -111,6 +120,7 @@ class BrandTransfer
 
     private $brands;
     private array $out;
+    private int $levelCount = 3;
 
     private function importBoats(array $rows): void
     {
@@ -128,7 +138,7 @@ class BrandTransfer
 
             $mid = (string) $model->_id;
             $pos[$mid] = ($pos[$mid] ?? -1) + 1;
-            $fields = ['name' => $vName, 'price' => round($price, 2), 'level_prices' => $this->levels($r), 'is_archived' => false];
+            $fields = ['name' => $vName, 'price' => round($price, 2), 'level_prices' => $this->levels($r), 'is_archived' => false] + $this->ccy($r);
             if (array_key_exists('EQUIPEMENTS INCLUS', $r)) {
                 $fields['included_equipment'] = collect(preg_split('/[;|\r\n]+/', (string) $r['EQUIPEMENTS INCLUS']))->map(fn ($l) => trim($l))->filter()->values()
                     ->map(fn ($l) => ['label' => $l, 'type' => 'standard'])->all();
@@ -156,7 +166,7 @@ class BrandTransfer
             $mid = (string) $model->_id;
             $cat = trim($r['FAMILLE'] ?? '') ?: 'Options';
 
-            $fields = ['category' => $cat, 'label' => $label, 'price' => round($price, 2), 'level_prices' => $this->levels($r), 'is_archived' => false];
+            $fields = ['category' => $cat, 'label' => $label, 'price' => round($price, 2), 'level_prices' => $this->levels($r), 'is_archived' => false] + $this->ccy($r);
             if (array_key_exists('DESCRIPTION', $r)) $fields['description'] = trim($r['DESCRIPTION']) ?: null;
             if (($vat = $this->num($r['TVA'] ?? null)) !== null) $fields['vat_rate'] = $vat;
 
@@ -181,7 +191,7 @@ class BrandTransfer
             $price = $this->num($r['PRIX PUBLIC HT'] ?? null);
             if ($price === null) { $this->err('MOTEURS', $line, __('PRIX PUBLIC HT is missing for :v.', ['v' => $code])); continue; }
 
-            $fields = ['managed_brand_id' => (string) $brand->_id, 'code' => $code, 'price' => round($price, 2), 'level_prices' => $this->levels($r), 'is_archived' => false];
+            $fields = ['managed_brand_id' => (string) $brand->_id, 'code' => $code, 'price' => round($price, 2), 'level_prices' => $this->levels($r), 'is_archived' => false] + $this->ccy($r);
             if (array_key_exists('PUISSANCE', $r)) $fields['horsepower'] = $this->num($r['PUISSANCE']);
             if (array_key_exists('CARBURANT', $r)) $fields['fuel'] = trim($r['CARBURANT']) ?: null;
             if (array_key_exists('DESCRIPTION', $r)) $fields['description'] = trim($r['DESCRIPTION']) ?: null;
@@ -208,7 +218,7 @@ class BrandTransfer
             if ($price === null) { $this->err('KITS', $line, __('PRIX PUBLIC HT is missing for :v.', ['v' => $label])); continue; }
             $type = in_array($this->key($r['TYPE'] ?? ''), ['helice', 'propeller', 'prop'], true) ? 'propeller' : 'kit';
 
-            $fields = ['managed_brand_id' => (string) $brand->_id, 'type' => $type, 'label' => $label, 'price' => round($price, 2), 'level_prices' => $this->levels($r)];
+            $fields = ['managed_brand_id' => (string) $brand->_id, 'type' => $type, 'label' => $label, 'price' => round($price, 2), 'level_prices' => $this->levels($r)] + $this->ccy($r);
             if (array_key_exists('REFERENCE', $r)) $fields['reference'] = trim($r['REFERENCE']) ?: null;
             if (($vat = $this->num($r['TVA'] ?? null)) !== null) $fields['vat_rate'] = $vat;
 
@@ -283,7 +293,16 @@ class BrandTransfer
 
     private function levels(array $r): array
     {
-        return BrandVariant::cleanLevelPrices(array_map(fn ($h) => $r[$h] ?? null, self::L));
+        return BrandVariant::cleanLevelPrices(array_map(fn ($h) => $r[$h] ?? null, self::levelHeaders($this->levelCount)), $this->levelCount);
+    }
+
+    /** ['currency' => EUR|USD] when the file has a DEVISE column, else nothing (kept as is). */
+    private function ccy(array $r): array
+    {
+        if (! array_key_exists('DEVISE', $r)) return [];
+        $v = mb_strtoupper(trim($r['DEVISE']));
+
+        return ['currency' => (str_contains($v, 'USD') || str_contains($v, '$')) ? 'USD' : 'EUR'];
     }
 
     private function num($v): ?float

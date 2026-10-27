@@ -38,6 +38,9 @@
                                     {{ $r['is_boat'] ? ($r['version'] ?: $r['boat']) : (implode(', ', $r['engines']) ?: $r['boat']) }}
                                 </a>
                                 <div class="text-xs text-gray-500">{{ $r['is_boat'] ? $r['boat'] : __('on :boat', ['boat' => $r['boat']]) }}</div>
+                                @if ($r['is_boat'] && ! empty($r['fitted_engines']))
+                                    <div class="text-xs text-gray-500"><i class="ri-settings-3-line"></i> {{ implode(', ', $r['fitted_engines']) }}</div>
+                                @endif
                             </td>
                             <td class="px-4 py-2.5 text-gray-500">{{ $r['client'] }}</td>
                             <td class="px-4 py-2.5 text-right {{ $r['discount_pct'] > 0 ? 'text-red-600' : 'text-gray-400' }}">{{ $r['discount_pct'] > 0 ? '−' . $r['discount_pct'] . ' %' : '—' }}</td>

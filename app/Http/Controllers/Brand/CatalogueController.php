@@ -80,12 +80,12 @@ class CatalogueController extends Controller
             ->orderBy('position')->get()->map(fn ($v) => [
                 'id' => (string) $v->_id, 'name' => $v->name, 'price' => $v->price, 'currency' => $v->currency ?: 'EUR',
                 'levels' => array_map(fn ($p) => $p === null ? '' : $p, $this->levelsOf($v)),
-                'equipment' => collect($v->included_equipment ?? [])->pluck('label')->filter()->implode("\n"),
+                'equipment' => collect($v->included_equipment ?? [])->map(fn ($e) => is_array($e) ? ($e['label'] ?? '') : (string) $e)->filter()->values()->all(),
             ])->values()->all();
         $options = BrandOption::where('brand_model_id', $id)->where('is_archived', '!=', true)
             ->orderBy('position')->get()->map(fn ($o) => [
                 'id' => (string) $o->_id, 'category' => $o->category, 'label' => $o->label, 'description' => $o->description,
-                'price' => $o->price, 'vat_rate' => $o->vat_rate ?? 20,
+                'price' => $o->price, 'vat_rate' => $o->vat_rate ?? 20, 'currency' => $o->currency ?: 'EUR',
                 'levels' => array_map(fn ($p) => $p === null ? '' : $p, $this->levelsOf($o)),
             ])->values()->all();
 
@@ -140,7 +140,9 @@ class CatalogueController extends Controller
             'versions.*.currency'   => 'nullable|in:EUR,USD',
             'versions.*.levels'     => 'nullable|array',
             'versions.*.levels.*'   => 'nullable|numeric|min:0',
-            'versions.*.equipment'  => 'nullable|string|max:10000',
+            // One item per entry (chips); a newline-separated string still works.
+            'versions.*.equipment'  => 'nullable',
+            'versions.*.equipment.*'=> 'nullable|string|max:200',
 
             'options'               => 'nullable|array',
             'options.*.id'          => 'nullable|string',
@@ -149,6 +151,7 @@ class CatalogueController extends Controller
             'options.*.description' => 'nullable|string|max:5000',
             'options.*.price'       => 'required|numeric',
             'options.*.vat_rate'    => 'nullable|numeric|min:0|max:100',
+            'options.*.currency'    => 'nullable|in:EUR,USD',
             'options.*.levels'      => 'nullable|array',
             'options.*.levels.*'    => 'nullable|numeric|min:0',
         ]);
@@ -174,14 +177,17 @@ class CatalogueController extends Controller
         $modelId = (string) $model->_id;
         $base = ['brand_model_id' => $modelId, 'managed_brand_id' => (string) $model->managed_brand_id];
 
+        $levels = $this->account()->levelCount();
         $keep = [];
         foreach (array_values($data['versions'] ?? []) as $i => $row) {
+            $equipment = $row['equipment'] ?? [];
+            $equipment = is_array($equipment) ? $equipment : preg_split('/\r\n|\r|\n/', (string) $equipment);
             $fields = [
                 'name' => trim($row['name']), 'price' => round((float) $row['price'], 2),
                 'currency' => $row['currency'] ?? 'EUR',
-                'level_prices' => BrandVariant::cleanLevelPrices($row['levels'] ?? []),
-                'included_equipment' => collect(preg_split('/\r\n|\r|\n/', (string) ($row['equipment'] ?? '')))
-                    ->map(fn ($l) => trim($l))->filter()->values()->map(fn ($l) => ['label' => $l, 'type' => 'standard'])->all(),
+                'level_prices' => BrandVariant::cleanLevelPrices($row['levels'] ?? [], $levels),
+                'included_equipment' => collect($equipment)
+                    ->map(fn ($l) => trim((string) $l))->filter()->unique()->values()->map(fn ($l) => ['label' => $l, 'type' => 'standard'])->all(),
                 'position' => $i, 'is_archived' => false,
             ];
             $existing = ! empty($row['id']) ? BrandVariant::where('brand_model_id', $modelId)->where('_id', $row['id'])->first() : null;
@@ -202,7 +208,7 @@ class CatalogueController extends Controller
                 'category' => trim((string) ($row['category'] ?? '')) ?: 'Options', 'label' => trim($row['label']),
                 'description' => $row['description'] ?? null, 'price' => round((float) $row['price'], 2),
                 'vat_rate' => isset($row['vat_rate']) && $row['vat_rate'] !== '' ? (float) $row['vat_rate'] : 20,
-                'currency' => 'EUR', 'level_prices' => BrandOption::cleanLevelPrices($row['levels'] ?? []),
+                'currency' => $row['currency'] ?? 'EUR', 'level_prices' => BrandOption::cleanLevelPrices($row['levels'] ?? [], $levels),
                 'position' => $i, 'is_archived' => false,
             ];
             $existing = ! empty($row['id']) ? BrandOption::where('brand_model_id', $modelId)->where('_id', $row['id'])->first() : null;
@@ -221,7 +227,7 @@ class CatalogueController extends Controller
     private function levelsOf($item): array
     {
         $out = [];
-        for ($l = 1; $l <= \App\Models\BrandAccount::LEVEL_COUNT; $l++) $out[] = $item->exactLevelPrice($l);
+        for ($l = 1; $l <= $this->account()->levelCount(); $l++) $out[] = $item->exactLevelPrice($l);
         return $out;
     }
 

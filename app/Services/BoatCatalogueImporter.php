@@ -457,6 +457,12 @@ class BoatCatalogueImporter
                     'message' => __(':brand is managed by its brand — rows for it are skipped.', ['brand' => $existingBrand->name])];
                 continue;
             }
+            // Owned by a brand account on Nautiqs: only that account publishes it.
+            if ($brandKey !== '' && \App\Services\Brand\ClaimedBrands::isClaimed($boat['brand'], \App\Models\BrandAccount::KIND_BOAT)) {
+                $errors[] = ['sheet' => BoatCatalogueExporter::SHEET_BOATS, 'row' => $boat['row'],
+                    'message' => __(':brand is published on Nautiqs by its manufacturer — rows for it are skipped. Ask them to invite you.', ['brand' => trim($boat['brand'])])];
+                continue;
+            }
             if ($existingBrand) {
                 $entry['brand_id'] = (string) $existingBrand->_id;
                 $entry['brand_action'] = 'existing';

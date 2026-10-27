@@ -17,14 +17,24 @@
             'mode' => old('pricing_mode', $account->isExactPricing() ? 'exact' : 'percent'),
         ];
         $catalogueRoute = $account->isEngine() ? 'brand.engines.index' : 'brand.catalogue.index';
+        // Same colour per level number as <x-brand.level-badge>.
         $tone = [1 => ['bg-amber-500', 'from-amber-400 to-amber-500', 'bg-amber-50 text-amber-700'],
                  2 => ['bg-slate-500', 'from-slate-400 to-slate-500', 'bg-slate-100 text-slate-700'],
-                 3 => ['bg-orange-600', 'from-orange-400 to-orange-600', 'bg-orange-50 text-orange-700']];
+                 3 => ['bg-orange-600', 'from-orange-400 to-orange-600', 'bg-orange-50 text-orange-700'],
+                 4 => ['bg-sky-500', 'from-sky-400 to-sky-600', 'bg-sky-50 text-sky-700'],
+                 5 => ['bg-violet-500', 'from-violet-400 to-violet-600', 'bg-violet-50 text-violet-700'],
+                 6 => ['bg-emerald-500', 'from-emerald-400 to-emerald-600', 'bg-emerald-50 text-emerald-700'],
+                 7 => ['bg-rose-500', 'from-rose-400 to-rose-600', 'bg-rose-50 text-rose-700'],
+                 8 => ['bg-teal-500', 'from-teal-400 to-teal-600', 'bg-teal-50 text-teal-700'],
+                 9 => ['bg-indigo-500', 'from-indigo-400 to-indigo-600', 'bg-indigo-50 text-indigo-700'],
+                 10 => ['bg-lime-600', 'from-lime-400 to-lime-600', 'bg-lime-50 text-lime-700']];
+        $levelCount = count($levels);
     @endphp
 
     <form method="POST" action="{{ route('brand.levels.update') }}" x-data="levelsEditor(@js($state))" class="space-y-5 pb-20">
         @csrf @method('PATCH')
         <input type="hidden" name="pricing_mode" :value="mode">
+        <input type="hidden" name="level_action" x-ref="levelAction" value="">
 
         {{-- How purchase prices are set --}}
         <section class="rise bg-white rounded-2xl border border-gray-200 p-5">
@@ -164,7 +174,26 @@
                     </div>
                 </section>
             @endforeach
+
+            {{-- Add a level: submits the form (so nothing typed is lost) with level_action=add. --}}
+            @if ($levelCount < \App\Models\BrandAccount::MAX_LEVELS)
+                <button type="button" @click="$refs.levelAction.value = 'add'; $el.form.requestSubmit()"
+                    class="rise min-h-[180px] rounded-2xl border-2 border-dashed border-gray-300 hover:border-primary-400 hover:bg-primary-50/30 text-gray-500 hover:text-primary-800 flex flex-col items-center justify-center gap-2 transition" style="--d: {{ $levelCount + 2 }}">
+                    <span class="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center"><i class="ri-add-line text-2xl"></i></span>
+                    <span class="font-semibold">{{ __('Add a level') }}</span>
+                    <span class="text-xs text-gray-400">{{ __(':n of :max levels', ['n' => $levelCount, 'max' => \App\Models\BrandAccount::MAX_LEVELS]) }}</span>
+                </button>
+            @endif
         </div>
+        @if ($levelCount > 1)
+            <div class="flex justify-end -mt-2">
+                <button type="button"
+                    @click="nautiqsConfirm({ title: @js(__('Remove :level? Only possible if no dealer is on it.', ['level' => end($levels)['name']])) })
+                        .then(ok => { if (ok) { $refs.levelAction.value = 'remove'; $el.form.requestSubmit(); } })"
+                    class="inline-flex items-center gap-1 text-sm font-medium text-gray-500 hover:text-red-600 px-2 py-1 rounded-lg hover:bg-red-50">
+                    <i class="ri-delete-bin-line"></i> {{ __('Remove the last level (:level)', ['level' => end($levels)['name']]) }}</button>
+            </div>
+        @endif
 
         {{-- Per-brand overrides --}}
         @if ($brands->count() > 1)

@@ -42,12 +42,14 @@
         <section class="rise bg-white rounded-2xl border border-gray-200 p-5 self-start" style="--d: 2">
             <span class="w-11 h-11 rounded-xl bg-primary-50 text-primary-800 flex items-center justify-center mb-3"><i class="ri-add-line text-xl"></i></span>
             <h3 class="font-semibold text-gray-900 mb-1">{{ __('Add a brand') }}</h3>
-            <p class="text-sm text-gray-500 mb-4">{{ __('A brand can be managed by one account only on Nautiqs.') }}</p>
+            <p class="text-sm text-gray-500 mb-4">{{ __('Pick it from the Nautiqs brand list. Once it is yours, dealers receive it only from you.') }}</p>
             <form method="POST" action="{{ route('brand.brands.store') }}" class="space-y-3">
                 @csrf
                 <div class="relative"><i class="ri-building-4-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                    <input name="name" required maxlength="120" value="{{ old('name') }}" placeholder="{{ __('Brand name') }}" aria-label="{{ __('Brand name') }}"
+                    <input name="name" required maxlength="120" value="{{ old('name') }}" placeholder="{{ __('Search the brand list…') }}" aria-label="{{ __('Brand name') }}"
+                        list="global-brand-list" autocomplete="off"
                         class="w-full pl-9 rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800"></div>
+                <datalist id="global-brand-list">@foreach ($globalBrands as $g)<option value="{{ $g }}">@endforeach</datalist>
                 @if ($connected > 0)
                     <label class="flex items-start gap-2.5 rounded-lg bg-gray-50 p-3 text-sm cursor-pointer">
                         <input type="checkbox" name="share" value="1" checked class="mt-0.5 rounded border-gray-300 text-primary-800 focus:ring-primary-800">

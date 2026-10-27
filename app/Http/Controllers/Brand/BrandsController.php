@@ -29,6 +29,7 @@ class BrandsController extends Controller
             'dealerCounts' => $this->accesses()->where('status', BrandAccess::STATUS_ACTIVE)->get()
                 ->flatMap(fn ($a) => $a->brandIds())->countBy(),
             'connected' => $this->accesses()->where('status', BrandAccess::STATUS_ACTIVE)->count(),
+            'globalBrands' => ManagedBrand::availableGlobalNames(),
         ]);
     }
 
@@ -40,7 +41,8 @@ class BrandsController extends Controller
             return back()->withInput()->withErrors(['name' => __('":name" is already managed on Nautiqs. Contact Nautiqs if it is yours.', ['name' => $name])]);
         }
 
-        $brand = ManagedBrand::create(['name' => $name, 'position' => ManagedBrand::count(), 'is_active' => true]);
+        $brand = ManagedBrand::create(ManagedBrand::fromName($name) + ['position' => ManagedBrand::count(), 'is_active' => true]);
+        $name = $brand->name;
 
         // Add it to the dealers already connected, so its catalogue reaches them as it is built.
         $shared = 0;

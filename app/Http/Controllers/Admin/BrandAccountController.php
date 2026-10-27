@@ -38,7 +38,7 @@ class BrandAccountController extends Controller
 
     public function create()
     {
-        return view('admin.brand-accounts.create');
+        return view('admin.brand-accounts.create', ['globalBrands' => ManagedBrand::availableGlobalNames()]);
     }
 
     public function store(Request $request)
@@ -71,7 +71,7 @@ class BrandAccountController extends Controller
             'created_by_user_id' => (string) auth()->id(),
         ]);
         foreach ($brandNames as $i => $name) {
-            ManagedBrand::create(['brand_account_id' => (string) $account->_id, 'name' => $name, 'position' => $i, 'is_active' => true]);
+            ManagedBrand::create(ManagedBrand::fromName($name) + ['brand_account_id' => (string) $account->_id, 'position' => $i, 'is_active' => true]);
         }
         $this->invite($account, $data['manager_name'], $email);
 
@@ -96,7 +96,9 @@ class BrandAccountController extends Controller
             ->get(['managed_brand_id'])->countBy(fn ($m) => (string) $m->managed_brand_id);
         $quoteCount = \App\Models\Quote::withoutGlobalScopes()->where('brand_account_ids', $id)->count();
 
-        return view('admin.brand-accounts.show', compact('account', 'brands', 'managers', 'invites', 'accesses', 'companies', 'itemCounts', 'quoteCount'));
+        $globalBrands = ManagedBrand::availableGlobalNames();
+
+        return view('admin.brand-accounts.show', compact('account', 'brands', 'managers', 'invites', 'accesses', 'companies', 'itemCounts', 'quoteCount', 'globalBrands'));
     }
 
     public function update(string $id, Request $request)
@@ -126,7 +128,7 @@ class BrandAccountController extends Controller
             return back()->withErrors(['brand' => __('Already managed by an account: :names', ['names' => $name])]);
         }
         $count = ManagedBrand::withoutGlobalScopes()->where('brand_account_id', $id)->count();
-        ManagedBrand::create(['brand_account_id' => $id, 'name' => $name, 'position' => $count, 'is_active' => true]);
+        ManagedBrand::create(ManagedBrand::fromName($name) + ['brand_account_id' => $id, 'position' => $count, 'is_active' => true]);
 
         return back()->with('status', __('Brand :name added.', ['name' => $name]));
     }

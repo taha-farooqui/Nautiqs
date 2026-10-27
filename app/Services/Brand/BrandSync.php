@@ -70,7 +70,7 @@ class BrandSync
         }
 
         $companyId = (string) $access->company_id;
-        $level     = max(1, min(BrandAccount::LEVEL_COUNT, (int) ($access->level ?: 1)));
+        $level     = max(1, min($account->levelCount(), (int) ($access->level ?: 1)));
         $shared    = $access->brandIds();
         $pricing   = new BrandPricing($account);
         $changes   = 0;

@@ -194,6 +194,12 @@ class EngineImporter
                 $errors[] = ['row' => $rowNumber, 'message' => __(':engine is managed by its brand — row skipped.', ['engine' => trim($data['brand'] . ' ' . $data['code'])])];
                 continue;
             }
+            // A brand owned by an engine account on Nautiqs: no new engines of it
+            // by hand (the dealer's existing ones can still be updated).
+            if (! $existing && \App\Services\Brand\ClaimedBrands::isClaimed($data['brand'], \App\Models\BrandAccount::KIND_ENGINE)) {
+                $errors[] = ['row' => $rowNumber, 'message' => __(':brand is published on Nautiqs by its manufacturer — rows for it are skipped. Ask them to invite you.', ['brand' => $data['brand']])];
+                continue;
+            }
 
             $payload = [
                 'brand'       => $data['brand'],

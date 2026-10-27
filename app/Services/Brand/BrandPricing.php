@@ -65,7 +65,7 @@ class BrandPricing
         $n = 0;
         foreach ($classes as $class) {
             foreach ($class::where('is_archived', '!=', true)->get() as $item) {
-                for ($l = 1; $l <= BrandAccount::LEVEL_COUNT; $l++) {
+                for ($l = 1; $l <= $this->account->levelCount(); $l++) {
                     if ($item->exactLevelPrice($l) === null) { $n++; break; }
                 }
             }

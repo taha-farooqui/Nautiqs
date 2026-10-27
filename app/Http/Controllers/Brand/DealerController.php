@@ -57,7 +57,7 @@ class DealerController extends Controller
         $data = $request->validate([
             'emails'      => 'required|array|min:1|max:50',
             'emails.*'    => 'nullable|string|max:200',
-            'level'       => 'required|integer|min:1|max:' . BrandAccount::LEVEL_COUNT,
+            'level'       => 'required|integer|min:1|max:' . $account->levelCount(),
             'brand_ids'   => 'required|array|min:1',
             'brand_ids.*' => 'string',
             'message'     => 'nullable|string|max:1000',
@@ -101,7 +101,7 @@ class DealerController extends Controller
         $account = $this->account();
         $access = $this->access($id);
         $data = $request->validate([
-            'level'       => 'required|integer|min:1|max:' . BrandAccount::LEVEL_COUNT,
+            'level'       => 'required|integer|min:1|max:' . $account->levelCount(),
             'brand_ids'   => 'nullable|array',
             'brand_ids.*' => 'string',
         ]);
