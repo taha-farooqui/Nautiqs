@@ -681,12 +681,14 @@
         @keydown.escape.window="emailOpen = false">
         <form method="POST" action="{{ route('quotes.send-email', $quote->_id) }}"
             enctype="multipart/form-data"
-            class="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl"
+            class="bg-white rounded-2xl w-full max-w-lg max-h-full flex flex-col overflow-hidden shadow-2xl"
             x-data
             @click.outside="emailOpen = false"
             @submit="$refs.messageInput.value = $refs.messageEditor.innerHTML">
             @csrf
-            <div class="px-5 py-4 border-b border-gray-100 flex items-center gap-3">
+            {{-- Header and footer stay put; only the middle scrolls, so Send is
+                 always reachable however small the screen or long the attachments. --}}
+            <div class="shrink-0 px-5 py-4 border-b border-gray-100 flex items-center gap-3">
                 <div class="w-10 h-10 rounded-lg bg-primary-50 text-primary-800 flex items-center justify-center shrink-0">
                     <i class="{{ $sendUi['icon'] }} text-xl"></i>
                 </div>
@@ -700,7 +702,7 @@
                 </button>
             </div>
 
-            <div class="p-5 space-y-4">
+            <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain p-5 space-y-4">
                 @if ($isGuest)
                     <div class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-800">
                         <p class="flex items-center gap-2 font-medium">
@@ -757,7 +759,7 @@
                     </div>
                     <div x-ref="messageEditor"
                         contenteditable="true"
-                        class="w-full max-h-72 overflow-y-auto rounded-lg border border-gray-300 focus:border-primary-800 focus:ring-primary-800 focus:outline-none px-3 py-2 text-sm bg-white prose prose-sm max-w-none">{!! $emailBodyHtml ?? '' !!}</div>
+                        class="w-full max-h-48 overflow-y-auto rounded-lg border border-gray-300 focus:border-primary-800 focus:ring-primary-800 focus:outline-none px-3 py-2 text-sm bg-white prose prose-sm max-w-none">{!! $emailBodyHtml ?? '' !!}</div>
                     <input type="hidden" name="message" x-ref="messageInput" value="{{ $emailBodyHtml ?? '' }}" />
                     <p class="text-xs text-gray-500 mt-1">
                         {{ __('Edit visually — formatting and the logo are preserved. Variables already substituted from the saved template.') }}
@@ -942,7 +944,7 @@
                 </div>
             </div>
 
-            <div class="px-5 py-4 border-t border-gray-100 bg-gray-50 flex items-center justify-end gap-2">
+            <div class="shrink-0 px-5 py-4 border-t border-gray-100 bg-gray-50 flex items-center justify-end gap-2">
                 <button type="button" @click="emailOpen = false"
                     class="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg">
                     {{ __('Cancel') }}
