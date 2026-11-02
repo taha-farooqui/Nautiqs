@@ -1803,5 +1803,6 @@
     "For every quote still waiting for an answer": "Pour chaque devis encore sans réponse",
     "Sent between 9:00 and 18:00, Paris time.": "Envoyée entre 9h et 18h, heure de Paris.",
     "Opens are an estimate: some email apps count an open that never happened, or hide a real one.": "Les ouvertures sont une estimation : certaines messageries comptent une ouverture qui n'a pas eu lieu, ou en masquent une réelle.",
-    "Not needed: the client opened this quote :count times.": "Pas nécessaire : le client a ouvert ce devis :count fois."
+    "Not needed: the client opened this quote :count times.": "Pas nécessaire : le client a ouvert ce devis :count fois.",
+    "This PDF is attached automatically to every quote and follow-up you send.": "Ce PDF est joint automatiquement à chaque devis et relance que vous envoyez."
 }

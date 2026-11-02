@@ -327,7 +327,7 @@
         <section x-show="tab === 'terms'" x-cloak class="bg-white rounded-2xl border border-gray-200 p-6"
             x-data="{ name: '', over: false }">
             <h3 class="font-semibold text-gray-900 mb-1">{{ __('General terms and conditions') }}</h3>
-            <p class="text-xs text-gray-500 mb-4">{{ __('Mandatory in France. This PDF is attached automatically to every quote and follow-up you send.') }}</p>
+            <p class="text-xs text-gray-500 mb-4">{{ __('This PDF is attached automatically to every quote and follow-up you send.') }}</p>
 
             @if ($company->terms_path)
                 <div class="mb-4 flex items-center gap-3 rounded-lg border border-gray-200 px-3 py-2.5">
