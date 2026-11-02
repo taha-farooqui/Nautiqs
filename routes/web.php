@@ -132,6 +132,7 @@ Route::middleware(['auth', 'verified', 'maintenance', 'brand.contain', 'managed.
     Route::get('/settings/company',    [CompanySettingsController::class, 'edit'])->name('company.settings');
     Route::patch('/settings/company',  [CompanySettingsController::class, 'update'])->name('company.settings.update');
     Route::post('/settings/company/logo/remove', [CompanySettingsController::class, 'removeLogo'])->name('company.settings.logo.remove');
+    Route::post('/settings/company/terms/remove', [CompanySettingsController::class, 'removeTerms'])->name('company.settings.terms.remove');
 
     // Team — multi-user sub-accounts. Admin-gated; the role middleware
     // returns 403 to salespeople who try to reach these.

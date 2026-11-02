@@ -43,6 +43,7 @@ class CompanySettingsController extends Controller
             'vat_number'        => ['nullable', 'string', 'max:50'],
             'address'           => ['nullable', 'string', 'max:500'],
             'logo'              => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:2048'],
+            'terms_pdf'         => ['nullable', 'file', 'mimes:pdf', 'max:' . Company::TERMS_MAX_KB],
             // §17.2
             'salesperson_name'  => ['nullable', 'string', 'max:100'],
             'salesperson_phone' => ['nullable', 'string', 'max:30'],
@@ -62,8 +63,10 @@ class CompanySettingsController extends Controller
             'follow_up_enabled'     => ['nullable', 'boolean'],
             'follow_up_delay_value' => ['exclude_unless:follow_up_enabled,1', 'required', 'integer', 'min:1', 'max:365'],
             'follow_up_delay_unit'  => ['exclude_unless:follow_up_enabled,1', 'required', 'in:days,weeks,months'],
+            'follow_up_condition'   => ['exclude_unless:follow_up_enabled,1', 'required', 'in:' . Company::FOLLOW_UP_LOW_OPENS . ',' . Company::FOLLOW_UP_ALWAYS],
         ], [], [
             'logo'                  => __('Logo'),
+            'terms_pdf'             => __('General terms'),
             'follow_up_delay_value' => __('follow-up delay'),
             'follow_up_delay_unit'  => __('follow-up unit'),
         ]);
@@ -78,6 +81,21 @@ class CompanySettingsController extends Controller
                 \Illuminate\Support\Facades\Storage::disk('public')->delete($company->logo_path);
             }
             $validated['logo_path'] = $request->file('logo')->store('company-logos', 'public');
+        }
+
+        // General terms: same treatment. On the public disk under a random
+        // name so the daily backups carry them, as they do the logos.
+        unset($validated['terms_pdf']);
+
+        if ($request->hasFile('terms_pdf')) {
+            if ($company->terms_path) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($company->terms_path);
+            }
+            $file = $request->file('terms_pdf');
+            $validated['terms_path']        = $file->store('company-terms', 'public');
+            $validated['terms_name']        = $file->getClientOriginalName();
+            $validated['terms_size']        = $file->getSize();
+            $validated['terms_uploaded_at'] = now();
         }
 
         // Watermark for the auto follow-up: on the OFF→ON transition, only
@@ -109,5 +127,21 @@ class CompanySettingsController extends Controller
         }
 
         return redirect()->route('company.settings')->with('status', __('Logo removed.'));
+    }
+
+    /** Remove the general terms PDF (same one-click pattern as the logo). */
+    public function removeTerms()
+    {
+        if (auth()->user()?->role === User::ROLE_SUPERADMIN) {
+            return redirect()->route('admin.settings.edit');
+        }
+        $company = Company::findOrFail(auth()->user()->company_id);
+
+        if ($company->terms_path) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($company->terms_path);
+            $company->update(['terms_path' => null, 'terms_name' => null, 'terms_size' => null, 'terms_uploaded_at' => null]);
+        }
+
+        return redirect()->route('company.settings')->with('status', __('General terms removed.'));
     }
 }

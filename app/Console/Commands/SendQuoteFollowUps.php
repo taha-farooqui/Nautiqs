@@ -88,6 +88,14 @@ class SendQuoteFollowUps extends Command
                         continue;
                     }
 
+                    // "Only if not opened, or opened once": a client who keeps
+                    // coming back to the quote does not need a reminder.
+                    if (! $company->followUpAppliesTo($quote)) {
+                        $skipped++;
+                        $this->line("  • {$quote->number}: opened {$quote->openCount()} times — skipped.");
+                        continue;
+                    }
+
                     // Give up after repeated transport failures (bad address…).
                     $failedAttempts = EmailLog::where('company_id', (string) $company->_id)
                         ->where('quote_id', (string) $quote->_id)

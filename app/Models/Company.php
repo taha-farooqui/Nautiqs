@@ -42,6 +42,14 @@ class Company extends Model
         'follow_up_delay_value', // e.g. 1
         'follow_up_delay_unit',  // days | weeks | months
         'follow_up_enabled_at',  // watermark: only quotes SENT after this get auto follow-ups
+        'follow_up_condition',   // low_opens = only if opened 0 or 1 time; absent/always = every quiet quote
+
+        // General terms and conditions (PDF on the public disk, like the logo).
+        // Sent with every quote and follow-up — mandatory in France.
+        'terms_path',
+        'terms_name',            // the file name the dealer uploaded
+        'terms_size',
+        'terms_uploaded_at',
 
         // Lead sources the dealer typed themselves, on top of
         // Client::LEAD_SOURCES (e.g. "Pakistan Auto Show (PAPS) 2026").
@@ -60,7 +68,42 @@ class Company extends Model
         'follow_up_enabled'     => 'boolean',
         'follow_up_delay_value' => 'integer',
         'follow_up_enabled_at'  => 'datetime',
+        'terms_uploaded_at'     => 'datetime',
     ];
+
+    public const FOLLOW_UP_ALWAYS    = 'always';
+    public const FOLLOW_UP_LOW_OPENS = 'low_opens';
+
+    /** Most opens a quote can have and still get a low_opens follow-up. */
+    public const FOLLOW_UP_MAX_OPENS = 1;
+
+    public const TERMS_MAX_KB = 5120;
+
+    /** Should a quote opened this many times still get the automatic follow-up? */
+    public function followUpAppliesTo(Quote $quote): bool
+    {
+        return $this->follow_up_condition !== self::FOLLOW_UP_LOW_OPENS
+            || $quote->openCount() <= self::FOLLOW_UP_MAX_OPENS;
+    }
+
+    public function hasTerms(): bool
+    {
+        return ! empty($this->terms_path) && \Illuminate\Support\Facades\Storage::disk('public')->exists($this->terms_path);
+    }
+
+    /** The general terms as they stand on disk: null when none is usable. */
+    public function termsFile(): ?array
+    {
+        if (! $this->hasTerms()) {
+            return null;
+        }
+
+        return [
+            'name'  => $this->terms_name ?: 'CGV.pdf',
+            'bytes' => \Illuminate\Support\Facades\Storage::disk('public')->get($this->terms_path),
+            'size'  => \Illuminate\Support\Facades\Storage::disk('public')->size($this->terms_path),
+        ];
+    }
 
     public function users()
     {

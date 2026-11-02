@@ -13,9 +13,11 @@
             'sales'    => ['salesperson_name','salesperson_phone','salesperson_email'],
             'defaults' => ['default_vat_rate','default_margin_pct','default_display_mode','timezone'],
             'margins'  => ['margin_presets.hull','margin_presets.engine','margin_presets.options','margin_presets.custom_items'],
-            'followup' => ['follow_up_enabled','follow_up_delay_value','follow_up_delay_unit'],
+            'followup' => ['follow_up_enabled','follow_up_delay_value','follow_up_delay_unit','follow_up_condition'],
+            'terms'    => ['terms_pdf'],
         ];
-        $startTab = 'profile';
+        // ?tab= lets the quote page's "add your terms" link land on the right tab.
+        $startTab = array_key_exists(request('tab'), $errorMap) ? request('tab') : 'profile';
         foreach ($errorMap as $tab => $fields) {
             if (collect($fields)->some(fn ($f) => $errors->has($f))) { $startTab = $tab; break; }
         }
@@ -53,6 +55,12 @@
                 :class="tab === 'followup' ? 'border-primary-800 text-primary-900' : 'border-transparent text-gray-500 hover:text-gray-900'"
                 class="px-4 py-2.5 text-sm font-semibold border-b-2 transition whitespace-nowrap">
                 <i class="ri-mail-send-line"></i> {{ __('Follow-ups') }}
+            </button>
+            <button type="button" @click="tab = 'terms'"
+                :class="tab === 'terms' ? 'border-primary-800 text-primary-900' : 'border-transparent text-gray-500 hover:text-gray-900'"
+                class="px-4 py-2.5 text-sm font-semibold border-b-2 transition whitespace-nowrap">
+                <i class="ri-file-shield-2-line"></i> {{ __('General terms') }}
+                @unless ($company->terms_path) <span class="inline-block w-2 h-2 rounded-full bg-amber-500 align-middle" title="{{ __('Not uploaded yet') }}"></span> @endunless
             </button>
         </div>
 
@@ -273,7 +281,7 @@
                 <input type="number" min="1" max="365" step="1" name="follow_up_delay_value"
                     value="{{ old('follow_up_delay_value', $company->follow_up_delay_value ?? 1) }}"
                     class="w-20 rounded-lg border-gray-300 text-sm text-center focus:border-primary-800 focus:ring-primary-800" />
-                @php $fuUnit = old('follow_up_delay_unit', $company->follow_up_delay_unit ?? 'months'); @endphp
+                @php $fuUnit = old('follow_up_delay_unit', $company->follow_up_delay_unit ?? 'days'); @endphp
                 <select name="follow_up_delay_unit"
                     class="rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800">
                     <option value="days"   @selected($fuUnit === 'days')>{{ __('day(s)') }}</option>
@@ -285,12 +293,71 @@
             <x-input-error :messages="$errors->get('follow_up_delay_value')" class="mt-1" />
             <x-input-error :messages="$errors->get('follow_up_delay_unit')" class="mt-1" />
 
+            {{-- Who gets it. Dealers already using follow-ups keep "every quote"
+                 until they choose otherwise; new ones start on the narrower rule. --}}
+            @php
+                $fuCondition = old('follow_up_condition', $company->follow_up_condition
+                    ?? ($company->follow_up_enabled ? \App\Models\Company::FOLLOW_UP_ALWAYS : \App\Models\Company::FOLLOW_UP_LOW_OPENS));
+            @endphp
+            <div class="mt-4 space-y-2 text-sm text-gray-700" :class="fuEnabled ? '' : 'opacity-50 pointer-events-none'">
+                <label class="flex items-start gap-2 cursor-pointer">
+                    <input type="radio" name="follow_up_condition" value="{{ \App\Models\Company::FOLLOW_UP_LOW_OPENS }}" @checked($fuCondition === \App\Models\Company::FOLLOW_UP_LOW_OPENS)
+                        class="mt-0.5 border-gray-300 text-primary-800 focus:ring-primary-800" />
+                    <span>{{ __('Only if the client has not opened the quote, or opened it just once') }}</span>
+                </label>
+                <label class="flex items-start gap-2 cursor-pointer">
+                    <input type="radio" name="follow_up_condition" value="{{ \App\Models\Company::FOLLOW_UP_ALWAYS }}" @checked($fuCondition === \App\Models\Company::FOLLOW_UP_ALWAYS)
+                        class="mt-0.5 border-gray-300 text-primary-800 focus:ring-primary-800" />
+                    <span>{{ __('For every quote still waiting for an answer') }}</span>
+                </label>
+            </div>
+            <x-input-error :messages="$errors->get('follow_up_condition')" class="mt-1" />
+
             <ul class="mt-5 pt-4 border-t border-gray-100 text-xs text-gray-500 space-y-1.5 list-disc list-inside">
                 <li>{{ __('One single follow-up is sent per quote — never more.') }}</li>
                 <li>{{ __('Only quotes sent after activation are followed up; quotes marked Won or Lost are excluded.') }}</li>
                 <li>{{ __('You can exclude an individual quote from its page.') }}</li>
                 <li>{{ __('Uses your « Follow-up » email template, with the quote PDF attached.') }}</li>
+                <li>{{ __('Sent between 9:00 and 18:00, Paris time.') }}</li>
+                <li>{{ __('Opens are an estimate: some email apps count an open that never happened, or hide a real one.') }}</li>
             </ul>
+        </section>
+
+        {{-- ============================== GENERAL TERMS ============================== --}}
+        <section x-show="tab === 'terms'" x-cloak class="bg-white rounded-2xl border border-gray-200 p-6"
+            x-data="{ name: '', over: false }">
+            <h3 class="font-semibold text-gray-900 mb-1">{{ __('General terms and conditions') }}</h3>
+            <p class="text-xs text-gray-500 mb-4">{{ __('Mandatory in France. This PDF is attached automatically to every quote and follow-up you send.') }}</p>
+
+            @if ($company->terms_path)
+                <div class="mb-4 flex items-center gap-3 rounded-lg border border-gray-200 px-3 py-2.5">
+                    <span class="shrink-0 w-10 h-10 rounded-lg bg-primary-50 text-primary-800 flex items-center justify-center"><i class="ri-file-pdf-2-line text-xl"></i></span>
+                    <span class="min-w-0 flex-1">
+                        <a href="{{ asset('storage/' . $company->terms_path) }}" target="_blank" class="block text-sm font-medium text-gray-900 hover:text-primary-800 truncate">{{ $company->terms_name }}</a>
+                        <span class="block text-xs text-gray-500">{{ number_format(($company->terms_size ?? 0) / 1024 / 1024, 1, ',', ' ') }} MB · {{ __('Added on :date', ['date' => $company->terms_uploaded_at?->translatedFormat('d M Y')]) }}</span>
+                    </span>
+                    <button type="submit" form="remove-terms-form" class="shrink-0 inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium bg-red-50 hover:bg-red-100 text-red-700 rounded-lg">
+                        <i class="ri-delete-bin-line"></i> {{ __('Remove') }}
+                    </button>
+                </div>
+            @else
+                <p class="mb-4 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 text-amber-800 px-3 py-2.5 text-sm">
+                    <i class="ri-error-warning-line text-base"></i>
+                    {{ __('No general terms yet: your quotes go out without them.') }}
+                </p>
+            @endif
+
+            <label class="block cursor-pointer rounded-2xl border-2 border-dashed p-8 text-center transition"
+                :class="over ? 'border-primary-800 bg-primary-50' : (name ? 'border-emerald-300 bg-emerald-50/50' : 'border-gray-300 hover:border-primary-400 hover:bg-gray-50')"
+                @dragover.prevent="over = true" @dragleave.prevent="over = false"
+                @drop.prevent="over = false; $refs.terms.files = $event.dataTransfer.files; name = $event.dataTransfer.files[0]?.name || ''">
+                <input x-ref="terms" type="file" name="terms_pdf" accept="application/pdf,.pdf" class="sr-only" @change="name = $event.target.files[0]?.name || ''">
+                <span class="mx-auto w-12 h-12 rounded-2xl flex items-center justify-center mb-3 transition" :class="name ? 'bg-emerald-500 text-white' : 'bg-primary-50 text-primary-800'">
+                    <i class="text-2xl" :class="name ? 'ri-file-pdf-2-line' : 'ri-upload-cloud-2-line'"></i></span>
+                <span class="block font-semibold text-gray-900" x-text="name || @js($company->terms_path ? __('Drop a new PDF to replace it') : __('Drop your PDF here'))"></span>
+                <span class="block text-sm text-gray-500 mt-0.5" x-text="name ? @js(__('Now click Save changes')) : @js(__('or click to choose a file — PDF, 5 MB max'))"></span>
+            </label>
+            <x-input-error :messages="$errors->get('terms_pdf')" class="mt-1" />
         </section>
 
         <div class="flex justify-end mt-4">
@@ -305,6 +372,12 @@
          settings form — HTML forbids nesting). Instant, no Save needed. --}}
     @if ($company->logo_path)
         <form id="remove-logo-form" method="POST" action="{{ route('company.settings.logo.remove') }}">
+            @csrf
+        </form>
+    @endif
+    @if ($company->terms_path)
+        <form id="remove-terms-form" method="POST" action="{{ route('company.settings.terms.remove') }}"
+            data-confirm="{{ __('Remove your general terms? Your quotes will go out without them.') }}" data-confirm-danger="1">
             @csrf
         </form>
     @endif

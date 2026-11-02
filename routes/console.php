@@ -8,12 +8,15 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-// Automatic quote follow-ups ("Relances"). Daily is enough — the delay
-// granularity is days/weeks/months. Needs the OS cron running
-// `php artisan schedule:run` every minute on the server.
+// Automatic quote follow-ups ("Relances"). Hourly in working hours, so a
+// one-day delay means about 24 hours rather than up to 40 (a quote sent at
+// 10:00 would miss a 09:00 run by an hour), and clients are never emailed at
+// night. Safe to repeat: the command sends one follow-up per quote, ever.
+// Needs the OS cron running `php artisan schedule:run` every minute on the server.
 // (Single VPS today; add ->onOneServer() if this ever runs on several.)
 Schedule::command('quotes:send-follow-ups')
-    ->dailyAt('09:00')
+    ->hourly()
+    ->between('9:00', '18:00')
     ->timezone('Europe/Paris')
     ->withoutOverlapping(60)
     ->appendOutputTo(storage_path('logs/follow-ups.log'));

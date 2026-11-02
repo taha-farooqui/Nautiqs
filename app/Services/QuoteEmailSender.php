@@ -134,6 +134,16 @@ class QuoteEmailSender
             ];
         }
 
+        // General terms travel with the quote wherever it goes: the quote
+        // email and the follow-up, which re-attaches the quote PDF. They are
+        // legally required in France, so an automatic send gets them too. No
+        // file uploaded does not stop the send — the dealer is warned in the
+        // send window and on the settings page.
+        $attachesQuote = ! ($type === EmailLog::TYPE_ORDER_CONFIRMATION && ! empty($quote->order_confirmation_number));
+        if ($attachesQuote && ($terms = $company->termsFile())) {
+            $extras[] = ['name' => $terms['name'], 'mime' => 'application/pdf', 'size' => $terms['size'], 'bytes' => $terms['bytes']];
+        }
+
         $sendError = null;
         try {
             Mail::html($bodyHtml, function ($msg) use ($to, $subject, $pdfBytes, $attachmentFilename, $replyToEmail, $replyToName, $fromName, $fromAddress, $company, $extras) {

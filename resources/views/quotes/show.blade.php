@@ -578,7 +578,9 @@
                                         };
                                     }
                                 @endphp
-                                @if ($fuDue && $quote->sent_at >= $fuCompany->follow_up_enabled_at)
+                                @if (! $fuCompany->followUpAppliesTo($quote))
+                                    <p class="text-xs text-gray-500 mt-0.5">{{ __('Not needed: the client opened this quote :count times.', ['count' => $quote->openCount()]) }}</p>
+                                @elseif ($fuDue && $quote->sent_at >= $fuCompany->follow_up_enabled_at)
                                     <p class="text-xs text-gray-500 mt-0.5">
                                         {{ __('Automatic follow-up scheduled around :date', ['date' => $fuDue->translatedFormat('d M Y')]) }}
                                     </p>
@@ -703,6 +705,25 @@
             </div>
 
             <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain p-5 space-y-4">
+                {{-- General terms go out with the quote and the follow-up. Missing
+                     ones warn but do not block: the dealer decides. --}}
+                @if (($sendType ?? 'quote') !== 'order_confirmation')
+                    @if ($quote->company?->hasTerms())
+                        <p class="flex items-center gap-2 rounded-lg bg-emerald-50 text-emerald-800 px-3 py-2 text-xs">
+                            <i class="ri-file-shield-2-line text-base"></i>
+                            <span class="min-w-0 truncate">{{ __('Your general terms are attached automatically: :name', ['name' => $quote->company->terms_name]) }}</span>
+                        </p>
+                    @else
+                        <div class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-800">
+                            <p class="flex items-start gap-2">
+                                <i class="ri-error-warning-line text-base"></i>
+                                <span>{{ __('No general terms uploaded. They are mandatory with a quote in France.') }}
+                                    <a href="{{ route('company.settings', ['tab' => 'terms']) }}" target="_blank" class="font-semibold underline">{{ __('Add them') }}</a></span>
+                            </p>
+                        </div>
+                    @endif
+                @endif
+
                 @if ($isGuest)
                     <div class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-800">
                         <p class="flex items-center gap-2 font-medium">
