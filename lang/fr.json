@@ -1859,5 +1859,9 @@
     "Everyone": "Tous les commerciaux",
     "{0}no new dealership|{1}:count new dealership|[2,*]:count new dealerships": "{0}aucune nouvelle concession|{1}:count nouvelle concession|[2,*]:count nouvelles concessions",
     "The whole platform at a glance: dealerships, quotes and activity.": "Toute la plateforme en un coup d'œil : concessions, devis et activité.",
-    "quoted": "chiffrés"
+    "quoted": "chiffrés",
+    "{0}no active boat|{1}:count active boat|[2,*]:count active boats": "{0}aucun bateau actif|{1}:count bateau actif|[2,*]:count bateaux actifs",
+    "{1}:count boat|[2,*]:count boats": "{1}:count bateau|[2,*]:count bateaux",
+    "No results": "Aucun résultat",
+    "Try another search or brand.": "Essayez une autre recherche ou une autre marque."
 }
