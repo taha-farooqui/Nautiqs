@@ -105,6 +105,7 @@ Route::middleware(['auth', 'verified', 'maintenance', 'brand.contain', 'managed.
 
     // Dashboard — §16.3
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
+    Route::get('/dashboard/export', [DashboardController::class, 'export'])->name('dashboard.export');
 
     // Clients — §16.1
     Route::resource('clients', ClientController::class);

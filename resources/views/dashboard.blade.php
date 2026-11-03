@@ -13,16 +13,21 @@
 
         // Trend badge: [label, up?] or null when there is nothing to compare.
         $pctBadge = fn ($d) => $d === null || (float) $d == 0 ? null : [($d > 0 ? '+' : '−') . rtrim(rtrim(number_format(abs($d), 1, ',', ''), '0'), ',') . ' %', $d > 0];
+        // Toolbar: same filters as the brand dashboard.
+        $periods = ['month' => __('This month'), '6m' => __('Last 6 months'), 'year' => __('Last 12 months')];
+        $q = fn (array $over) => route('dashboard', array_filter(array_merge(['period' => $period, 'brand' => $brandFilter, 'user' => $userFilter], $over), fn ($v) => $v !== null && $v !== ''));
+        $exportUrl = route('dashboard.export', array_filter(['period' => $period, 'brand' => $brandFilter, 'user' => $userFilter]));
+
         $kpis = [
-            ['label' => __('Quotes this month'), 'value' => number_format($quotesThisMonth, 0, ',', ' '),
-                'badge' => $quotesDelta ? [($quotesDelta > 0 ? '+' : '−') . abs($quotesDelta), $quotesDelta > 0] : null,
-                'note' => $quotesDelta ? __('vs last month') : __('Same as last month')],
-            ['label' => __('Total quoted (excl. VAT)'), 'value' => $eur($totalQuotedThisMonth),
-                'badge' => $pctBadge($totalQuotedDeltaPct),
-                'note' => $totalQuotedDeltaPct === null ? __('No data last month') : __('vs last month')],
-            ['label' => __('Revenue won this month'), 'value' => $eur($revenueWonThisMonth),
-                'badge' => $pctBadge($revenueWonDeltaPct),
-                'note' => $revenueWonDeltaPct === null ? __('No data last month') : __('vs last month')],
+            ['label' => __('Quotes'), 'value' => number_format($quotesCount, 0, ',', ' '),
+                'badge' => $pctBadge($quotesDeltaPct),
+                'note' => trans_choice('{0}vs. no quote|{1}vs. :count quote|[2,*]vs. :count quotes', $quotesPrev, ['count' => $quotesPrev])],
+            ['label' => __('Total quoted (excl. VAT)'), 'value' => $eur($quoted),
+                'badge' => $pctBadge($quotedDeltaPct),
+                'note' => __('vs. :v', ['v' => $eur($quotedPrev)])],
+            ['label' => __('Won (HT)'), 'value' => $eur($wonValue),
+                'badge' => $pctBadge($wonDeltaPct),
+                'note' => trans_choice('{0}no signed quote|{1}:count signed quote|[2,*]:count signed quotes', $wonCount, ['count' => $wonCount])],
             ['label' => __('Awaiting response'), 'value' => number_format($awaitingResponse, 0, ',', ' '),
                 'badge' => $expiredThisWeek > 0 ? [(string) $expiredThisWeek, false] : null,
                 'note' => $expiredThisWeek > 0 ? $expiredThisWeek . ' ' . __('expired this week') : __('None expired this week')],
@@ -107,6 +112,53 @@
             </div>
         </div>
 
+        {{-- Toolbar --}}
+        @php
+            $menuPanel = 'absolute left-0 z-20 mt-1 rounded-xl border border-nq-border bg-white p-1 shadow-lg';
+            $opt = fn (bool $on) => 'block rounded-lg px-3 py-2 text-sm truncate ' . ($on ? 'bg-nq-primary-bg text-primary-800 font-medium' : 'text-nq-text hover:bg-nq-subtle');
+        @endphp
+        <div class="flex flex-wrap items-center gap-2">
+            @if ($userOptions->count() > 1)
+                <div x-data="{ open: false }" class="relative">
+                    <button type="button" @click="open = !open" class="{{ $btnSecondary }}">
+                        <i class="ph-bold ph-sliders text-base"></i> {{ __('Filters') }}
+                        @if ($userFilter) <span class="w-1.5 h-1.5 rounded-full bg-primary-800"></span> @endif
+                    </button>
+                    <div x-show="open" x-cloak x-transition @click.outside="open = false" class="{{ $menuPanel }} w-64 max-h-80 overflow-y-auto">
+                        <p class="px-3 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-[0.66px] text-nq-text-3">{{ __('Salesperson') }}</p>
+                        <a href="{{ $q(['user' => null]) }}" class="{{ $opt($userFilter === '') }}">{{ __('Everyone') }}</a>
+                        @foreach ($userOptions as $id => $name)
+                            <a href="{{ $q(['user' => $id]) }}" class="{{ $opt($userFilter === (string) $id) }}">{{ $name }}</a>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+            <div x-data="{ open: false }" class="relative">
+                <button type="button" @click="open = !open" class="{{ $btnSecondary }}">
+                    <i class="ph-bold ph-calendar-blank text-base"></i> {{ $periods[$period] }} <i class="ph-bold ph-caret-down text-base"></i>
+                </button>
+                <div x-show="open" x-cloak x-transition @click.outside="open = false" class="{{ $menuPanel }} w-52">
+                    @foreach ($periods as $p => $label)
+                        <a href="{{ $q(['period' => $p]) }}" class="{{ $opt($period === $p) }}">{{ $label }}</a>
+                    @endforeach
+                </div>
+            </div>
+            @if ($brandOptions->count() > 1)
+                <div x-data="{ open: false }" class="relative">
+                    <button type="button" @click="open = !open" class="{{ $btnSecondary }}">
+                        <i class="ph-bold ph-tag text-base"></i> {{ $brandFilter !== '' ? $brandFilter : __('All brands') }} <i class="ph-bold ph-caret-down text-base"></i>
+                    </button>
+                    <div x-show="open" x-cloak x-transition @click.outside="open = false" class="{{ $menuPanel }} w-56 max-h-80 overflow-y-auto">
+                        <a href="{{ $q(['brand' => null]) }}" class="{{ $opt($brandFilter === '') }}">{{ __('All brands') }}</a>
+                        @foreach ($brandOptions as $b)
+                            <a href="{{ $q(['brand' => $b]) }}" class="{{ $opt($brandFilter === (string) $b) }}">{{ $b }}</a>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+            <a href="{{ $exportUrl }}" class="ml-auto {{ $btnSecondary }}"><i class="ph-bold ph-export text-base"></i> {{ __('Export') }}</a>
+        </div>
+
         {{-- KPIs --}}
         <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
             @foreach ($kpis as $i => $k)
@@ -150,7 +202,7 @@
             <section class="rise {{ $card }} p-4 flex flex-col gap-4" style="--d: 5">
                 <div class="flex items-center justify-between gap-2">
                     <h3 class="{{ $cardTitle }}">{{ __('Quote status') }}</h3>
-                    <span class="text-xs leading-5 text-nq-text-3">{{ __('Last 6 months') }}</span>
+                    <span class="text-xs leading-5 text-nq-text-3">{{ $periods[$period] }}</span>
                 </div>
                 <div class="flex-1 rounded-[10px] bg-nq-subtle px-4 py-6 flex items-center justify-center">
                     @if ($statusTotal > 0)
@@ -182,7 +234,7 @@
             <section class="rise {{ $card }} p-4 flex flex-col gap-2" style="--d: 6">
                 <div class="flex items-center justify-between gap-2">
                     <h3 class="{{ $cardTitle }}">{{ __('Top quoted models') }}</h3>
-                    <span class="text-xs leading-5 text-nq-text-3">{{ __('This month') }}</span>
+                    <span class="text-xs leading-5 text-nq-text-3">{{ $periods[$period] }}</span>
                 </div>
                 <div>
                     @forelse ($topModels as $i => $m)
