@@ -3,119 +3,110 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AccountRequest;
 use App\Models\AuditLog;
 use App\Models\Company;
 use App\Models\Quote;
-use App\Models\User;
+use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 
 /**
- * Spec §4.4 — superadmin platform overview. Same visual language as the
- * tenant dashboard (KPI tiles with MoM deltas, pipeline-trend chart,
- * recent-quotes table, top quoted models) but unscoped: every figure is
- * a roll-up across all tenants.
+ * Spec §4.4 — superadmin platform overview, in the same Figma style as the
+ * dealer and brand dashboards. Every figure is a roll-up across all tenants
+ * for the chosen period, compared with the period just before.
  *
- * Counts use Model::count() directly because TenantScope auto-disables
- * for the superadmin role.
+ * TenantScope auto-disables for the superadmin role, so queries are unscoped.
+ * Client names stay masked: a dealer's clients are the dealer's.
  */
 class DashboardController extends Controller
 {
-    public function index()
+    public const PERIODS = ['month' => 0, '6m' => 5, 'year' => 11];
+
+    public function index(Request $request)
     {
-        $now            = Carbon::now();
-        $startOfMonth   = $now->copy()->startOfMonth();
-        $startLastMonth = $now->copy()->subMonthNoOverflow()->startOfMonth();
-        $endLastMonth   = $now->copy()->subMonthNoOverflow()->endOfMonth();
+        $period = array_key_exists($request->query('period'), self::PERIODS) ? $request->query('period') : '6m';
+        $now = Carbon::now();
+        $since = $now->copy()->startOfMonth()->subMonthsNoOverflow(self::PERIODS[$period]);
+        $prevSince = $since->copy()->subMonthsNoOverflow(self::PERIODS[$period] + 1);
 
-        // ── KPI 1: Quotes this month (vs last month delta) ─────────────
-        $quotesThisMonth = Quote::where('created_at', '>=', $startOfMonth)->count();
-        $quotesLastMonth = Quote::whereBetween('created_at', [$startLastMonth, $endLastMonth])->count();
-        $quotesDelta     = $quotesThisMonth - $quotesLastMonth;
+        $fields = ['number', 'company_id', 'status', 'created_at', 'won_at', 'totals', 'model_snapshot'];
+        $created = Quote::where('created_at', '>=', $prevSince)->get($fields);
+        $won = Quote::where('status', Quote::STATUS_WON)->where('won_at', '>=', $prevSince)->get($fields);
 
-        // ── KPI 2: Total quoted excl. VAT this month ───────────────────
-        $totalQuotedThisMonth = (float) Quote::where('created_at', '>=', $startOfMonth)
-            ->get(['totals'])
-            ->sum(fn ($q) => (float) ($q->totals['total_ht'] ?? 0));
-        $totalQuotedLastMonth = (float) Quote::whereBetween('created_at', [$startLastMonth, $endLastMonth])
-            ->get(['totals'])
-            ->sum(fn ($q) => (float) ($q->totals['total_ht'] ?? 0));
-        $totalQuotedDeltaPct = $totalQuotedLastMonth > 0
-            ? round((($totalQuotedThisMonth - $totalQuotedLastMonth) / $totalQuotedLastMonth) * 100, 1)
-            : null;
+        $cur = fn (Collection $c, string $f) => $c->filter(fn ($q) => $q->{$f} && $q->{$f} >= $since);
+        $prev = fn (Collection $c, string $f) => $c->filter(fn ($q) => $q->{$f} && $q->{$f} < $since);
+        $ht = fn (Collection $c) => (float) $c->sum(fn ($q) => (float) ($q->totals['total_ht'] ?? 0));
+        $delta = fn ($a, $b) => $b > 0 ? round(($a - $b) / $b * 100, 1) : null;
 
-        // ── KPI 3: Revenue won this month ──────────────────────────────
-        $revenueWonThisMonth = (float) Quote::where('status', Quote::STATUS_WON)
-            ->where('won_at', '>=', $startOfMonth)
-            ->get(['totals'])
-            ->sum(fn ($q) => (float) ($q->totals['total_ht'] ?? 0));
-        $revenueWonLastMonth = (float) Quote::where('status', Quote::STATUS_WON)
-            ->whereBetween('won_at', [$startLastMonth, $endLastMonth])
-            ->get(['totals'])
-            ->sum(fn ($q) => (float) ($q->totals['total_ht'] ?? 0));
-        $revenueWonDeltaPct = $revenueWonLastMonth > 0
-            ? round((($revenueWonThisMonth - $revenueWonLastMonth) / $revenueWonLastMonth) * 100, 1)
-            : null;
+        $rows = $cur($created, 'created_at');
+        $before = $prev($created, 'created_at');
+        $wonNow = $cur($won, 'won_at');
 
-        // ── KPI 4: Active dealerships (vs total) ───────────────────────
-        $dealersActive = Company::where('status', '!=', 'suspended')->count();
-        $dealersTotal  = Company::count();
-        $newDealersThisMonth = Company::where('created_at', '>=', $startOfMonth)->count();
+        $newDealers = Company::where('created_at', '>=', $since)->count();
+        $newDealersPrev = Company::where('created_at', '>=', $prevSince)->where('created_at', '<', $since)->count();
 
-        // ── Pipeline trend (last 6 months) ─────────────────────────────
-        $trend = [];
-        for ($i = 5; $i >= 0; $i--) {
-            $monthStart = $now->copy()->subMonthsNoOverflow($i)->startOfMonth();
-            $monthEnd   = $monthStart->copy()->endOfMonth();
-            $trend[] = [
-                'label' => $monthStart->format('M y'),
-                'sent'  => Quote::whereBetween('created_at', [$monthStart, $monthEnd])->count(),
-                'won'   => Quote::where('status', Quote::STATUS_WON)->whereBetween('won_at', [$monthStart, $monthEnd])->count(),
-                'lost'  => Quote::where('status', Quote::STATUS_LOST)->whereBetween('lost_at', [$monthStart, $monthEnd])->count(),
-            ];
-        }
-
-        // ── Recent quotes across all tenants (with company name) ───────
-        $recent = Quote::orderBy('created_at', 'desc')->limit(8)
-            ->get(['number', 'company_id', 'client_snapshot', 'model_snapshot', 'totals', 'status', 'created_at']);
-        $companyIds = $recent->pluck('company_id')->unique()->filter()->values();
-        $companies = Company::whereIn('_id', $companyIds)->get(['name'])->keyBy('_id');
-        $recent->each(function ($q) use ($companies) {
-            $q->company_name = $companies->get((string) $q->company_id)?->name ?? '—';
-        });
-
-        // ── Top quoted models (this month) ─────────────────────────────
-        $topModels = Quote::where('created_at', '>=', $startOfMonth)
-            ->get(['model_snapshot'])
-            ->groupBy(fn ($q) => ($q->model_snapshot['brand'] ?? '—') . ' · ' . ($q->model_snapshot['name'] ?? '—'))
-            ->map(fn ($group) => [
-                'name'  => $group->first()->model_snapshot['name']  ?? '—',
-                'brand' => $group->first()->model_snapshot['brand'] ?? '—',
-                'count' => $group->count(),
-            ])
-            ->sortByDesc('count')
-            ->take(5)
-            ->values();
-        $topModelMax = $topModels->max('count') ?: 1;
-
-        // ── Recent platform activity (audit log) ───────────────────────
-        $recentAudit = AuditLog::orderBy('created_at', 'desc')->take(8)->get();
-
-        // ── Stats strip ───────────────────────────────────────────────
         $kpis = [
-            'quotes_this_month'     => $quotesThisMonth,
-            'quotes_delta'          => $quotesDelta,
-            'total_quoted'          => $totalQuotedThisMonth,
-            'total_quoted_delta'    => $totalQuotedDeltaPct,
-            'revenue_won'           => $revenueWonThisMonth,
-            'revenue_won_delta'     => $revenueWonDeltaPct,
-            'dealers_active'        => $dealersActive,
-            'dealers_total'         => $dealersTotal,
-            'new_dealers'           => $newDealersThisMonth,
-            'tenant_users'          => User::where('role', '!=', User::ROLE_SUPERADMIN)->count(),
+            'quotes'       => $rows->count(),
+            'quotes_prev'  => $before->count(),
+            'quotes_delta' => $delta($rows->count(), $before->count()),
+            'quoted'       => $ht($rows),
+            'quoted_prev'  => $ht($before),
+            'quoted_delta' => $delta($ht($rows), $ht($before)),
+            'won'          => $ht($wonNow),
+            'won_count'    => $wonNow->count(),
+            'won_delta'    => $delta($ht($wonNow), $ht($prev($won, 'won_at'))),
+            'dealers_active' => Company::where('status', '!=', 'suspended')->count(),
+            'dealers_total'  => Company::count(),
+            'new_dealers'    => $newDealers,
+            'new_dealers_delta' => $delta($newDealers, $newDealersPrev),
         ];
 
-        return view('admin.dashboard', compact(
-            'kpis', 'trend', 'recent', 'topModels', 'topModelMax', 'recentAudit'
-        ));
+        // Quotes created per month across the period (single bar chart).
+        $trend = [];
+        for ($m = $since->copy(); $m <= $now; $m = $m->copy()->addMonthNoOverflow()) {
+            $trend[$m->format('Y-m')] = ['label' => $m->translatedFormat('M'), 'count' => 0];
+        }
+        foreach ($rows as $q) {
+            $k = $q->created_at->format('Y-m');
+            if (isset($trend[$k])) $trend[$k]['count']++;
+        }
+        $trend = array_values($trend);
+
+        $statuses = [];
+        foreach ([Quote::STATUS_SENT, Quote::STATUS_WON, Quote::STATUS_DRAFT, Quote::STATUS_LOST] as $s) {
+            $statuses[$s] = $rows->where('status', $s)->count();
+        }
+
+        // Most active dealerships and most quoted models of the period.
+        $byCompany = $rows->groupBy(fn ($q) => (string) $q->company_id);
+        $names = Company::whereIn('_id', $byCompany->keys()->filter()->values()->all())->get(['name'])
+            ->mapWithKeys(fn ($c) => [(string) $c->_id => $c->name]);
+        $topDealers = $byCompany->map(fn ($g, $cid) => [
+            'name' => $names[$cid] ?? '—', 'quotes' => $g->count(), 'quoted' => $ht($g),
+        ])->sortByDesc('quotes')->take(5)->values();
+
+        $topModels = $rows
+            ->groupBy(fn ($q) => ($q->model_snapshot['brand'] ?? '—') . ' · ' . ($q->model_snapshot['name'] ?? '—'))
+            ->map(fn ($g) => [
+                'name'  => $g->first()->model_snapshot['name']  ?? '—',
+                'brand' => $g->first()->model_snapshot['brand'] ?? '—',
+                'count' => $g->count(),
+            ])->sortByDesc('count')->take(5)->values();
+
+        // Recent quotes across all tenants (with company name).
+        $recent = Quote::orderBy('created_at', 'desc')->limit(6)
+            ->get(['number', 'company_id', 'client_snapshot', 'model_snapshot', 'totals', 'status', 'created_at']);
+        $recentNames = Company::whereIn('_id', $recent->pluck('company_id')->unique()->filter()->values()->all())->get(['name'])
+            ->mapWithKeys(fn ($c) => [(string) $c->_id => $c->name]);
+        $recent->each(fn ($q) => $q->company_name = $recentNames[(string) $q->company_id] ?? '—');
+
+        return view('admin.dashboard', [
+            'period' => $period,
+            'kpis' => $kpis, 'trend' => $trend, 'statuses' => $statuses,
+            'topDealers' => $topDealers, 'topModels' => $topModels, 'recent' => $recent,
+            'recentAudit' => AuditLog::orderBy('created_at', 'desc')->take(5)->get(),
+            'pendingRequests' => AccountRequest::where('status', AccountRequest::STATUS_PENDING)->count(),
+        ]);
     }
 }
