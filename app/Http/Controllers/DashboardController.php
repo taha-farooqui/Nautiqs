@@ -29,7 +29,7 @@ class DashboardController extends Controller
         // re-hammer Atlas. Recent quotes are fetched fresh (single quick
         // query, and we want them up-to-date right after a save).
         $companyId = auth()->user()->company_id ?? 'guest';
-        $cacheKey  = "dashboard:v1:{$companyId}:" . now()->format('YmdHi');
+        $cacheKey  = "dashboard:v2:{$companyId}:" . now()->format('YmdHi');
 
         $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, 60, function () {
             return $this->buildData();
@@ -127,7 +127,7 @@ class DashboardController extends Controller
             $monthStart = $now->copy()->subMonthsNoOverflow($i)->startOfMonth();
             $monthEnd   = $monthStart->copy()->endOfMonth();
             $trend[] = [
-                'label' => $monthStart->format('M y'),
+                'label' => $monthStart->translatedFormat('M'),
                 'sent'  => Quote::whereBetween('created_at', [$monthStart, $monthEnd])->count(),
                 'won'   => Quote::where('status', Quote::STATUS_WON)->whereBetween('won_at', [$monthStart, $monthEnd])->count(),
                 'lost'  => Quote::where('status', Quote::STATUS_LOST)->whereBetween('lost_at', [$monthStart, $monthEnd])->count(),

@@ -1,367 +1,339 @@
-@php
-    if (! function_exists('nautiqs_format_short')) {
-        function nautiqs_format_short(float $n): string {
-            if ($n >= 1_000_000) return number_format($n / 1_000_000, 1, '.', '') . 'M';
-            if ($n >= 1_000)     return number_format($n / 1_000, 0) . 'k';
-            return number_format($n, 0);
-        }
-    }
-@endphp
-
-{{-- Header date reads "day date month year" (jeudi 30 juillet 2026). --}}
+{{-- Dealer dashboard. Our own figures, laid out and styled like Clement's Figma
+     (same cards, type sizes, colours and Phosphor icons as the brand dashboard). --}}
 <x-app-layout :title="__('Dashboard')" :header="__('Dashboard')">
-
-    {{-- Partner brand invitations waiting for an answer. Read live, not from
-         the cached dashboard data, so it disappears as soon as it's answered. --}}
     @php
+        $eur = fn ($v) => number_format((float) $v, 0, ',', ' ') . ' €';
+        $firstName = explode(' ', trim(auth()->user()->name))[0];
+
+        // Partner brand invitations waiting for an answer. Read live, not from
+        // the cached dashboard data, so it disappears as soon as it's answered.
         $brandInvites = auth()->user()->company_id
             ? app(\App\Services\Brand\BrandInvitations::class)->pendingFor((string) auth()->user()->company_id)
             : collect();
+
+        // Trend badge: [label, up?] or null when there is nothing to compare.
+        $pctBadge = fn ($d) => $d === null || (float) $d == 0 ? null : [($d > 0 ? '+' : '−') . rtrim(rtrim(number_format(abs($d), 1, ',', ''), '0'), ',') . ' %', $d > 0];
+        $kpis = [
+            ['label' => __('Quotes this month'), 'value' => number_format($quotesThisMonth, 0, ',', ' '),
+                'badge' => $quotesDelta ? [($quotesDelta > 0 ? '+' : '−') . abs($quotesDelta), $quotesDelta > 0] : null,
+                'note' => $quotesDelta ? __('vs last month') : __('Same as last month')],
+            ['label' => __('Total quoted (excl. VAT)'), 'value' => $eur($totalQuotedThisMonth),
+                'badge' => $pctBadge($totalQuotedDeltaPct),
+                'note' => $totalQuotedDeltaPct === null ? __('No data last month') : __('vs last month')],
+            ['label' => __('Revenue won this month'), 'value' => $eur($revenueWonThisMonth),
+                'badge' => $pctBadge($revenueWonDeltaPct),
+                'note' => $revenueWonDeltaPct === null ? __('No data last month') : __('vs last month')],
+            ['label' => __('Awaiting response'), 'value' => number_format($awaitingResponse, 0, ',', ' '),
+                'badge' => $expiredThisWeek > 0 ? [(string) $expiredThisWeek, false] : null,
+                'note' => $expiredThisWeek > 0 ? $expiredThisWeek . ' ' . __('expired this week') : __('None expired this week')],
+        ];
+
+        $hasTrend = collect($trend)->sum('sent') > 0;
+        $closed = $wonThisMonth + $lostThisMonth;
+        $wonShare = $closed > 0 ? round($wonThisMonth / $closed * 100) : 0;
+
+        // Quote status tags (Figma "Tag": 24 px, dot + 12 px medium label).
+        $tags = [
+            'draft' => [__('Draft'), 'bg-nq-muted border-nq-border text-nq-text-2', 'bg-nq-text-3'],
+            'sent'  => [__('Sent'), 'bg-nq-info-bg border-[#d4e9fb] text-[#1d6aa5]', 'bg-nq-chart2'],
+            'won'   => [__('Won'), 'bg-nq-success-bg border-nq-success-border text-nq-success-text', 'bg-nq-success'],
+            'lost'  => [__('Lost'), 'bg-nq-error-bg border-[#fbd5d6] text-nq-error-text', 'bg-nq-error'],
+        ];
+        $quick = [
+            ['plus', 'bg-nq-primary-bg text-primary-800', __('New quote'), __('Build a quote in under 2 minutes.'), route('quotes.create')],
+            ['user-plus', 'bg-nq-info-bg text-nq-chart2', __('Add client'), __('Save a client to reuse on your quotes.'), route('clients.create')],
+            ['sailboat', 'bg-nq-warning-bg text-nq-chart3', __('Catalogue'), __('Your boats, versions, options and prices.'), route('catalogue.models')],
+            ['file-text', 'bg-nq-success-bg text-nq-success', __('All quotes'), __('Follow, resend and convert your quotes.'), route('quotes.index')],
+        ];
+        $initials = fn ($s) => mb_strtoupper(collect(preg_split('/\s+/', trim((string) $s)))->filter()->map(fn ($p) => mb_substr($p, 0, 1))->take(2)->implode('')) ?: '—';
+
+        $card = 'bg-white border border-nq-border rounded-xl';
+        $btn = 'h-9 inline-flex items-center gap-2 px-4 rounded-lg text-sm leading-[22px] font-medium transition-colors whitespace-nowrap';
+        $btnSecondary = $btn . ' bg-white border border-nq-border text-nq-text hover:bg-nq-subtle';
+        $cardTitle = 'text-base leading-6 font-medium text-nq-text';
+        $link = 'inline-flex items-center gap-1 text-sm leading-[22px] font-medium text-primary-800 hover:underline';
     @endphp
-    @if ($brandInvites->isNotEmpty())
-        <div class="mb-4 rounded-xl border border-primary-200 bg-primary-50 px-4 py-3 flex flex-wrap items-center justify-between gap-3">
-            <div class="flex items-start gap-2 text-sm text-primary-900">
-                <i class="ri-links-line text-lg"></i>
-                <span>{{ trans_choice('{1}A brand wants to share its catalogue with you.|[2,*]:count brands want to share their catalogue with you.', $brandInvites->count(), ['count' => $brandInvites->count()]) }}</span>
-            </div>
-            <a href="{{ $brandInvites->count() === 1 ? route('partner-brands.show', $brandInvites->first()->_id) : route('partner-brands.index') }}"
-                class="px-3 py-1.5 text-sm font-semibold bg-primary-800 hover:bg-primary-900 text-white rounded-lg">{{ __('See the invitation') }}</a>
-        </div>
-    @endif
 
-    {{-- Catalogue update banner (only when there are pending updates) --}}
-    @if ($pendingUpdatesCount > 0)
-        <section class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary-900 to-primary-700 text-white p-5 mb-6">
-            <div class="flex flex-col lg:flex-row lg:items-center gap-3">
-                <div class="w-10 h-10 rounded-lg bg-white/15 flex items-center justify-center">
-                    <i class="ri-anchor-line text-xl"></i>
+    <div class="flex flex-col gap-4">
+        {{-- Partner brand invitation --}}
+        @if ($brandInvites->isNotEmpty())
+            <div class="{{ $card }} px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+                <div class="flex items-center gap-3 text-sm leading-[22px] text-nq-text">
+                    <span class="w-8 h-8 shrink-0 rounded-lg bg-nq-primary-bg text-primary-800 flex items-center justify-center"><i class="ph-bold ph-handshake text-base"></i></span>
+                    <span>{{ trans_choice('{1}A brand wants to share its catalogue with you.|[2,*]:count brands want to share their catalogue with you.', $brandInvites->count(), ['count' => $brandInvites->count()]) }}</span>
                 </div>
-                <div class="flex-1">
-                    <p class="font-semibold">{{ __('Catalogue update available') }}{{ $pendingUpdatesBrand ? ' — ' . $pendingUpdatesBrand : '' }}</p>
-                    <p class="text-sm text-white/80">
-                        {{ $pendingUpdatesCount }} {{ $pendingUpdatesCount === 1 ? __('change') : __('changes') }} {{ __('from the platform — review before applying') }}.
+                <a href="{{ $brandInvites->count() === 1 ? route('partner-brands.show', $brandInvites->first()->_id) : route('partner-brands.index') }}"
+                    class="{{ $btn }} bg-primary-800 text-white hover:bg-nq-active">{{ __('See the invitation') }}</a>
+            </div>
+        @endif
+
+        {{-- Catalogue update (only when there are pending updates) --}}
+        @if ($pendingUpdatesCount > 0)
+            <div class="{{ $card }} px-4 py-3 flex flex-wrap items-center gap-3">
+                <span class="w-8 h-8 shrink-0 rounded-lg bg-nq-warning-bg text-nq-chart3 flex items-center justify-center"><i class="ph-bold ph-arrows-clockwise text-base"></i></span>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm leading-[22px] font-medium text-nq-text">{{ __('Catalogue update available') }}{{ $pendingUpdatesBrand ? ' — ' . $pendingUpdatesBrand : '' }}</p>
+                    <p class="text-xs leading-5 text-nq-text-3">{{ $pendingUpdatesCount }} {{ $pendingUpdatesCount === 1 ? __('change') : __('changes') }} {{ __('from the platform — review before applying') }}.</p>
+                </div>
+                <button class="{{ $btnSecondary }}">{{ __('Dismiss') }}</button>
+                <button class="{{ $btn }} bg-primary-800 text-white hover:bg-nq-active">{{ __('Review & apply') }}</button>
+            </div>
+        @endif
+
+        {{-- Page heading --}}
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div class="flex flex-col gap-1">
+                <div class="flex flex-wrap items-center gap-3">
+                    <h2 class="text-2xl leading-8 font-semibold tracking-[-0.24px] text-nq-text">{{ __('Hello :name', ['name' => $firstName]) }}</h2>
+                    @if ($awaitingResponse > 0)
+                        <span class="h-6 inline-flex items-center gap-1.5 px-2 rounded-md bg-nq-success-bg border border-nq-success-border text-xs leading-5 font-medium text-nq-success-text">
+                            <span class="w-1.5 h-1.5 rounded-full bg-nq-success"></span>
+                            {{ $awaitingResponse }} {{ mb_strtolower(__('Awaiting response')) }}
+                        </span>
+                    @endif
+                </div>
+                <p class="text-sm leading-[22px] text-nq-text-2">{{ now()->translatedFormat('l j F Y') }}</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                <a href="{{ route('clients.create') }}" class="{{ $btnSecondary }}"><i class="ph-bold ph-user-plus text-base"></i> {{ __('Add client') }}</a>
+                <a href="{{ route('quotes.create') }}" class="{{ $btn }} bg-primary-800 text-white hover:bg-nq-active"><i class="ph-bold ph-plus text-base"></i> {{ __('New quote') }}</a>
+            </div>
+        </div>
+
+        {{-- KPIs --}}
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+            @foreach ($kpis as $i => $k)
+                <div class="rise {{ $card }} pt-4 px-4 pb-[30px] flex flex-col gap-6" style="--d: {{ $i }}">
+                    <div class="flex items-start justify-between gap-2">
+                        <p class="text-sm leading-[22px] font-medium text-nq-text-2">{{ $k['label'] }}</p>
+                        @if ($k['badge'])
+                            @php [$bLabel, $bUp] = $k['badge']; @endphp
+                            <span class="inline-flex items-center gap-[3px] px-1.5 py-0.5 rounded-md border text-xs leading-5 font-medium whitespace-nowrap {{ $bUp ? 'bg-nq-success-bg border-nq-success text-nq-success-text' : 'bg-nq-error-bg border-nq-error text-nq-error-text' }}">
+                                <i class="ph-bold {{ $bUp ? 'ph-trend-up' : 'ph-trend-down' }} text-xs"></i>{{ $bLabel }}</span>
+                        @endif
+                    </div>
+                    <div>
+                        <p class="text-2xl leading-8 font-semibold text-nq-text tabular-nums">{{ $k['value'] }}</p>
+                        <p class="text-xs leading-5 text-nq-text-3">{{ $k['note'] }}</p>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+
+        {{-- Quotes per month + conversion --}}
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+            <section class="rise xl:col-span-2 {{ $card }} p-4 flex flex-col gap-4" style="--d: 4">
+                <div class="flex items-center justify-between gap-2">
+                    <h3 class="{{ $cardTitle }}">{{ __('Quotes per month') }}</h3>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs leading-5 text-nq-text-3">{{ __('Total:') }}</span>
+                        <span class="text-sm leading-[22px] font-medium text-nq-text tabular-nums">{{ collect($trend)->sum('sent') }}</span>
+                    </div>
+                </div>
+                @if ($hasTrend)
+                    <div class="relative h-[268px] rounded-[10px] bg-nq-subtle p-3"><canvas id="dealerTrend"></canvas></div>
+                @else
+                    <div class="rounded-[10px] bg-nq-subtle">
+                        <x-app.empty-state icon="ri-bar-chart-2-line" size="sm" class="h-[268px]" :title="__('No quotes yet')"
+                            :message="__('Start by creating a quote — it takes under 2 minutes.')" />
+                    </div>
+                @endif
+            </section>
+
+            <section class="rise {{ $card }} p-4 flex flex-col gap-4" style="--d: 5">
+                <h3 class="{{ $cardTitle }}">{{ __('Conversion rate') }}</h3>
+                <div class="flex-1 rounded-[10px] bg-nq-subtle px-4 py-6 flex flex-col justify-center gap-4">
+                    <p class="flex items-baseline gap-2">
+                        <span class="text-2xl leading-8 font-semibold text-nq-text tabular-nums">{{ $conversionRate }} %</span>
+                        <span class="text-xs leading-5 text-nq-text-3">{{ __('This month') }}</span>
                     </p>
+                    <div class="flex h-7 gap-1.5">
+                        @if ($closed > 0)
+                            @if ($wonShare > 0)<div class="grow-x h-full rounded-lg bg-primary-800" style="width: {{ $wonShare }}%"></div>@endif
+                            @if ($wonShare < 100)<div class="h-full flex-1 rounded-lg" style="background: repeating-linear-gradient(135deg, #e8e8eb 0 1.5px, #f0f0f2 1.5px 7px)"></div>@endif
+                        @else
+                            <div class="h-full flex-1 rounded-lg bg-nq-muted"></div>
+                        @endif
+                    </div>
+                    <ul class="flex flex-col gap-2">
+                        @foreach ([[__('Sent'), $sentThisMonth, '#2b8fd6'], [__('Won'), $wonThisMonth, '#0e4f79'], [__('Lost'), $lostThisMonth, '#c9c9cf']] as [$l, $n, $c])
+                            <li class="inline-flex items-center gap-1.5 self-start bg-white border border-nq-border-2 rounded-lg pl-2 pr-2.5 py-1.5 whitespace-nowrap">
+                                <span class="w-0.5 h-3 rounded-full" style="background: {{ $c }}"></span>
+                                <span class="text-xs leading-5 font-medium text-nq-text">{{ $l }} :</span>
+                                <span class="text-xs leading-5 text-nq-text-3">{{ $n }}</span>
+                            </li>
+                        @endforeach
+                    </ul>
+                    @if ($avgDaysToClose !== null)
+                        <p class="text-xs leading-5 text-nq-text-2">{{ __('Avg. time to close') }} : <span class="font-medium text-nq-text">{{ rtrim(rtrim(number_format($avgDaysToClose, 1, ',', ''), '0'), ',') }} {{ __('days') }}</span></p>
+                    @endif
                 </div>
-                <div class="flex flex-wrap gap-2">
-                    <button class="px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white font-medium text-sm hover:bg-white/20 transition">
-                        {{ __('Dismiss') }}
-                    </button>
-                    <button class="px-4 py-2 rounded-lg bg-white text-primary-900 font-semibold text-sm hover:bg-white/90 transition">
-                        {{ __('Review & apply') }}
-                    </button>
+            </section>
+        </div>
+
+        {{-- Top models + quick actions --}}
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+            <section class="rise {{ $card }} p-4 flex flex-col gap-2" style="--d: 6">
+                <div class="flex items-center justify-between gap-2">
+                    <h3 class="{{ $cardTitle }}">{{ __('Top quoted models') }}</h3>
+                    <span class="text-xs leading-5 text-nq-text-3">{{ __('This month') }}</span>
                 </div>
-            </div>
-        </section>
-    @endif
+                <div>
+                    @forelse ($topModels as $i => $m)
+                        <div class="flex items-center gap-3 py-2">
+                            <span class="w-8 h-8 shrink-0 rounded-full text-xs font-semibold flex items-center justify-center {{ $i % 3 === 2 ? 'bg-nq-accent-bg text-nq-accent-text' : 'bg-nq-primary-bg text-primary-800' }}">{{ $initials($m['name']) }}</span>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm leading-[22px] font-medium text-nq-text truncate">{{ $m['name'] }}</p>
+                                <p class="text-xs leading-5 text-nq-text-3 truncate">{{ $m['brand'] }}</p>
+                            </div>
+                            <span class="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-nq-subtle border border-nq-border text-xs leading-5 font-medium text-nq-text-2 whitespace-nowrap"><i class="ph-bold ph-check text-xs"></i>{{ trans_choice('{1}:count quote|[2,*]:count quotes', $m['count'], ['count' => $m['count']]) }}</span>
+                        </div>
+                    @empty
+                        <x-app.empty-state icon="ri-trophy-line" size="sm" :title="__('No quotes this month')" :message="__('Top models will appear here as you build quotes.')" />
+                    @endforelse
+                </div>
+            </section>
 
-    {{-- KPI cards (4) --}}
-    <section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
-        {{-- 1. Quotes this month --}}
-        <div class="bg-white rounded-2xl border border-gray-200 p-5">
-            <div class="flex items-center gap-2 mb-3">
-                <span class="w-2 h-2 rounded-full bg-blue-500"></span>
-                <span class="text-sm text-gray-600">{{ __('Quotes this month') }}</span>
-            </div>
-            <p class="text-3xl font-bold text-gray-900">{{ number_format($quotesThisMonth) }}</p>
-            <p class="text-xs mt-2 {{ $quotesDelta > 0 ? 'text-emerald-600' : ($quotesDelta < 0 ? 'text-red-600' : 'text-gray-500') }}">
-                @if ($quotesDelta > 0)
-                    <i class="ri-arrow-up-line"></i> +{{ $quotesDelta }} {{ __('vs last month') }}
-                @elseif ($quotesDelta < 0)
-                    <i class="ri-arrow-down-line"></i> {{ $quotesDelta }} {{ __('vs last month') }}
-                @else
-                    <i class="ri-subtract-line"></i> {{ __('Same as last month') }}
-                @endif
-            </p>
+            <section class="rise {{ $card }} p-4 flex flex-col gap-2" style="--d: 7">
+                <h3 class="{{ $cardTitle }}">{{ __('Quick actions') }}</h3>
+                <ul>
+                    @foreach ($quick as [$icon, $tone, $title, $text, $href])
+                        <li class="{{ $loop->last ? '' : 'border-b border-nq-border-2' }}">
+                            <a href="{{ $href }}" class="group flex items-center gap-3.5 py-3">
+                                <span class="w-8 h-8 shrink-0 rounded-lg flex items-center justify-center {{ $tone }}"><i class="ph-bold ph-{{ $icon }} text-base"></i></span>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-base leading-6 text-nq-text group-hover:text-primary-800">{{ $title }}</p>
+                                    <p class="text-sm leading-[22px] text-nq-text-2">{{ $text }}</p>
+                                </div>
+                                <i class="ph-bold ph-arrow-right text-base text-nq-text-3 group-hover:text-primary-800"></i>
+                            </a>
+                        </li>
+                    @endforeach
+                </ul>
+            </section>
         </div>
 
-        {{-- 2. Total quoted excl. VAT --}}
-        <div class="bg-white rounded-2xl border border-gray-200 p-5">
-            <div class="flex items-center gap-2 mb-3">
-                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                <span class="text-sm text-gray-600">{{ __('Total quoted (excl. VAT)') }}</span>
-            </div>
-            <p class="text-3xl font-bold text-gray-900">{{ nautiqs_format_short($totalQuotedThisMonth) }} €</p>
-            <p class="text-xs mt-2 {{ ($totalQuotedDeltaPct ?? 0) > 0 ? 'text-emerald-600' : (($totalQuotedDeltaPct ?? 0) < 0 ? 'text-red-600' : 'text-gray-500') }}">
-                @if ($totalQuotedDeltaPct === null)
-                    <i class="ri-subtract-line"></i> {{ __('No data last month') }}
-                @elseif ($totalQuotedDeltaPct > 0)
-                    <i class="ri-arrow-up-line"></i> +{{ $totalQuotedDeltaPct }}% {{ __('vs last month') }}
-                @elseif ($totalQuotedDeltaPct < 0)
-                    <i class="ri-arrow-down-line"></i> {{ $totalQuotedDeltaPct }}% {{ __('vs last month') }}
-                @else
-                    <i class="ri-subtract-line"></i> {{ __('Same as last month') }}
-                @endif
-            </p>
-        </div>
-
-        {{-- 3. Revenue won this month --}}
-        <div class="bg-white rounded-2xl border border-gray-200 p-5">
-            <div class="flex items-center gap-2 mb-3">
-                <span class="w-2 h-2 rounded-full bg-amber-500"></span>
-                <span class="text-sm text-gray-600">{{ __('Revenue won this month') }}</span>
-            </div>
-            <p class="text-3xl font-bold text-gray-900">{{ nautiqs_format_short($revenueWonThisMonth) }} €</p>
-            <p class="text-xs mt-2 {{ ($revenueWonDeltaPct ?? 0) > 0 ? 'text-emerald-600' : (($revenueWonDeltaPct ?? 0) < 0 ? 'text-red-600' : 'text-gray-500') }}">
-                @if ($revenueWonDeltaPct === null)
-                    <i class="ri-subtract-line"></i> {{ __('No data last month') }}
-                @elseif ($revenueWonDeltaPct > 0)
-                    <i class="ri-arrow-up-line"></i> +{{ $revenueWonDeltaPct }}% {{ __('vs last month') }}
-                @elseif ($revenueWonDeltaPct < 0)
-                    <i class="ri-arrow-down-line"></i> {{ $revenueWonDeltaPct }}% {{ __('vs last month') }}
-                @else
-                    <i class="ri-subtract-line"></i> {{ __('Same as last month') }}
-                @endif
-            </p>
-        </div>
-
-        {{-- 4. Awaiting response --}}
-        <div class="bg-white rounded-2xl border border-gray-200 p-5">
-            <div class="flex items-center gap-2 mb-3">
-                <span class="w-2 h-2 rounded-full bg-red-500"></span>
-                <span class="text-sm text-gray-600">{{ __('Awaiting response') }}</span>
-            </div>
-            <p class="text-3xl font-bold text-gray-900">{{ number_format($awaitingResponse) }}</p>
-            <p class="text-xs mt-2 {{ $expiredThisWeek > 0 ? 'text-red-600' : 'text-gray-500' }}">
-                @if ($expiredThisWeek > 0)
-                    <i class="ri-arrow-down-line"></i> {{ $expiredThisWeek }} {{ __('expired this week') }}
-                @else
-                    <i class="ri-subtract-line"></i> {{ __('None expired this week') }}
-                @endif
-            </p>
-        </div>
-    </section>
-
-    {{-- Pipeline trend --}}
-    <section class="bg-white rounded-2xl border border-gray-200 p-5 mb-4">
-        <div class="flex flex-wrap items-start justify-between gap-x-3 gap-y-2 mb-4">
-            <div class="min-w-0">
-                <h3 class="font-semibold text-gray-900">{{ __('Pipeline trend') }}</h3>
-                <p class="text-sm text-gray-500">{{ __('Last 6 months · sent vs won vs lost') }}</p>
-            </div>
-            <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-                <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span> {{ __('Sent') }}</span>
-                <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> {{ __('Won') }}</span>
-                <span class="inline-flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-red-500"></span> {{ __('Lost') }}</span>
-            </div>
-        </div>
-        <div class="h-64">
-            <canvas id="pipelineTrendChart"></canvas>
-        </div>
-    </section>
-
-    @push('scripts')
-        <script>
-            const trend = @json($trend);
-            @php
-                $trendLabels = [
-                    'sent' => __('Sent'),
-                    'won'  => __('Won'),
-                    'lost' => __('Lost'),
-                ];
-            @endphp
-            const trendLabels = @json($trendLabels);
-
-            document.addEventListener('DOMContentLoaded', () => {
-                const ctx = document.getElementById('pipelineTrendChart');
-                if (!ctx || !window.Chart) return;
-
-                Chart.defaults.font.family = "'Geist', sans-serif";
-                Chart.defaults.color = '#64748b';
-
-                const grad = (color) => {
-                    const g = ctx.getContext('2d').createLinearGradient(0, 0, 0, 250);
-                    g.addColorStop(0, color + '55');
-                    g.addColorStop(1, color + '00');
-                    return g;
-                };
-
-                new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: trend.map(d => d.label),
-                        datasets: [
-                            {
-                                label: trendLabels.sent,
-                                data: trend.map(d => d.sent),
-                                borderColor: '#3b82f6',
-                                backgroundColor: grad('#3b82f6'),
-                                fill: true, tension: 0.35, borderWidth: 2.5,
-                                pointBackgroundColor: '#3b82f6', pointBorderColor: '#fff', pointBorderWidth: 2, pointRadius: 0, pointHoverRadius: 5,
-                            },
-                            {
-                                label: trendLabels.won,
-                                data: trend.map(d => d.won),
-                                borderColor: '#10b981',
-                                backgroundColor: grad('#10b981'),
-                                fill: true, tension: 0.35, borderWidth: 2.5,
-                                pointBackgroundColor: '#10b981', pointBorderColor: '#fff', pointBorderWidth: 2, pointRadius: 0, pointHoverRadius: 5,
-                            },
-                            {
-                                label: trendLabels.lost,
-                                data: trend.map(d => d.lost),
-                                borderColor: '#ef4444',
-                                backgroundColor: grad('#ef4444'),
-                                fill: true, tension: 0.35, borderWidth: 2.5,
-                                pointBackgroundColor: '#ef4444', pointBorderColor: '#fff', pointBorderWidth: 2, pointRadius: 0, pointHoverRadius: 5,
-                            },
-                        ],
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        interaction: { mode: 'index', intersect: false },
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: { backgroundColor: '#0f172a', padding: 10, cornerRadius: 8, displayColors: true },
-                        },
-                        scales: {
-                            x: { grid: { display: false }, ticks: { font: { size: 11 } } },
-                            y: { beginAtZero: true, grid: { color: 'rgba(15,23,42,0.06)' }, ticks: { font: { size: 11 }, stepSize: 1, precision: 0 } },
-                        },
-                    },
-                });
-            });
-        </script>
-    @endpush
-
-    {{-- Main grid --}}
-    <section class="grid grid-cols-1 xl:grid-cols-3 gap-4 items-start">
-        {{-- Recent quotes (left, 2 cols) --}}
-        <div class="xl:col-span-2 bg-white rounded-2xl border border-gray-200 overflow-hidden">
-            <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-                <h3 class="font-semibold text-gray-900">{{ __('Recent quotes') }}</h3>
-                <a href="{{ route('quotes.index') }}" class="text-sm font-medium text-primary-800 hover:text-primary-900">
-                    {{ __('View all') }} <i class="ri-arrow-right-line"></i>
-                </a>
+        {{-- Recent quotes --}}
+        <section class="rise {{ $card }} overflow-hidden" style="--d: 8">
+            <div class="p-4 flex items-center justify-between gap-2">
+                <h3 class="{{ $cardTitle }}">{{ __('Recent quotes') }}</h3>
+                <a href="{{ route('quotes.index') }}" class="{{ $link }}">{{ __('View all') }} <i class="ph-bold ph-arrow-right text-base"></i></a>
             </div>
             @if ($recent->isEmpty())
-                <x-app.empty-state
-                    icon="ri-file-list-3-line"
-                    :title="__('No quotes yet')"
-                    :message="__('Start by creating a quote — it takes under 2 minutes.')"
-                    :ctaLabel="__('New quote')"
-                    ctaHref="{{ route('quotes.create') }}" />
+                <x-app.empty-state icon="ri-file-list-3-line" :title="__('No quotes yet')" :message="__('Start by creating a quote — it takes under 2 minutes.')"
+                    :ctaLabel="__('New quote')" ctaHref="{{ route('quotes.create') }}" />
             @else
                 <div class="overflow-x-auto">
-                    <table class="w-full text-sm">
-                        <thead class="bg-gray-50 text-xs uppercase tracking-wider text-gray-500">
-                            <tr>
-                                <th class="px-5 py-3 text-left font-semibold">{{ __('Client') }}</th>
-                                <th class="px-5 py-3 text-left font-semibold">{{ __('Ref.') }}</th>
-                                <th class="px-5 py-3 text-left font-semibold">{{ __('Boat') }}</th>
-                                <th class="px-5 py-3 text-right font-semibold">{{ __('Amount excl. VAT') }}</th>
-                                <th class="px-5 py-3 text-left font-semibold">{{ __('Status') }}</th>
+                    <table class="w-full min-w-[820px] text-sm">
+                        <thead>
+                            <tr class="bg-nq-subtle text-left text-xs leading-5 text-nq-text-2">
+                                <th class="h-9 px-4 font-normal border-y border-nq-border-2">{{ __('Client') }}</th>
+                                <th class="h-9 px-4 font-normal border-y border-nq-border-2 w-[130px]">{{ __('Ref.') }}</th>
+                                <th class="h-9 px-4 font-normal border-y border-nq-border-2">{{ __('Boat') }}</th>
+                                <th class="h-9 px-4 font-normal border-y border-nq-border-2 w-[150px] text-right">{{ __('Amount excl. VAT') }}</th>
+                                <th class="h-9 px-4 font-normal border-y border-nq-border-2 w-[140px]">{{ __('Status') }}</th>
+                                <th class="h-9 px-4 border-y border-nq-border-2 w-12"></th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-gray-100">
+                        <tbody>
                             @foreach ($recent as $q)
                                 @php
                                     $first = $q->client_snapshot['first_name'] ?? '';
                                     $last  = $q->client_snapshot['last_name']  ?? '';
                                     $clientName = trim($first . ' ' . $last) ?: __('Guest');
-                                    $initials = strtoupper(mb_substr($first, 0, 1) . mb_substr($last, 0, 1)) ?: 'G';
+                                    $ini = mb_strtoupper(mb_substr($first, 0, 1) . mb_substr($last, 0, 1)) ?: 'G';
+                                    [$tLabel, $tCls, $tDot] = $tags[$q->status] ?? $tags['draft'];
+                                    $rowBorder = $loop->last ? '' : 'border-b border-nq-border-2';
                                 @endphp
-                                <tr class="hover:bg-gray-50 cursor-pointer"
-                                    data-href="{{ route('quotes.show', $q->_id) }}"
+                                <tr class="hover:bg-nq-subtle cursor-pointer" data-href="{{ route('quotes.show', $q->_id) }}"
                                     onclick="if (!event.target.closest('a, button, form, input')) window.location = this.dataset.href">
-                                    <td class="px-5 py-3">
+                                    <td class="h-14 px-4 {{ $rowBorder }}">
                                         <div class="flex items-center gap-2">
-                                            <span class="w-8 h-8 rounded-full bg-primary-50 text-primary-800 text-xs font-bold flex items-center justify-center shrink-0">
-                                                {{ $initials }}
-                                            </span>
+                                            <span class="w-6 h-6 shrink-0 rounded-full bg-nq-primary-bg text-primary-800 text-[10px] font-semibold flex items-center justify-center">{{ $ini }}</span>
                                             <div class="min-w-0">
-                                                <div class="font-medium text-gray-900 truncate">{{ $clientName }}</div>
-                                                <div class="text-xs text-gray-500 truncate">{{ $q->client_snapshot['email'] ?? '' }}</div>
+                                                <div class="text-sm leading-[22px] font-medium text-nq-text truncate">{{ $clientName }}</div>
+                                                @if (! empty($q->client_snapshot['email']))
+                                                    <div class="text-xs leading-5 text-nq-text-3 truncate">{{ $q->client_snapshot['email'] }}</div>
+                                                @endif
                                             </div>
                                         </div>
                                     </td>
-                                    <td class="px-5 py-3 whitespace-nowrap">
-                                        <a href="{{ route('quotes.show', $q->_id) }}"
-                                            class="font-mono text-xs px-2 py-1 rounded bg-gray-100 text-gray-700 hover:bg-primary-50 hover:text-primary-800">
-                                            {{ $q->number }}
-                                        </a>
+                                    <td class="h-14 px-4 whitespace-nowrap {{ $rowBorder }}">
+                                        <a href="{{ route('quotes.show', $q->_id) }}" class="font-mono text-xs px-1.5 py-0.5 rounded-[5px] bg-nq-muted border border-nq-border text-nq-text-2 hover:text-primary-800">{{ $q->number }}</a>
                                     </td>
-                                    <td class="px-5 py-3">
-                                        <div class="text-gray-900">{{ $q->boatLabel() ?: '—' }}</div>
-                                        <div class="text-xs text-gray-500">{{ $q->model_snapshot['brand'] ?? '' }}</div>
+                                    <td class="h-14 px-4 {{ $rowBorder }}">
+                                        <div class="text-sm leading-[22px] text-nq-text">{{ $q->boatLabel() ?: '—' }}</div>
+                                        @if (! empty($q->model_snapshot['brand']))
+                                            <div class="text-xs leading-5 text-nq-text-3">{{ $q->model_snapshot['brand'] }}</div>
+                                        @endif
                                     </td>
-                                    <td class="px-5 py-3 text-right whitespace-nowrap">
-                                        <div class="font-semibold text-gray-900">
-                                            {{ number_format($q->totals['total_ht'] ?? 0, 0, ',', ' ') }} €
-                                        </div>
-                                        <div class="text-xs text-gray-500">
-                                            {{ __('VAT incl.') }} {{ number_format($q->totals['total_ttc'] ?? 0, 0, ',', ' ') }} €
-                                        </div>
+                                    <td class="h-14 px-4 text-right whitespace-nowrap {{ $rowBorder }}">
+                                        <div class="text-sm leading-[22px] font-medium text-nq-text tabular-nums">{{ $eur($q->totals['total_ht'] ?? 0) }}</div>
+                                        <div class="text-xs leading-5 text-nq-text-3 tabular-nums">{{ __('VAT incl.') }} {{ $eur($q->totals['total_ttc'] ?? 0) }}</div>
                                     </td>
-                                    <td class="px-5 py-3"><x-app.status-pill :status="$q->status" /></td>
+                                    <td class="h-14 px-4 {{ $rowBorder }}">
+                                        <span class="h-6 inline-flex items-center gap-1.5 px-2 rounded-md border text-xs leading-5 font-medium whitespace-nowrap {{ $tCls }}"><span class="w-1.5 h-1.5 rounded-full {{ $tDot }}"></span>{{ $tLabel }}</span>
+                                    </td>
+                                    <td class="h-14 px-4 text-right {{ $rowBorder }}">
+                                        <a href="{{ route('quotes.show', $q->_id) }}" class="w-7 h-7 inline-flex items-center justify-center rounded-lg text-nq-text-3 hover:bg-nq-muted hover:text-nq-text" title="{{ __('Open') }}"><i class="ph-bold ph-dots-three-vertical text-base"></i></a>
+                                    </td>
                                 </tr>
                             @endforeach
                         </tbody>
                     </table>
                 </div>
             @endif
-        </div>
+        </section>
+    </div>
 
-        {{-- Right column stack --}}
-        <div class="space-y-4">
-            {{-- Quick actions --}}
-            <div class="bg-white rounded-2xl border border-gray-200 p-5">
-                <h3 class="font-semibold text-gray-900 mb-4">{{ __('Quick actions') }}</h3>
-                <div class="grid grid-cols-2 gap-3">
-                    <a href="{{ route('quotes.create') }}" class="flex flex-col items-center gap-2 p-4 rounded-xl border border-gray-200 hover:bg-primary-50 hover:border-primary-200 transition">
-                        <i class="ri-file-add-line text-2xl text-primary-800"></i>
-                        <span class="text-xs font-medium text-gray-900 text-center">{{ __('New quote') }}</span>
-                    </a>
-                    <a href="{{ route('clients.create') }}" class="flex flex-col items-center gap-2 p-4 rounded-xl border border-gray-200 hover:bg-primary-50 hover:border-primary-200 transition">
-                        <i class="ri-user-add-line text-2xl text-primary-800"></i>
-                        <span class="text-xs font-medium text-gray-900 text-center">{{ __('Add client') }}</span>
-                    </a>
-                    <a href="#" class="flex flex-col items-center gap-2 p-4 rounded-xl border border-gray-200 hover:bg-primary-50 hover:border-primary-200 transition">
-                        <i class="ri-upload-cloud-2-line text-2xl text-primary-800"></i>
-                        <span class="text-xs font-medium text-gray-900 text-center">{{ __('Import catalogue') }}</span>
-                    </a>
-                    <a href="{{ route('quotes.index') }}" class="flex flex-col items-center gap-2 p-4 rounded-xl border border-gray-200 hover:bg-primary-50 hover:border-primary-200 transition">
-                        <i class="ri-file-list-3-line text-2xl text-primary-800"></i>
-                        <span class="text-xs font-medium text-gray-900 text-center">{{ __('All quotes') }}</span>
-                    </a>
-                </div>
-            </div>
-
-            {{-- Top quoted models --}}
-            <div class="bg-white rounded-2xl border border-gray-200 p-5">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="font-semibold text-gray-900">{{ __('Top quoted models') }}</h3>
-                    <span class="text-xs text-gray-500">{{ __('This month') }}</span>
-                </div>
-                @if ($topModels->isEmpty())
-                    <x-app.empty-state
-                        icon="ri-trophy-line"
-                        :title="__('No quotes this month')"
-                        :message="__('Top models will appear here as you build quotes.')"
-                        size="sm" />
-                @else
-                    <ul class="space-y-3">
-                        @foreach ($topModels as $i => $m)
-                            <li>
-                                <div class="flex items-center justify-between text-xs mb-1">
-                                    <span class="font-medium text-gray-900">
-                                        <span class="text-gray-400">#{{ $i + 1 }}</span>
-                                        {{ $m['name'] }}
-                                        <span class="text-gray-500 font-normal">· {{ $m['brand'] }}</span>
-                                    </span>
-                                    <span class="font-semibold text-gray-900">{{ $m['count'] }}</span>
-                                </div>
-                                <div class="h-2 rounded-full bg-gray-100 overflow-hidden">
-                                    <div class="h-full bg-gradient-to-r from-primary-800 to-primary-500"
-                                        style="width: {{ ($m['count'] / $topModelMax) * 100 }}%"></div>
-                                </div>
-                            </li>
-                        @endforeach
-                    </ul>
-                @endif
-            </div>
-
-        </div>
-    </section>
+    @push('scripts')
+        <script>
+            // One series only: quotes created per month. Past months hatched,
+            // the current month in navy with its value on top (Figma node 19:228).
+            document.addEventListener('DOMContentLoaded', () => {
+                const el = document.getElementById('dealerTrend');
+                if (!el) return;
+                const draw = () => {
+                    if (!window.Chart || el.dataset.drawn) return;
+                    el.dataset.drawn = '1';
+                    const trend = @json($trend);
+                    const data = trend.map(d => d.sent);
+                    const last = data.length - 1;
+                    const hatch = document.createElement('canvas'); hatch.width = hatch.height = 7;
+                    const h = hatch.getContext('2d'); h.fillStyle = '#f0f0f2'; h.fillRect(0, 0, 7, 7);
+                    h.strokeStyle = '#e4e4e7'; h.lineWidth = 1.5; h.beginPath(); h.moveTo(0, 7); h.lineTo(7, 0); h.stroke();
+                    const pattern = el.getContext('2d').createPattern(hatch, 'repeat');
+                    const valuePill = {
+                        id: 'valuePill',
+                        afterDatasetsDraw(c) {
+                            const bar = c.getDatasetMeta(0).data[last];
+                            if (!bar || !data[last]) return;
+                            const g = c.ctx, label = String(data[last]); g.save(); g.font = '500 12px Geist, sans-serif';
+                            const w = g.measureText(label).width + 16, x = bar.x - w / 2, y = bar.y - 34;
+                            g.fillStyle = '#f0f0f2'; g.strokeStyle = '#e8e8eb'; g.lineWidth = 1; g.beginPath(); g.roundRect(x, y, w, 26, 6); g.fill(); g.stroke();
+                            g.fillStyle = '#0b0b0d'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(label, bar.x, y + 13); g.restore();
+                        },
+                    };
+                    new Chart(el, {
+                        type: 'bar',
+                        data: { labels: trend.map(d => d.label), datasets: [{ label: @js(__('Quotes')), data,
+                            backgroundColor: data.map((_, i) => i === last ? '#0e4f79' : pattern),
+                            hoverBackgroundColor: data.map((_, i) => i === last ? '#093a5c' : '#e8e8eb'),
+                            borderRadius: 8, borderSkipped: false, maxBarThickness: 84, categoryPercentage: 0.8, barPercentage: 0.95 }] },
+                        options: {
+                            responsive: true, maintainAspectRatio: false, layout: { padding: { top: 38 } },
+                            animation: { duration: 800, easing: 'easeOutQuart', delay: c => c.type === 'data' ? c.dataIndex * 60 : 0 },
+                            plugins: { legend: { display: false }, tooltip: { backgroundColor: '#0b0b0d', padding: 10, cornerRadius: 8, titleFont: { family: 'Geist' }, bodyFont: { family: 'Geist' } } },
+                            scales: {
+                                x: { grid: { display: false }, border: { display: false }, ticks: { color: '#73737c', font: { family: 'Geist', size: 12 } } },
+                                y: { beginAtZero: true, border: { display: false }, grid: { display: false }, ticks: { color: '#73737c', font: { family: 'Geist', size: 12 }, precision: 0, maxTicksLimit: 6 } },
+                            },
+                        },
+                        plugins: [valuePill],
+                    });
+                };
+                window.Chart ? draw() : window.addEventListener('load', draw, { once: true });
+            });
+        </script>
+    @endpush
 </x-app-layout>
-

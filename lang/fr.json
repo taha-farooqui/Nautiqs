@@ -1850,5 +1850,10 @@
     "{1}:count quote|[2,*]:count quotes": "{1}:count devis|[2,*]:count devis",
     "Your most active dealerships will rank here.": "Vos concessions les plus actives seront classées ici.",
     "Search…": "Rechercher…",
-    "Menu": "Menu"
+    "Menu": "Menu",
+    "Build a quote in under 2 minutes.": "Créez un devis en moins de 2 minutes.",
+    "Save a client to reuse on your quotes.": "Enregistrez un client pour vos prochains devis.",
+    "Your boats, versions, options and prices.": "Vos bateaux, versions, options et prix.",
+    "Follow, resend and convert your quotes.": "Suivez, relancez et transformez vos devis.",
+    "Avg. time to close": "Délai moyen de signature"
 }
