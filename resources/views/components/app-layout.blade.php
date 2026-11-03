@@ -27,7 +27,7 @@
         @livewireStyles
         @stack('head')
     </head>
-    <body class="font-sans antialiased bg-base-200 text-gray-800">
+    <body class="font-sans antialiased bg-nq-subtle text-gray-800">
         <div class="min-h-screen flex" x-data="{ sidebarOpen: false }">
             <x-app.sidebar />
 
@@ -41,7 +41,7 @@
             <div class="flex-1 flex flex-col min-w-0 xl:ml-60">
                 <x-app.header :title="$header ?? ($title ?? __('Dashboard'))" />
 
-                <main class="flex-1 px-4 sm:px-6 lg:px-8 py-6">
+                <main class="flex-1 px-4 sm:px-6 py-6">
                     {{ $slot }}
                 </main>
             </div>

@@ -1848,5 +1848,7 @@
     "Best dealerships": "Meilleures concessions",
     "See all": "Voir tout",
     "{1}:count quote|[2,*]:count quotes": "{1}:count devis|[2,*]:count devis",
-    "Your most active dealerships will rank here.": "Vos concessions les plus actives seront classées ici."
+    "Your most active dealerships will rank here.": "Vos concessions les plus actives seront classées ici.",
+    "Search…": "Rechercher…",
+    "Menu": "Menu"
 }

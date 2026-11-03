@@ -1,3 +1,6 @@
+/* Phosphor icons, bold weight — the icon set of Clement's Figma design. */
+@import '@phosphor-icons/web/bold';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

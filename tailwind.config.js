@@ -29,6 +29,35 @@ export default {
                     800: '#0e4f79',
                     900: '#093a5c',
                 },
+                // Clement's Figma design tokens (--nq-*), named as in the file.
+                nq: {
+                    text:        '#0b0b0d', // text-primary
+                    'text-2':    '#55555e', // text-secondary / nav text
+                    'text-3':    '#73737c', // text-tertiary
+                    border:      '#e8e8eb', // border-default
+                    'border-2':  '#f0f0f2', // border-secondary
+                    muted:       '#f0f0f2', // bg-muted
+                    subtle:      '#fbfbfb', // bg-subtle / nav bg
+                    active:      '#093a5c', // nav-item-active
+                    'primary-bg':'#eef4f8',
+                    accent:      '#b8864a',
+                    'accent-bg': '#fbf7f0',
+                    'accent-text':'#7a532c',
+                    chart2:      '#2b8fd6',
+                    chart3:      '#e59a1a',
+                    'success':   '#16a06a',
+                    'success-bg':'#ecfaf3',
+                    'success-border':'#d1f2e1',
+                    'success-text':'#0b6845',
+                    'error':     '#e5484d',
+                    'error-bg':  '#fef1f1',
+                    'error-text':'#a02c30',
+                    'info-bg':   '#eef7fe',
+                    'warning-bg':'#fff8eb',
+                },
+            },
+            boxShadow: {
+                'nq-xs': '0 1px 2px rgba(11, 16, 21, 0.05)',
             },
         },
     },

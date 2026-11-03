@@ -122,16 +122,16 @@ class DashboardController extends Controller
         $items = $account->isEngine() ? BrandEngine::count() : BrandModel::count();
         $levelsSet = $account->isExactPricing() || collect($account->levelsResolved())->contains(fn ($l) => array_sum($l['pct']) > 0);
         $steps = [
-            ['done' => $items > 0, 'icon' => $account->isEngine() ? 'ri-settings-3-line' : 'ri-sailboat-line',
+            ['done' => $items > 0, 'icon' => $account->isEngine() ? 'engine' : 'sailboat',
                 'title' => __('Add your catalogue'), 'text' => __('By hand or from your Excel price list.'),
                 'href' => route($account->isEngine() ? 'brand.engines.index' : 'brand.catalogue.index')],
-            ['done' => $levelsSet, 'icon' => 'ri-price-tag-3-line',
+            ['done' => $levelsSet, 'icon' => 'sliders',
                 'title' => __('Set your price levels'), 'text' => __('The discount each level of dealer gets.'),
                 'href' => route('brand.levels.edit')],
-            ['done' => $accesses->isNotEmpty(), 'icon' => 'ri-user-add-line',
+            ['done' => $accesses->isNotEmpty(), 'icon' => 'user-plus',
                 'title' => __('Invite your dealers'), 'text' => __('They receive your catalogue at their level.'),
                 'href' => route('brand.dealers.index')],
-            ['done' => $connected > 0, 'icon' => 'ri-links-line',
+            ['done' => $connected > 0, 'icon' => 'handshake',
                 'title' => __('First dealer connected'), 'text' => __('Their quotes start appearing here.'),
                 'href' => route('brand.dealers.index', ['tab' => 'waiting'])],
         ];
