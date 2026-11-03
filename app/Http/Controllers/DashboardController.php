@@ -29,7 +29,7 @@ class DashboardController extends Controller
         // re-hammer Atlas. Recent quotes are fetched fresh (single quick
         // query, and we want them up-to-date right after a save).
         $companyId = auth()->user()->company_id ?? 'guest';
-        $cacheKey  = "dashboard:v2:{$companyId}:" . now()->format('YmdHi');
+        $cacheKey  = "dashboard:v3:{$companyId}:" . now()->format('YmdHi');
 
         $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, 60, function () {
             return $this->buildData();
@@ -134,6 +134,13 @@ class DashboardController extends Controller
             ];
         }
 
+        // ── Quote status (quotes created in the same 6 months as the chart) ─
+        $sixMonthsAgo = $now->copy()->subMonthsNoOverflow(5)->startOfMonth();
+        $statuses = [];
+        foreach ([Quote::STATUS_SENT, Quote::STATUS_WON, Quote::STATUS_DRAFT, Quote::STATUS_LOST] as $s) {
+            $statuses[$s] = Quote::where('created_at', '>=', $sixMonthsAgo)->where('status', $s)->count();
+        }
+
         // ── Pending catalogue updates (banner trigger) ─────────────────
         // For now, just a placeholder count — populated when the
         // catalogue notification module is built.
@@ -163,6 +170,7 @@ class DashboardController extends Controller
             'avgDaysToClose'        => $avgDaysToClose,
 
             'trend'                 => $trend,
+            'statuses'              => $statuses,
 
             'pendingUpdatesCount'   => $pendingUpdatesCount,
             'pendingUpdatesBrand'   => $pendingUpdatesBrand,

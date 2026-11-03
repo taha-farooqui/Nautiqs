@@ -29,8 +29,15 @@
         ];
 
         $hasTrend = collect($trend)->sum('sent') > 0;
-        $closed = $wonThisMonth + $lostThisMonth;
-        $wonShare = $closed > 0 ? round($wonThisMonth / $closed * 100) : 0;
+        // Quote status donut — same colours as the brand dashboard.
+        $statuses = $statuses ?? ['sent' => 0, 'won' => 0, 'draft' => 0, 'lost' => 0];
+        $statusTotal = array_sum($statuses);
+        $statusMeta = [
+            'sent'  => [__('Sent'), '#0e4f79'],
+            'won'   => [__('Won'), '#2b8fd6'],
+            'draft' => [__('Drafts'), '#e59a1a'],
+            'lost'  => [__('Lost'), '#e8e8eb'],
+        ];
 
         // Quote status tags (Figma "Tag": 24 px, dot + 12 px medium label).
         $tags = [
@@ -141,31 +148,30 @@
             </section>
 
             <section class="rise {{ $card }} p-4 flex flex-col gap-4" style="--d: 5">
-                <h3 class="{{ $cardTitle }}">{{ __('Conversion rate') }}</h3>
-                <div class="flex-1 rounded-[10px] bg-nq-subtle px-4 py-6 flex flex-col justify-center gap-4">
-                    <p class="flex items-baseline gap-2">
-                        <span class="text-2xl leading-8 font-semibold text-nq-text tabular-nums">{{ $conversionRate }} %</span>
-                        <span class="text-xs leading-5 text-nq-text-3">{{ __('This month') }}</span>
-                    </p>
-                    <div class="flex h-7 gap-1.5">
-                        @if ($closed > 0)
-                            @if ($wonShare > 0)<div class="grow-x h-full rounded-lg bg-primary-800" style="width: {{ $wonShare }}%"></div>@endif
-                            @if ($wonShare < 100)<div class="h-full flex-1 rounded-lg" style="background: repeating-linear-gradient(135deg, #e8e8eb 0 1.5px, #f0f0f2 1.5px 7px)"></div>@endif
-                        @else
-                            <div class="h-full flex-1 rounded-lg bg-nq-muted"></div>
-                        @endif
-                    </div>
-                    <ul class="flex flex-col gap-2">
-                        @foreach ([[__('Sent'), $sentThisMonth, '#2b8fd6'], [__('Won'), $wonThisMonth, '#0e4f79'], [__('Lost'), $lostThisMonth, '#c9c9cf']] as [$l, $n, $c])
-                            <li class="inline-flex items-center gap-1.5 self-start bg-white border border-nq-border-2 rounded-lg pl-2 pr-2.5 py-1.5 whitespace-nowrap">
-                                <span class="w-0.5 h-3 rounded-full" style="background: {{ $c }}"></span>
-                                <span class="text-xs leading-5 font-medium text-nq-text">{{ $l }} :</span>
-                                <span class="text-xs leading-5 text-nq-text-3">{{ $n }}</span>
-                            </li>
-                        @endforeach
-                    </ul>
-                    @if ($avgDaysToClose !== null)
-                        <p class="text-xs leading-5 text-nq-text-2">{{ __('Avg. time to close') }} : <span class="font-medium text-nq-text">{{ rtrim(rtrim(number_format($avgDaysToClose, 1, ',', ''), '0'), ',') }} {{ __('days') }}</span></p>
+                <div class="flex items-center justify-between gap-2">
+                    <h3 class="{{ $cardTitle }}">{{ __('Quote status') }}</h3>
+                    <span class="text-xs leading-5 text-nq-text-3">{{ __('Last 6 months') }}</span>
+                </div>
+                <div class="flex-1 rounded-[10px] bg-nq-subtle px-4 py-6 flex items-center justify-center">
+                    @if ($statusTotal > 0)
+                        <div class="w-full flex flex-col sm:flex-row xl:flex-col 2xl:flex-row items-center justify-center gap-4">
+                            <div class="relative w-[156px] h-[156px] shrink-0"><canvas id="dealerStatus"></canvas>
+                                <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                    <span class="text-2xl leading-8 font-semibold text-nq-text">{{ $statusTotal }}</span><span class="text-xs leading-5 text-nq-text-3">{{ __('quotes') }}</span>
+                                </div>
+                            </div>
+                            <ul class="flex flex-col gap-2">
+                                @foreach ($statusMeta as $s => [$label, $color])
+                                    <li class="inline-flex items-center gap-1.5 bg-white border border-nq-border-2 rounded-lg pl-2 pr-2.5 py-1.5 whitespace-nowrap">
+                                        <span class="w-0.5 h-3 rounded-full" style="background: {{ $s === 'lost' ? '#c9c9cf' : $color }}"></span>
+                                        <span class="text-xs leading-5 font-medium text-nq-text">{{ $label }} :</span>
+                                        <span class="text-xs leading-5 text-nq-text-3">{{ round($statuses[$s] / $statusTotal * 100) }} % · {{ $statuses[$s] }}</span>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @else
+                        <x-app.empty-state icon="ri-donut-chart-line" size="sm" class="w-full" :title="__('No data yet')" :message="__('Draft, sent, won and lost quotes will show here.')" />
                     @endif
                 </div>
             </section>
@@ -330,6 +336,24 @@
                             },
                         },
                         plugins: [valuePill],
+                    });
+                };
+                window.Chart ? draw() : window.addEventListener('load', draw, { once: true });
+            });
+
+            document.addEventListener('DOMContentLoaded', () => {
+                const el = document.getElementById('dealerStatus');
+                if (!el) return;
+                const draw = () => {
+                    if (!window.Chart || el.dataset.drawn) return;
+                    el.dataset.drawn = '1';
+                    const st = @json($statuses);
+                    new Chart(el, {
+                        type: 'doughnut',
+                        data: { labels: [@js(__('Sent')), @js(__('Won')), @js(__('Drafts')), @js(__('Lost'))],
+                            datasets: [{ data: [st.sent, st.won, st.draft, st.lost], backgroundColor: ['#0e4f79', '#2b8fd6', '#e59a1a', '#e8e8eb'], borderWidth: 4, borderColor: '#fbfbfb', borderRadius: 6, hoverOffset: 4 }] },
+                        options: { responsive: true, maintainAspectRatio: false, cutout: '62%', animation: { animateRotate: true, duration: 900 },
+                            plugins: { legend: { display: false }, tooltip: { backgroundColor: '#0b0b0d', padding: 10, cornerRadius: 8, titleFont: { family: 'Geist' }, bodyFont: { family: 'Geist' } } } },
                     });
                 };
                 window.Chart ? draw() : window.addEventListener('load', draw, { once: true });
