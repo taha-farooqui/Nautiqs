@@ -122,7 +122,7 @@ class DashboardController extends Controller
         $items = $account->isEngine() ? BrandEngine::count() : BrandModel::count();
         $levelsSet = $account->isExactPricing() || collect($account->levelsResolved())->contains(fn ($l) => array_sum($l['pct']) > 0);
         $steps = [
-            ['done' => $items > 0, 'icon' => $account->isEngine() ? 'engine' : 'sailboat',
+            ['done' => $items > 0, 'icon' => $account->isEngine() ? 'fan' : 'sailboat',
                 'title' => __('Add your catalogue'), 'text' => __('By hand or from your Excel price list.'),
                 'href' => route($account->isEngine() ? 'brand.engines.index' : 'brand.catalogue.index')],
             ['done' => $levelsSet, 'icon' => 'sliders',

@@ -33,10 +33,10 @@
                 ['label' => 'Catalogue',         'icon' => 'sailboat',           'route' => 'catalogue.models',  'active' => 'catalogue.models'],
                 [
                     'label'     => 'Engines',
-                    'icon'      => 'engine',
+                    'icon'      => 'fan',
                     'activeAny' => ['engines.*', 'engine-accessories.*'],
                     'children'  => [
-                        ['label' => 'Engines',     'icon' => 'engine', 'route' => 'engines.index',            'active' => 'engines.*'],
+                        ['label' => 'Engines',     'icon' => 'fan', 'route' => 'engines.index',            'active' => 'engines.*'],
                         ['label' => 'Kits & propellers', 'icon' => 'wrench', 'route' => 'engine-accessories.index', 'active' => 'engine-accessories.*'],
                     ],
                 ],
@@ -96,7 +96,7 @@
                 ['label' => 'Brands',          'icon' => 'buildings',      'route' => 'admin.brands.index',    'active' => 'admin.brands.*'],
                 ['label' => 'Models',          'icon' => 'sailboat',        'route' => 'admin.models.index',    'active' => 'admin.models.*'],
                 ['label' => 'Variants',        'icon' => 'stack',     'route' => 'admin.variants.index',  'active' => 'admin.variants.*'],
-                ['label' => 'Engines',         'icon' => 'engine',      'route' => 'admin.engines.index',   'active' => 'admin.engines.*'],
+                ['label' => 'Engines',         'icon' => 'fan',      'route' => 'admin.engines.index',   'active' => 'admin.engines.*'],
                 ['label' => 'Equipment',       'icon' => 'wrench',           'route' => 'admin.equipment.index', 'active' => 'admin.equipment.*'],
                 ['label' => 'Options',         'icon' => 'list-checks',         'route' => 'admin.options.index',   'active' => 'admin.options.*'],
             ],
@@ -124,7 +124,7 @@
             'items' => [
                 ['label' => 'Dashboard',       'icon' => 'squares-four',     'route' => 'brand.dashboard', 'active' => 'brand.dashboard'],
                 $brandAccount?->isEngine()
-                    ? ['label' => 'Catalogue', 'icon' => 'engine',      'route' => 'brand.engines.index',   'active' => ['brand.engines.*', 'brand.transfer.*']]
+                    ? ['label' => 'Catalogue', 'icon' => 'fan',      'route' => 'brand.engines.index',   'active' => ['brand.engines.*', 'brand.transfer.*']]
                     : ['label' => 'Catalogue', 'icon' => 'sailboat',        'route' => 'brand.catalogue.index', 'active' => ['brand.catalogue.*', 'brand.transfer.*']],
                 ['label' => 'Brands',          'icon' => 'tag',      'route' => 'brand.brands.index',  'active' => 'brand.brands.*'],
                 ['label' => 'Price levels',    'icon' => 'sliders',     'route' => 'brand.levels.edit',   'active' => 'brand.levels.*'],
