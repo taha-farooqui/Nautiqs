@@ -151,7 +151,7 @@
     $brandTones = ['bg-primary-800', 'bg-nq-accent', 'bg-nq-chart2', 'bg-nq-chart3', 'bg-nq-success', 'bg-nq-text-2'];
     $supportEmail = config('mail.from.address');
 
-    // Figma "Sider" (node 19:4): 240 px, #fbfbfb, 36 px rows, 18 px Phosphor bold icons.
+    // Figma "Sider" (node 19:4), widened to 264 px on request, #fbfbfb, 36 px rows, 18 px Phosphor bold icons.
     $row = 'flex items-center gap-2.5 h-9 px-2.5 rounded-lg text-sm leading-[22px] transition-colors';
     $rowIdle = 'text-nq-text-2 hover:bg-nq-muted hover:text-nq-text';
     $rowOn = 'bg-nq-active text-white font-medium';
@@ -159,7 +159,7 @@
 @endphp
 
 <aside
-    class="fixed inset-y-0 left-0 z-40 w-60 bg-nq-subtle border-r border-nq-border-2 flex flex-col pt-4 px-3 pb-3 transition-transform duration-200 ease-out xl:translate-x-0"
+    class="fixed inset-y-0 left-0 z-40 w-[264px] bg-nq-subtle border-r border-nq-border-2 flex flex-col pt-4 px-3 pb-3 transition-transform duration-200 ease-out xl:translate-x-0"
     :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full xl:translate-x-0'">
 
     {{-- Logo --}}

@@ -47,7 +47,7 @@
                 class="fixed inset-0 bg-gray-900/40 z-30 xl:hidden"
                 style="display: none;"></div>
 
-            <div class="flex-1 flex flex-col min-w-0 xl:ml-60">
+            <div class="flex-1 flex flex-col min-w-0 xl:ml-[264px]">
                 {{-- Slate top bar — visually unmistakable from the white tenant header. --}}
                 <header class="sticky top-0 z-20 bg-slate-900 text-white border-b border-slate-800">
                     <div class="h-16 px-4 sm:px-6 lg:px-8 flex items-center gap-4">
