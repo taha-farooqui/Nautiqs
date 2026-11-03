@@ -7,8 +7,9 @@
 
         <title>{{ $title ?? config('app.name', 'Nautiqs') }}</title>
 
-        <link rel="icon" type="image/png" href="{{ asset('nautiqs_logo.png') }}" />
-        <link rel="apple-touch-icon" href="{{ asset('nautiqs_logo.png') }}" />
+        <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="any" />
+        <link rel="icon" type="image/png" href="{{ asset('nautiqs-icon.png') }}" />
+        <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}" />
 
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -22,7 +23,7 @@
                 {{-- Left: form --}}
                 <div class="p-8 sm:p-12 flex flex-col justify-center">
                     <a href="/" class="inline-flex items-center mb-8">
-                        <x-application-logo class="w-10 h-10" />
+                        <x-application-logo class="h-10 w-auto" />
                     </a>
                     {{ $slot }}
                 </div>

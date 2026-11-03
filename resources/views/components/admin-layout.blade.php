@@ -22,8 +22,9 @@
 
         <title>{{ $title ?? __('Platform') }} · {{ config('app.name', 'Nautiqs') }} {{ __('Platform') }}</title>
 
-        <link rel="icon" type="image/png" href="{{ asset('nautiqs_logo.png') }}" />
-        <link rel="apple-touch-icon" href="{{ asset('nautiqs_logo.png') }}" />
+        <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="any" />
+        <link rel="icon" type="image/png" href="{{ asset('nautiqs-icon.png') }}" />
+        <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}" />
 
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -46,7 +47,7 @@
                 class="fixed inset-0 bg-gray-900/40 z-30 xl:hidden"
                 style="display: none;"></div>
 
-            <div class="flex-1 flex flex-col min-w-0 xl:ml-72">
+            <div class="flex-1 flex flex-col min-w-0 xl:ml-60">
                 {{-- Slate top bar — visually unmistakable from the white tenant header. --}}
                 <header class="sticky top-0 z-20 bg-slate-900 text-white border-b border-slate-800">
                     <div class="h-16 px-4 sm:px-6 lg:px-8 flex items-center gap-4">

@@ -305,6 +305,8 @@ Route::middleware(['auth', 'verified', 'maintenance', 'brand.contain', 'managed.
      ----------------------------------------------------------------- */
     Route::prefix('brand')->name('brand.')->middleware('brand')->group(function () {
         Route::get('/', \App\Http\Controllers\Brand\DashboardController::class)->name('dashboard');
+        Route::post('/targets', [\App\Http\Controllers\Brand\DashboardController::class, 'targets'])->name('targets');
+        Route::get('/export', [\App\Http\Controllers\Brand\DashboardController::class, 'export'])->name('export');
 
         $bc = \App\Http\Controllers\Brand\CatalogueController::class;
         Route::get('/catalogue',                [$bc, 'index'])->name('catalogue.index');

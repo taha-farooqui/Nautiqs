@@ -3,7 +3,7 @@
     {{-- row 1 --}}
     <div class="rounded-lg bg-primary-700/80"></div>
     <div class="rounded-lg bg-white col-span-2 flex items-center justify-center p-4">
-        <img src="{{ asset('nautiqs_logo.png') }}" alt="{{ config('app.name', 'Nautiqs') }}" class="w-24 h-24 object-contain" />
+        <x-application-logo variant="icon" class="w-24 h-24 rounded-2xl" />
     </div>
     <div class="rounded-lg bg-primary-700/80"></div>
 
@@ -72,7 +72,7 @@
         <svg class="w-10 h-10" fill="currentColor" viewBox="0 0 24 24"><path d="M14 6l-4.5 6.5-3.5-4L2 18h20z"/></svg>
     </div>
     <div class="rounded-lg bg-white flex items-center justify-center">
-        <img src="{{ asset('nautiqs_logo.png') }}" alt="" class="w-10 h-10 object-contain" />
+        <x-application-logo variant="icon" class="w-10 h-10 rounded-lg" />
         <svg viewBox="0 0 64 64" class="hidden" fill="currentColor"></svg>
     </div>
 

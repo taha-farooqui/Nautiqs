@@ -12,8 +12,9 @@
 
         <title>{{ $title ?? __('Dashboard') }} · {{ config('app.name', 'Nautiqs') }}</title>
 
-        <link rel="icon" type="image/png" href="{{ asset('nautiqs_logo.png') }}" />
-        <link rel="apple-touch-icon" href="{{ asset('nautiqs_logo.png') }}" />
+        <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="any" />
+        <link rel="icon" type="image/png" href="{{ asset('nautiqs-icon.png') }}" />
+        <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}" />
 
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -37,7 +38,7 @@
                 class="fixed inset-0 bg-gray-900/40 z-30 xl:hidden"
                 style="display: none;"></div>
 
-            <div class="flex-1 flex flex-col min-w-0 xl:ml-72">
+            <div class="flex-1 flex flex-col min-w-0 xl:ml-60">
                 <x-app.header :title="$header ?? ($title ?? __('Dashboard'))" />
 
                 <main class="flex-1 px-4 sm:px-6 lg:px-8 py-6">

@@ -32,8 +32,9 @@
         </button>
 
         {{-- Title --}}
-        <div class="min-w-0 flex-1 md:flex-none">
-            <h1 class="text-lg font-semibold text-gray-900 truncate">{{ $title }}</h1>
+        <div class="min-w-0 flex-1 md:flex-none flex items-center gap-2">
+            <i class="ri-layout-grid-line text-gray-400 hidden sm:inline"></i>
+            <h1 class="text-[15px] font-semibold text-gray-900 truncate">{{ $title }}</h1>
         </div>
 
         {{-- Search trigger (Cmd/Ctrl+K) — dealer data only, so not for brand managers --}}
@@ -42,7 +43,7 @@
                 @click="$dispatch('open-search')"
                 class="group relative w-full text-left">
                 <i class="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                <div class="w-full truncate pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-500 hover:bg-white hover:border-primary-800 transition">
+                <div class="w-full truncate pl-9 pr-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-500 hover:border-primary-800 transition">
                     {{ __('Search quotes, clients, models…') }}
                 </div>
                 <kbd class="hidden lg:inline-flex absolute right-2 top-1/2 -translate-y-1/2 px-1.5 py-0.5 text-[10px] font-semibold text-gray-500 bg-white border border-gray-200 rounded">⌘K</kbd>
@@ -50,13 +51,13 @@
         </div>
 
         {{-- Actions --}}
-        <div class="ml-auto flex items-center gap-1.5">
+        <div class="ml-auto flex items-center gap-2">
 
             {{-- Native locale switcher — hits /locale/{lang}, sets a cookie,
                  bounces back. No third-party widget, no flashes, no mistranslations. --}}
             <div x-data="{ open: false }" class="relative">
                 <button @click="open = !open"
-                    class="h-10 px-3 inline-flex items-center gap-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition text-sm font-medium"
+                    class="h-9 px-2.5 inline-flex items-center gap-1.5 text-gray-600 hover:text-gray-900 border border-gray-200 hover:bg-gray-50 rounded-lg transition text-sm font-medium"
                     :title="'{{ __('Language') }}'">
                     <i class="ri-translate-2 text-lg"></i>
                     <span>{{ strtoupper($currentLocale) }}</span>
@@ -80,11 +81,11 @@
             {{-- Notifications --}}
             <div x-data="{ open: false }" class="relative">
                 <button @click="open = !open"
-                    class="w-10 h-10 inline-flex items-center justify-center text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition relative"
+                    class="w-9 h-9 inline-flex items-center justify-center text-gray-500 hover:text-gray-900 border border-gray-200 hover:bg-gray-50 rounded-lg transition relative"
                     :title="'{{ __('Notifications') }}'">
-                    <i class="ri-notification-3-line text-xl"></i>
+                    <i class="ri-notification-3-line text-lg"></i>
                     @if ($unreadCount > 0)
-                        <span class="absolute top-1.5 right-1.5 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                        <span class="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center ring-2 ring-white">
                             {{ $unreadCount > 99 ? '99+' : $unreadCount }}
                         </span>
                     @endif
@@ -140,14 +141,15 @@
             </div>
 
             {{-- User menu --}}
+            <span class="hidden sm:block w-px h-7 bg-gray-200 mx-1"></span>
             <div x-data="{ open: false }" class="relative">
                 <button @click="open = !open"
-                    class="flex items-center gap-2 pl-1 pr-2 py-1 hover:bg-gray-100 rounded-lg transition">
-                    <span class="w-8 h-8 rounded-full bg-primary-800 text-white font-semibold text-sm flex items-center justify-center">
-                        {{ strtoupper($initials) }}
+                    class="flex items-center gap-2.5 pl-1 pr-2 py-1 hover:bg-gray-100 rounded-lg transition">
+                    <span class="w-8 h-8 rounded-full bg-primary-50 text-primary-800 font-semibold text-sm flex items-center justify-center">
+                        {{ mb_strtoupper(mb_substr($user?->name ?? 'U', 0, 1)) }}
                     </span>
                     <div class="hidden sm:block text-left">
-                        <div class="text-sm font-semibold text-gray-900 leading-tight">{{ $user?->name }}</div>
+                        <div class="text-sm font-semibold text-gray-900 leading-tight">{{ explode(' ', trim($user?->name ?? ''))[0] }}</div>
                         <div class="text-xs text-gray-500 leading-tight">
                             {{ match ($user?->role) {
                                 \App\Models\User::ROLE_SUPERADMIN   => __('Superadmin'),

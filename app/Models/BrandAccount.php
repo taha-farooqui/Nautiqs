@@ -45,6 +45,7 @@ class BrandAccount extends Model
         // strings.
         'levels',
         'pricing_mode', // percent (default) | exact
+        'targets',      // [monthly_quoted => € HT, win_rate => %] — the brand's own goals, for its dashboard
         'is_active',
         'created_by_user_id',
     ];
