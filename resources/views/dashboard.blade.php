@@ -12,7 +12,13 @@
             : collect();
 
         // Trend badge: [label, up?] or null when there is nothing to compare.
-        $pctBadge = fn ($d) => $d === null || (float) $d == 0 ? null : [($d > 0 ? '+' : '−') . rtrim(rtrim(number_format(abs($d), 1, ',', ''), '0'), ',') . ' %', $d > 0];
+        // Trend badge, always shown: [label, 'up' | 'down' | 'flat'].
+        // Nothing in the previous period → +100 % when there is something now, else 0 %.
+        $pctBadge = function ($d, $now) {
+            if ($d === null) return $now > 0 ? ['+100 %', 'up'] : ['0 %', 'flat'];
+            if ((float) $d == 0) return ['0 %', 'flat'];
+            return [($d > 0 ? '+' : '−') . rtrim(rtrim(number_format(abs($d), 1, ',', ''), '0'), ',') . ' %', $d > 0 ? 'up' : 'down'];
+        };
         // Toolbar: same filters as the brand dashboard.
         $periods = ['month' => __('This month'), '6m' => __('Last 6 months'), 'year' => __('Last 12 months')];
         $q = fn (array $over) => route('dashboard', array_filter(array_merge(['period' => $period, 'brand' => $brandFilter, 'user' => $userFilter], $over), fn ($v) => $v !== null && $v !== ''));
@@ -20,16 +26,16 @@
 
         $kpis = [
             ['label' => __('Quotes'), 'value' => number_format($quotesCount, 0, ',', ' '),
-                'badge' => $pctBadge($quotesDeltaPct),
+                'badge' => $pctBadge($quotesDeltaPct, $quotesCount),
                 'note' => trans_choice('{0}vs. no quote|{1}vs. :count quote|[2,*]vs. :count quotes', $quotesPrev, ['count' => $quotesPrev])],
             ['label' => __('Total quoted (excl. VAT)'), 'value' => $eur($quoted),
-                'badge' => $pctBadge($quotedDeltaPct),
+                'badge' => $pctBadge($quotedDeltaPct, $quoted),
                 'note' => __('vs. :v', ['v' => $eur($quotedPrev)])],
             ['label' => __('Won (HT)'), 'value' => $eur($wonValue),
-                'badge' => $pctBadge($wonDeltaPct),
+                'badge' => $pctBadge($wonDeltaPct, $wonValue),
                 'note' => trans_choice('{0}no signed quote|{1}:count signed quote|[2,*]:count signed quotes', $wonCount, ['count' => $wonCount])],
             ['label' => __('Awaiting response'), 'value' => number_format($awaitingResponse, 0, ',', ' '),
-                'badge' => $expiredThisWeek > 0 ? [(string) $expiredThisWeek, false] : null,
+                'badge' => $expiredThisWeek > 0 ? ['−' . $expiredThisWeek, 'down'] : ['0', 'flat'],
                 'note' => $expiredThisWeek > 0 ? $expiredThisWeek . ' ' . __('expired this week') : __('None expired this week')],
         ];
 
@@ -166,9 +172,16 @@
                     <div class="flex items-start justify-between gap-2">
                         <p class="text-sm leading-[22px] font-medium text-nq-text-2">{{ $k['label'] }}</p>
                         @if ($k['badge'])
-                            @php [$bLabel, $bUp] = $k['badge']; @endphp
-                            <span class="inline-flex items-center gap-[3px] px-1.5 py-0.5 rounded-md border text-xs leading-5 font-medium whitespace-nowrap {{ $bUp ? 'bg-nq-success-bg border-nq-success text-nq-success-text' : 'bg-nq-error-bg border-nq-error text-nq-error-text' }}">
-                                <i class="ph-bold {{ $bUp ? 'ph-trend-up' : 'ph-trend-down' }} text-xs"></i>{{ $bLabel }}</span>
+                            @php
+                                [$bLabel, $bDir] = $k['badge'];
+                                [$bCls, $bIcon] = match ($bDir) {
+                                    'up'   => ['bg-nq-success-bg border-nq-success text-nq-success-text', 'ph-trend-up'],
+                                    'down' => ['bg-nq-error-bg border-nq-error text-nq-error-text', 'ph-trend-down'],
+                                    default => ['bg-nq-muted border-nq-border text-nq-text-2', 'ph-minus'],
+                                };
+                            @endphp
+                            <span class="inline-flex items-center gap-[3px] px-1.5 py-0.5 rounded-md border text-xs leading-5 font-medium whitespace-nowrap {{ $bCls }}">
+                                <i class="ph-bold {{ $bIcon }} text-xs"></i>{{ $bLabel }}</span>
                         @endif
                     </div>
                     <div>
