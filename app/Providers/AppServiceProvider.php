@@ -36,6 +36,29 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Laravel's built-in password-reset and verification emails use the
+        // Nautiqs system template (resources/views/components/email/*).
+        \Illuminate\Auth\Notifications\ResetPassword::toMailUsing(function ($user, string $token) {
+            $email = $user->getEmailForPasswordReset();
+
+            return (new \Illuminate\Notifications\Messages\MailMessage)
+                ->subject(__('Reset your Nautiqs password'))
+                ->view('emails.password-reset', [
+                    'url'    => route('password.reset', ['token' => $token, 'email' => $email]),
+                    'email'  => $email,
+                    'expire' => config('auth.passwords.' . config('auth.defaults.passwords') . '.expire', 60),
+                ]);
+        });
+        \Illuminate\Auth\Notifications\VerifyEmail::toMailUsing(function ($user, string $url) {
+            return (new \Illuminate\Notifications\Messages\MailMessage)
+                ->subject(__('Verify your email address on Nautiqs'))
+                ->view('emails.verify-email', [
+                    'url'    => $url,
+                    'email'  => $user->getEmailForVerification(),
+                    'expire' => config('auth.verification.expire', 60),
+                ]);
+        });
+
         // Force HTTPS on URL generation in production. Behind Railway's edge
         // proxy the app sees plain HTTP requests, but cookies, password-reset
         // links, and OAuth callbacks must use https:// to match the public URL.
