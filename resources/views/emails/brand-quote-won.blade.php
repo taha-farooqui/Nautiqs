@@ -56,5 +56,5 @@
         <tr><td align="right" style="padding:4px 10px; font-size:13px; color:#55555e;">{{ __('Quote total HT') }}</td><td align="right" style="padding:4px 10px; font-size:13px; color:#0b0b0d; white-space:nowrap;">{{ $eur($q['total_ht']) }}</td></tr>
     </table>
 
-    <x-email.button :href="$url">{{ __('Open in your brand portal') }}</x-email.button>
+    <x-email.button :href="$url">{{ __('View quote') }}</x-email.button>
 </x-email.layout>

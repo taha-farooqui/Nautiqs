@@ -1931,5 +1931,8 @@
     "You are receiving this email because a password reset was requested for :email.": "Vous recevez cet e-mail car une réinitialisation du mot de passe a été demandée pour :email.",
     "You are receiving this email because an account was created on Nautiqs with :email.": "Vous recevez cet e-mail car un compte a été créé sur Nautiqs avec :email.",
     "Your :company account is ready: set your password to get started.": "Votre compte :company est prêt : choisissez votre mot de passe pour commencer.",
-    "Choose my new password": "Choisir mon nouveau mot de passe"
+    "Choose my new password": "Choisir mon nouveau mot de passe",
+    "View quote": "Voir le devis",
+    "View invitation": "Voir l’invitation",
+    "Activate account": "Activer mon compte"
 }

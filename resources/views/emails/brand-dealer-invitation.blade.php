@@ -16,7 +16,7 @@
 
     <x-email.text>{{ __('If you accept, :brand will see statistics on the quotes you make with its products (models, amounts, discounts, status). Your clients\' personal details are never shared.', ['brand' => $account->name]) }}</x-email.text>
 
-    <x-email.button :href="$ctaUrl">{{ $hasAccount ? __('Review the invitation') : __('Request my Nautiqs account') }}</x-email.button>
+    <x-email.button :href="$ctaUrl">{{ $hasAccount ? __('View invitation') : __('Request access') }}</x-email.button>
 
     @unless ($hasAccount)
         <x-email.note type="info">{{ __('Use this email address when you request your account: the invitation will be waiting for you once it is open.') }}</x-email.note>
