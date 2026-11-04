@@ -1,17 +1,12 @@
-<x-guest-layout :title="__('Request an account') . ' · Nautiqs'">
-    <div class="max-w-md">
-        <h1 class="text-3xl font-bold text-gray-900 mb-1">{{ __('Request an account') }}</h1>
-        <p class="text-gray-500 mb-8">
-            {{ __('Tell us about your dealership — we will review your request and email you when your account is ready.') }}
-        </p>
+{{-- Figma "02 / Demander un accès / Light"; once sent, "03 / Demande envoyée". --}}
+<x-guest-layout :title="__('Request access') . ' · Nautiqs'">
+    @if (session('status'))
+        <x-auth.heading :title="__('Request sent')">{{ session('status') }}</x-auth.heading>
+        <x-auth.button :href="route('login')" variant="secondary">{{ __('Back to log in') }}</x-auth.button>
+    @else
+        <x-auth.heading :title="__('Request your access')">{{ __('Tell us about your company to join Nautiqs.') }}</x-auth.heading>
 
-        @if (session('status'))
-            <div class="mb-5 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
-                <p class="font-medium">{{ session('status') }}</p>
-            </div>
-        @endif
-
-        <form method="POST" action="{{ route('account-request.store') }}" class="space-y-5">
+        <form method="POST" action="{{ route('account-request.store') }}" class="flex flex-col gap-6">
             @csrf
 
             {{-- Honeypot — hidden from humans, tempting for bots. --}}
@@ -19,69 +14,23 @@
                 <input type="text" name="website" tabindex="-1" autocomplete="off" />
             </div>
 
-            <div>
-                <label for="name" class="block text-sm font-medium text-gray-700 mb-1">
-                    {{ __('Full name') }} <span class="text-red-500">*</span>
-                </label>
-                <input id="name" name="name" type="text" required autofocus
-                    value="{{ old('name') }}"
-                    placeholder="{{ __('Your full name') }}"
-                    class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800 placeholder:text-gray-400" />
-                <x-input-error :messages="$errors->get('name')" class="mt-2" />
+            <div class="flex flex-col gap-5">
+                <x-auth.field :label="__('Full name')" name="name" :value="old('name')"
+                    :placeholder="__('First and last name')" required autofocus autocomplete="name" />
+                <x-auth.field :label="__('Company')" name="company_name" :value="old('company_name')"
+                    :placeholder="__('Your company name')" required autocomplete="organization" />
+                <x-auth.field :label="__('Work email')" name="email" type="email" :value="old('email')"
+                    :placeholder="__('name@company.com')" required autocomplete="email" />
+                <x-auth.select :label="__('Company type')" name="company_type" :value="old('company_type', 'dealer')"
+                    :options="\App\Models\AccountRequest::companyTypes()" required />
             </div>
 
-            <div>
-                <label for="email" class="block text-sm font-medium text-gray-700 mb-1">
-                    {{ __('Email') }} <span class="text-red-500">*</span>
-                </label>
-                <input id="email" name="email" type="email" required
-                    value="{{ old('email') }}"
-                    placeholder="{{ __('Enter your email address') }}"
-                    class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800 placeholder:text-gray-400" />
-                <x-input-error :messages="$errors->get('email')" class="mt-2" />
+            <div class="flex flex-col gap-4">
+                <x-auth.button>{{ __('Request access') }}</x-auth.button>
+                <p class="text-xs leading-5 text-nq-text-2">{{ __('Your request will be reviewed before your access is activated.') }}</p>
             </div>
-
-            <div>
-                <label for="company_name" class="block text-sm font-medium text-gray-700 mb-1">
-                    {{ __('Dealership name') }} <span class="text-red-500">*</span>
-                </label>
-                <input id="company_name" name="company_name" type="text" required
-                    value="{{ old('company_name') }}"
-                    class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800 placeholder:text-gray-400" />
-                <x-input-error :messages="$errors->get('company_name')" class="mt-2" />
-            </div>
-
-            <div>
-                <label for="phone" class="block text-sm font-medium text-gray-700 mb-1">
-                    {{ __('Phone') }}
-                </label>
-                <input id="phone" name="phone" type="tel"
-                    value="{{ old('phone') }}"
-                    class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800 placeholder:text-gray-400" />
-                <x-input-error :messages="$errors->get('phone')" class="mt-2" />
-            </div>
-
-            <div>
-                <label for="message" class="block text-sm font-medium text-gray-700 mb-1">
-                    {{ __('Message') }} <span class="text-gray-400 font-normal">({{ __('optional') }})</span>
-                </label>
-                <textarea id="message" name="message" rows="3"
-                    placeholder="{{ __('Anything we should know about your dealership?') }}"
-                    class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800 placeholder:text-gray-400">{{ old('message') }}</textarea>
-                <x-input-error :messages="$errors->get('message')" class="mt-2" />
-            </div>
-
-            <button type="submit"
-                class="w-full bg-primary-800 hover:bg-primary-900 text-white font-semibold py-3 rounded-lg transition">
-                {{ __('Send my request') }}
-            </button>
         </form>
 
-        <p class="text-center text-sm text-gray-500 mt-6">
-            {{ __('Already have an account?') }}
-            <a href="{{ route('login') }}" class="font-semibold text-primary-800 hover:text-primary-900">
-                {{ __('Log in') }}
-            </a>
-        </p>
-    </div>
+        <x-auth.link :href="route('login')">{{ __('Already have an account? Log in') }}</x-auth.link>
+    @endif
 </x-guest-layout>

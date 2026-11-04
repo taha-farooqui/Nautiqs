@@ -1,32 +1,23 @@
-<x-guest-layout title="Verify email · Nautiqs">
-    <div class="max-w-md">
-        <h1 class="text-3xl font-bold text-gray-900 mb-1">Verify your email</h1>
-        <p class="text-gray-500 mb-6">
-            Thanks for signing up! Please click the link we just emailed to you to verify your address.
-            Didn't receive it? We'll gladly send another.
-        </p>
+{{-- Figma "05 / Vérifier son e-mail / Light", kept link-based: the email holds a
+     verification link (the 6-digit code variant is not built). --}}
+<x-guest-layout :title="__('Verify email') . ' · Nautiqs'">
+    <x-auth.heading :title="__('Verify your email')">
+        {{ __('We sent a verification link to') }} <span class="text-nq-text">{{ auth()->user()?->email }}</span>.
+        {{ __('Click it to activate your account.') }}
+    </x-auth.heading>
 
-        @if (session('status') == 'verification-link-sent')
-            <div class="mb-6 text-sm text-green-600 font-medium">
-                A new verification link has been sent to your email.
-            </div>
-        @endif
+    @if (session('status') == 'verification-link-sent')
+        <x-auth.alert>{{ __('A new verification link has been sent to your email.') }}</x-auth.alert>
+    @endif
 
-        <div class="flex items-center justify-between gap-3">
-            <form method="POST" action="{{ route('verification.send') }}" class="flex-1">
-                @csrf
-                <button type="submit"
-                    class="w-full bg-primary-800 hover:bg-primary-900 text-white font-semibold py-3 rounded-lg transition">
-                    Resend verification email
-                </button>
-            </form>
-
-            <form method="POST" action="{{ route('logout') }}">
-                @csrf
-                <button type="submit" class="text-sm text-gray-600 hover:text-gray-900 underline">
-                    Log out
-                </button>
-            </form>
-        </div>
+    <div class="flex flex-col gap-4">
+        <form method="POST" action="{{ route('verification.send') }}">
+            @csrf
+            <x-auth.button>{{ __('Resend the email') }}</x-auth.button>
+        </form>
+        <form method="POST" action="{{ route('logout') }}">
+            @csrf
+            <x-auth.link>{{ __('Use another email address') }}</x-auth.link>
+        </form>
     </div>
 </x-guest-layout>

@@ -54,6 +54,10 @@ export default {
                     'error-text':'#a02c30',
                     'info-bg':   '#eef7fe',
                     'warning-bg':'#fff8eb',
+                    // Auth screens (Clement's sign-in Figma).
+                    layout:      '#f7f7f8', // bg-layout: inputs, language track, left panel
+                    'border-strong': '#d6d6db', // input / secondary button border
+                    navy:        '#051e30', // navy-900: left panel headline
                 },
             },
             boxShadow: {

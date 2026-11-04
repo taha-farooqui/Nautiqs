@@ -15,6 +15,10 @@ return [
 
     'name' => env('APP_NAME', 'Nautiqs'),
 
+    // Footer links of the sign-in screens ("Confidentialité", "Mentions légales").
+    'privacy_url' => env('APP_PRIVACY_URL', 'https://nautiqs.fr'),
+    'legal_url'   => env('APP_LEGAL_URL', 'https://nautiqs.fr'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Environment

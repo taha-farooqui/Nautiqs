@@ -1,37 +1,25 @@
+{{-- Figma "07 / Mot de passe oublié / Light"; once sent, "08 / Lien de réinitialisation envoyé". --}}
 <x-guest-layout :title="__('Forgot password') . ' · Nautiqs'">
-    <div class="max-w-md">
-        <h1 class="text-3xl font-bold text-gray-900 mb-1">{{ __('Forgot your password?') }}</h1>
-        <p class="text-gray-500 mb-8">
-            {{ __("No problem. Enter your email and we'll send you a link to reset it.") }}
-        </p>
+    @if (session('status'))
+        <x-auth.heading :title="__('Check your inbox')">{{ session('status') }}</x-auth.heading>
+        <div class="flex flex-col gap-4">
+            <x-auth.button :href="route('login')" variant="secondary">{{ __('Back to log in') }}</x-auth.button>
+            <form method="POST" action="{{ route('password.email') }}">
+                @csrf
+                <input type="hidden" name="email" value="{{ old('email') }}">
+                <x-auth.link>{{ __('Resend the link') }}</x-auth.link>
+            </form>
+        </div>
+    @else
+        <x-auth.heading :title="__('Forgot your password?')">{{ __('Enter your email and we will send you a link to reset it.') }}</x-auth.heading>
 
-        <x-auth-session-status class="mb-4" :status="session('status')" />
-
-        <form method="POST" action="{{ route('password.email') }}" class="space-y-5">
+        <form method="POST" action="{{ route('password.email') }}" class="flex flex-col gap-6">
             @csrf
-
-            <div>
-                <label for="email" class="block text-sm font-medium text-gray-700 mb-1">
-                    {{ __('Email') }} <span class="text-red-500">*</span>
-                </label>
-                <input id="email" name="email" type="email" required autofocus
-                    value="{{ old('email') }}"
-                    placeholder="{{ __('Enter your email address') }}"
-                    class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800 placeholder:text-gray-400" />
-                <x-input-error :messages="$errors->get('email')" class="mt-2" />
-            </div>
-
-            <button type="submit"
-                class="w-full bg-primary-800 hover:bg-primary-900 text-white font-semibold py-3 rounded-lg transition">
-                {{ __('Email password reset link') }}
-            </button>
+            <x-auth.field :label="__('Work email')" name="email" type="email" :value="old('email')"
+                :placeholder="__('name@company.com')" required autofocus autocomplete="email" />
+            <x-auth.button>{{ __('Send the reset link') }}</x-auth.button>
         </form>
 
-        <p class="text-center text-sm text-gray-500 mt-6">
-            {{ __('Remembered it?') }}
-            <a href="{{ route('login') }}" class="font-semibold text-primary-800 hover:text-primary-900">
-                {{ __('Back to log in') }}
-            </a>
-        </p>
-    </div>
+        <x-auth.link :href="route('login')">{{ __('Back to log in') }}</x-auth.link>
+    @endif
 </x-guest-layout>

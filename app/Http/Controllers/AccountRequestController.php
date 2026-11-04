@@ -26,6 +26,7 @@ class AccountRequestController extends Controller
             'company_name' => ['required', 'string', 'max:150'],
             'phone'        => ['nullable', 'string', 'max:30'],
             'message'      => ['nullable', 'string', 'max:2000'],
+            'company_type' => ['nullable', 'in:' . implode(',', array_keys(AccountRequest::companyTypes()))],
             // Honeypot — real users never fill this hidden field.
             'website'      => ['prohibited'],
         ], [
@@ -52,6 +53,7 @@ class AccountRequestController extends Controller
                 'company_name' => $data['company_name'],
                 'phone'        => $data['phone'] ?? null,
                 'message'      => $data['message'] ?? null,
+                'company_type' => $data['company_type'] ?? null,
                 'status'       => AccountRequest::STATUS_PENDING,
             ]);
         }

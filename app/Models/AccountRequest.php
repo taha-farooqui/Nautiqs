@@ -26,6 +26,7 @@ class AccountRequest extends Model
         'company_name',
         'phone',
         'message',              // optional free text ("tell us about your dealership")
+        'company_type',         // dealer | brand | wholesaler (sign-in Figma, "Type d'entreprise")
         'status',               // pending | approved | rejected
         'handled_at',
         'handled_by_name',      // superadmin who approved/rejected (denormalised)
@@ -35,6 +36,21 @@ class AccountRequest extends Model
     protected $casts = [
         'handled_at' => 'datetime',
     ];
+
+    /** What kind of business is asking: key => label. */
+    public static function companyTypes(): array
+    {
+        return [
+            'dealer'     => __('Dealership'),
+            'brand'      => __('Brand'),
+            'wholesaler' => __('Wholesaler'),
+        ];
+    }
+
+    public function companyTypeLabel(): ?string
+    {
+        return self::companyTypes()[$this->company_type] ?? null;
+    }
 
     public function isPending(): bool
     {

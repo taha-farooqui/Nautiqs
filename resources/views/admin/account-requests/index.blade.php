@@ -41,7 +41,7 @@
                 <tbody class="divide-y divide-gray-100">
                     @foreach ($pending as $req)
                         <tr class="hover:bg-gray-50 align-top">
-                            <td class="px-5 py-3 font-medium text-gray-900">{{ $req->company_name }}</td>
+                            <td class="px-5 py-3 font-medium text-gray-900">{{ $req->company_name }}@if ($req->companyTypeLabel())<span class="block text-xs font-normal text-gray-500">{{ $req->companyTypeLabel() }}</span>@endif</td>
                             <td class="px-5 py-3">
                                 <p class="text-gray-900">{{ $req->name }}</p>
                                 <p class="text-xs text-gray-500">{{ $req->email }}</p>
