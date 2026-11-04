@@ -1880,8 +1880,6 @@
     "Your request will be reviewed before your access is activated.": "Votre demande sera examinée avant l’activation de votre accès.",
     "Already have an account? Log in": "Vous avez déjà un compte ? Se connecter",
     "Verify your email": "Vérifiez votre e-mail",
-    "Your network.": "Votre réseau.",
-    "One single platform.": "Une seule plateforme.",
     "Privacy": "Confidentialité",
     "Legal notice": "Mentions légales",
     "Help": "Aide",
@@ -1910,6 +1908,8 @@
     "Your session has expired": "Votre session a expiré",
     "For your security, you were logged out after a period of inactivity. Log in again to continue.": "Pour votre sécurité, vous avez été déconnecté après une période d’inactivité. Reconnectez-vous pour continuer.",
     "Log in again": "Se reconnecter",
-    "Catalogue, prices and quotes: run your business": "Catalogue, tarifs et devis : pilotez votre activité",
-    "and work with your dealerships, all in one place.": "et collaborez avec vos concessions, au même endroit."
+    "Configure your boats.": "Configurez vos bateaux.",
+    "Prepare your quotes.": "Préparez vos devis.",
+    "Master your margins.": "Maîtrisez vos marges.",
+    "Tailored configuration, simpler quotes, margins under control: discover Nautiqs, the sales software for marine professionals.": "Configuration sur mesure, devis simplifiés, marges sous contrôle, découvrez Nautiqs, le logiciel commercial des professionnels du nautisme."
 }

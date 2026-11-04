@@ -40,11 +40,10 @@
                     </div>
                     <div class="absolute left-16 right-16 bottom-[85px] flex flex-col gap-5">
                         <p class="text-[38px] leading-[46px] font-semibold tracking-[-0.76px] text-nq-navy">
-                            {{ __('Your network.') }}<br>{{ __('One single platform.') }}
+                            {{ __('Configure your boats.') }}<br>{{ __('Prepare your quotes.') }}<br>{{ __('Master your margins.') }}
                         </p>
                         <p class="text-base leading-6 text-nq-text-2">
-                            {{ __('Catalogue, prices and quotes: run your business') }}<br class="hidden xl:inline">
-                            {{ __('and work with your dealerships, all in one place.') }}
+                            {{ __('Tailored configuration, simpler quotes, margins under control: discover Nautiqs, the sales software for marine professionals.') }}
                         </p>
                     </div>
                 </div>
