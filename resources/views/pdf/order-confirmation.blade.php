@@ -200,8 +200,12 @@
             <table class="qcond">
                 <tr><td class="label">{{ __('Confirmed on') }}</td><td class="val">{{ $confirmDate?->format('d/m/Y') }}</td></tr>
                 <tr><td class="label">{{ __('Linked quote') }}</td><td class="val">{{ $quote->number }}</td></tr>
-                <tr><td class="label">{{ __('Payment') }}</td><td class="val">{{ __('As agreed in the quote') }}</td></tr>
-                <tr><td class="label">{{ __('Delivery') }}</td><td class="val">{{ __('8 to 12 weeks depending on availability') }}</td></tr>
+                @if (! empty($quote->terms['payment']))
+                    <tr><td class="label">{{ __('Payment') }}</td><td class="val">{{ $quote->terms['payment'] }}</td></tr>
+                @endif
+                @if (! empty($quote->terms['delivery']))
+                    <tr><td class="label">{{ __('Delivery') }}</td><td class="val">{{ $quote->terms['delivery'] }}</td></tr>
+                @endif
             </table>
 
             @if (! empty($quote->trade_in) && (($quote->trade_in['value'] ?? 0) > 0))

@@ -2,7 +2,7 @@
     @include('brand.partials.flash')
 
     <div class="mb-4 flex flex-wrap items-center justify-between gap-3 text-sm">
-        <a href="{{ route('brand.catalogue.index', ['brand' => $brand->_id]) }}" class="text-gray-500 hover:text-primary-800"><i class="ri-arrow-left-line"></i> {{ $brand->name }}</a>
+        <a href="{{ route('brand.catalogue.index') }}" class="text-gray-500 hover:text-primary-800"><i class="ri-arrow-left-line"></i> {{ __('Back to catalogue') }}</a>
         <div class="flex gap-2">
             <a href="{{ route('brand.transfer.form') }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 font-medium bg-white hover:bg-gray-50 text-gray-800 border border-gray-300 rounded-lg"><i class="ri-upload-2-line"></i> {{ __('Import from Excel') }}</a>
             <a href="{{ route('brand.transfer.export') }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 font-medium bg-white hover:bg-gray-50 text-gray-800 border border-gray-300 rounded-lg"><i class="ri-download-2-line"></i> {{ __('Export') }}</a>
@@ -13,47 +13,49 @@
     <form method="POST" action="{{ $model ? route('brand.catalogue.update', $model->_id) : route('brand.catalogue.store') }}" novalidate
         x-data="brandModelEditor(@js($versions), @js($options), @js($levels), @js($account->isExactPricing()))">
         @csrf
-        @if ($model) @method('PATCH') @else <input type="hidden" name="managed_brand_id" value="{{ $brand->_id }}"> @endif
+        @if ($model) @method('PATCH') @endif
 
         {{-- Tabs, as on the dealer side --}}
         <div class="mb-4 border-b border-gray-200 flex items-center gap-1 overflow-x-auto">
             <button type="button" @click="tab = 'boat'" :class="tab === 'boat' ? 'border-primary-800 text-primary-900' : 'border-transparent text-gray-500 hover:text-gray-900'"
                 class="px-4 py-2.5 text-sm font-semibold border-b-2 transition whitespace-nowrap"><i class="ri-sailboat-line"></i> {{ __('Boat') }}</button>
             <button type="button" @click="tab = 'versions'" :class="tab === 'versions' ? 'border-primary-800 text-primary-900' : 'border-transparent text-gray-500 hover:text-gray-900'"
-                class="px-4 py-2.5 text-sm font-semibold border-b-2 transition whitespace-nowrap"><i class="ri-list-check-2"></i> {{ __('Versions & equipment') }} <span class="text-xs text-gray-400" x-text="'(' + versions.length + ')'"></span></button>
+                class="px-4 py-2.5 text-sm font-semibold border-b-2 transition whitespace-nowrap"><i class="ri-list-check-2"></i> {{ __('Versions') }} <span class="text-xs text-gray-400" x-text="'(' + versions.length + ')'"></span></button>
             <button type="button" @click="tab = 'options'" :class="tab === 'options' ? 'border-primary-800 text-primary-900' : 'border-transparent text-gray-500 hover:text-gray-900'"
                 class="px-4 py-2.5 text-sm font-semibold border-b-2 transition whitespace-nowrap"><i class="ri-add-circle-line"></i> {{ __('Options') }} <span class="text-xs text-gray-400" x-text="'(' + options.length + ')'"></span></button>
         </div>
 
         {{-- Boat --}}
         <section x-show="tab === 'boat'" class="bg-white rounded-2xl border border-gray-200 p-6 space-y-5">
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div class="sm:col-span-2">
-                    <label for="m-name" class="block text-sm font-medium text-gray-700 mb-1">{{ __('Model name') }} <span class="text-red-500">*</span></label>
-                    <input id="m-name" name="name" required maxlength="160" value="{{ old('name', $model->name ?? '') }}"
-                        class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />
-                </div>
-                <div>
-                    <label for="m-code" class="block text-sm font-medium text-gray-700 mb-1">{{ __('Code') }}</label>
-                    <input id="m-code" name="code" maxlength="60" value="{{ old('code', $model->code ?? '') }}"
-                        class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />
-                </div>
-            </div>
-            <div class="grid grid-cols-2 sm:grid-cols-6 gap-3">
-                @foreach ([['year', __('Year'), '1'], ['length_total', __('Length (m)'), '0.01'], ['beam', __('Beam (m)'), '0.01'], ['draft_max', __('Draft (m)'), '0.01'], ['weight', __('Weight (kg)'), '1'], ['passengers', __('Passengers'), '1']] as [$f, $label, $step])
-                    <div>
-                        <label for="m-{{ $f }}" class="block text-xs font-medium text-gray-600 mb-1">{{ $label }}</label>
-                        <input id="m-{{ $f }}" name="{{ $f }}" type="number" step="{{ $step }}" min="0" value="{{ old($f, $model->$f ?? '') }}"
-                            class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
-                    </div>
-                @endforeach
+            {{-- Same fields as the dealer's boat form. --}}
+            <div class="flex items-center gap-3 pb-3 border-b border-gray-100">
+                <label class="inline-flex items-center gap-2">
+                    <input type="hidden" name="is_active" value="0" />
+                    <input type="checkbox" name="is_active" value="1"
+                        @checked(old('is_active', ! ($model->is_archived ?? false)))
+                        class="rounded border-gray-300 text-primary-800 focus:ring-primary-800" />
+                    <span class="text-sm font-medium text-gray-700">{{ __('Active') }}</span>
+                </label>
+                <span class="text-xs text-gray-500">{{ __('Visible in the quote builder when checked.') }}</span>
             </div>
             <div>
-                <label for="m-desc" class="block text-sm font-medium text-gray-700 mb-1">{{ __('Description') }}</label>
-                <textarea id="m-desc" name="description" rows="3" maxlength="5000" class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800">{{ old('description', $model->description ?? '') }}</textarea>
+                <label for="m-brand" class="block text-sm font-medium text-gray-700 mb-1">{{ __('Brand') }} <span class="text-red-500">*</span></label>
+                @if ($model)
+                    <input id="m-brand" value="{{ $brand->name }}" disabled
+                        class="w-full rounded-lg border-gray-300 bg-gray-50 text-gray-700" />
+                @else
+                    <select id="m-brand" name="managed_brand_id" class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800">
+                        @foreach ($brands as $b)
+                            <option value="{{ $b->_id }}" @selected((string) old('managed_brand_id', $brand->_id) === (string) $b->_id)>{{ $b->name }}</option>
+                        @endforeach
+                    </select>
+                @endif
             </div>
-            <div class="flex justify-end">
-                <button type="button" @click="tab = 'versions'" class="inline-flex items-center gap-1 text-sm font-semibold text-primary-800 hover:underline">{{ __('Next: versions & equipment') }} <i class="ri-arrow-right-line"></i></button>
+            <div>
+                <label for="m-name" class="block text-sm font-medium text-gray-700 mb-1">{{ __('Model name') }} <span class="text-red-500">*</span></label>
+                <input id="m-name" name="name" required maxlength="160" value="{{ old('name', $model->name ?? '') }}"
+                    placeholder="{{ __('e.g. 60 OPEN LINE') }}"
+                    class="w-full max-w-xl rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />
             </div>
         </section>
 

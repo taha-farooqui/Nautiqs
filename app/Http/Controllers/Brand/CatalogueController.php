@@ -28,17 +28,24 @@ class CatalogueController extends Controller
         }
 
         $brands = ManagedBrand::orderBy('position')->orderBy('name')->get();
-        $brand  = $brands->first(fn ($b) => (string) $b->_id === (string) $request->query('brand')) ?? $brands->first();
+        // No brand in the URL = all brands, as on the dealer catalogue.
+        $brand  = $brands->first(fn ($b) => (string) $b->_id === (string) $request->query('brand'));
+        $names  = $brands->mapWithKeys(fn ($b) => [(string) $b->_id => $b->name]);
+        $q      = trim((string) $request->query('q', ''));
 
-        $models = $brand
-            ? BrandModel::where('managed_brand_id', (string) $brand->_id)->orderBy('is_archived')->orderBy('name')->get()
-            : collect();
+        $models = BrandModel::whereIn('managed_brand_id', $brand ? [(string) $brand->_id] : $names->keys()->all())->get()
+            ->when($q !== '', fn ($c) => $c->filter(fn ($m) => str_contains(
+                mb_strtolower($m->name . ' ' . ($names[(string) $m->managed_brand_id] ?? '')), mb_strtolower($q)
+            )))
+            ->sortBy([
+                fn ($a, $b) => (int) $a->is_archived <=> (int) $b->is_archived,
+                fn ($a, $b) => strnatcasecmp($names[(string) $a->managed_brand_id] ?? '', $names[(string) $b->managed_brand_id] ?? ''),
+                fn ($a, $b) => strnatcasecmp((string) $a->name, (string) $b->name),
+            ])->values();
         $ids = $models->map(fn ($m) => (string) $m->_id)->all();
         $variants = BrandVariant::whereIn('brand_model_id', $ids)->where('is_archived', '!=', true)->get()->groupBy('brand_model_id');
-        $options  = BrandOption::whereIn('brand_model_id', $ids)->where('is_archived', '!=', true)->get()->groupBy('brand_model_id');
-        $counts   = BrandModel::where('is_archived', '!=', true)->get(['managed_brand_id'])->countBy('managed_brand_id');
 
-        return view('brand.catalogue.index', compact('account', 'brands', 'brand', 'models', 'variants', 'options', 'counts'));
+        return view('brand.catalogue.index', compact('account', 'brands', 'brand', 'names', 'models', 'variants', 'q'));
     }
 
     public function create(Request $request)
@@ -124,14 +131,7 @@ class CatalogueController extends Controller
     {
         return $request->validate([
             'name'        => 'required|string|max:160',
-            'code'        => 'nullable|string|max:60',
-            'year'        => 'nullable|integer|min:1950|max:2100',
-            'length_total'=> 'nullable|numeric|min:0|max:200',
-            'beam'        => 'nullable|numeric|min:0|max:50',
-            'draft_max'   => 'nullable|numeric|min:0|max:20',
-            'weight'      => 'nullable|numeric|min:0|max:200000',
-            'passengers'  => 'nullable|integer|min:0|max:500',
-            'description' => 'nullable|string|max:5000',
+            'is_active'   => 'nullable|boolean',
 
             'versions'              => 'nullable|array',
             'versions.*.id'         => 'nullable|string',
@@ -159,16 +159,9 @@ class CatalogueController extends Controller
 
     private function modelFields(array $d): array
     {
-        $num = fn ($k) => isset($d[$k]) && $d[$k] !== '' ? (float) $d[$k] : null;
-
-        return [
-            'name' => trim($d['name']), 'code' => $d['code'] ?? null,
-            'year' => isset($d['year']) && $d['year'] !== '' ? (int) $d['year'] : null,
-            'length_total' => $num('length_total'), 'beam' => $num('beam'), 'draft_max' => $num('draft_max'),
-            'weight' => $num('weight'),
-            'passengers' => isset($d['passengers']) && $d['passengers'] !== '' ? (int) $d['passengers'] : null,
-            'description' => $d['description'] ?? null,
-        ];
+        // Same fields as the dealer boat form. Code, year, dimensions and the
+        // description come from Excel imports only, so saving leaves them as they are.
+        return ['name' => trim($d['name']), 'is_archived' => ! ($d['is_active'] ?? true)];
     }
 
     /** Upsert the posted versions and options; rows no longer posted are archived. */

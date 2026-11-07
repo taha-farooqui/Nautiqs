@@ -5,8 +5,6 @@
         $search = (string) request('q', '');
         $brandUrl = fn ($id) => route('catalogue.models', array_filter(['brand' => $id, 'q' => $search]));
         $activeCount = $rows->where('variant_count', '>', 0)->count();
-        $tones = ['bg-primary-800', 'bg-nq-accent', 'bg-nq-chart2', 'bg-nq-chart3', 'bg-nq-success', 'bg-nq-text-2'];
-        $toneOf = fn ($name) => $tones[abs(crc32(mb_strtolower((string) $name))) % count($tones)];
 
         $card = 'bg-white border border-nq-border rounded-xl';
         $btn = 'h-9 inline-flex items-center gap-2 px-4 rounded-lg text-sm leading-[22px] font-medium transition-colors whitespace-nowrap';
@@ -77,7 +75,6 @@
                         <a href="{{ $brandUrl(null) }}" class="block rounded-lg px-3 py-2 text-sm {{ $brandFilter === '' ? 'bg-nq-primary-bg text-primary-800 font-medium' : 'text-nq-text hover:bg-nq-subtle' }}">{{ __('All brands') }}</a>
                         @foreach ($brands as $b)
                             <a href="{{ $brandUrl((string) $b->_id) }}" class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm {{ $brandFilter === (string) $b->_id ? 'bg-nq-primary-bg text-primary-800 font-medium' : 'text-nq-text hover:bg-nq-subtle' }}">
-                                <span class="w-[18px] h-[18px] rounded-[5px] {{ $toneOf($b->name) }} text-white text-[10px] font-medium flex items-center justify-center shrink-0">{{ mb_strtoupper(mb_substr($b->name, 0, 1)) }}</span>
                                 <span class="truncate">{{ $b->name }}</span>
                             </a>
                         @endforeach
@@ -135,9 +132,6 @@
                                     onclick="if (!event.target.closest('a, button, form, input')) window.location = this.dataset.href">
                                     <td class="h-14 px-4 {{ $rowBorder }}">
                                         <span class="inline-flex items-center gap-2 whitespace-nowrap">
-                                            @if ($b?->name)
-                                                <span class="w-6 h-6 rounded-md {{ $toneOf($b->name) }} text-white text-[11px] font-medium flex items-center justify-center shrink-0">{{ mb_strtoupper(mb_substr($b->name, 0, 1)) }}</span>
-                                            @endif
                                             <span class="text-sm leading-[22px] font-medium text-nq-text">{{ $b?->name ?? '—' }}</span>
                                             @if ($b?->managed_brand_id) <x-brand.managed-badge /> @endif
                                         </span>
