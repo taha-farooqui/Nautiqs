@@ -22,7 +22,7 @@ class ClientController extends Controller
         // Names, email and phone are encrypted, so the database can neither
         // match nor sort them. The dealer's own clients are filtered and
         // filed by surname here instead — see App\Support\Pii\Search.
-        $clients = Search::filter(Client::query()->get(), $q, fn (Client $c) => [
+        $clients = Search::filter(Client::query()->whereNull('archived_at')->get(), $q, fn (Client $c) => [
             $c->first_name, $c->last_name, $c->company_name, $c->email, $c->phone, $c->city,
         ])->sortBy(fn (Client $c) => Search::nameKey($c->last_name, $c->first_name))->values();
 
@@ -85,19 +85,21 @@ class ClientController extends Controller
     {
         $client = Client::findOrFail($id);
 
-        // Protect against orphaning quotes — block delete if any quote
-        // references this client.
+        // A client with quotes is part of that history. Quotes keep their own
+        // client snapshot, but the record stays tied to them, so archive it
+        // (hidden from the list, data kept) instead of deleting. A client with
+        // no quotes is deleted outright.
         if (Quote::where('client_id', $id)->exists()) {
-            return back()->withErrors([
-                'delete' => __('Cannot delete a client who has quotes. Archive the quotes first.'),
-            ]);
+            $client->update(['archived_at' => now()]);
+            $status = __('Client removed. Their quotes are kept.');
+        } else {
+            $client->delete();
+            $status = __('Client deleted.');
         }
-
-        $client->delete();
 
         return redirect()
             ->route('clients.index')
-            ->with('status', __('Client deleted.'));
+            ->with('status', $status);
     }
     /**
      * A source typed by hand joins this dealership's dropdown for next time

@@ -50,7 +50,7 @@ class SearchController extends Controller
             ]);
 
         $clients = Search::filter(
-            Client::query()->get(['first_name', 'last_name', 'company_name', 'email', 'phone', 'city']),
+            Client::query()->whereNull('archived_at')->get(['first_name', 'last_name', 'company_name', 'email', 'phone', 'city']),
             $q,
             fn ($c) => [$c->first_name, $c->last_name, $c->company_name, $c->email, $c->phone, $c->city]
         )

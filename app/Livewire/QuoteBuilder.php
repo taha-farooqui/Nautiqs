@@ -251,7 +251,7 @@ class QuoteBuilder extends Component
     public function clients()
     {
         // Surnames are encrypted, so the database cannot order them.
-        return Client::get()
+        return Client::whereNull('archived_at')->get()
             ->sortBy(fn (Client $c) => Search::nameKey($c->last_name, $c->first_name))
             ->values();
     }

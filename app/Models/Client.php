@@ -37,6 +37,7 @@ class Client extends Model
         'navigation_area',  // where they sail — free text
         'current_boat',     // what they own today — free text
         'lead_source',      // how they found us (see LEAD_SOURCES)
+        'archived_at',      // set when "deleted" while the client still has quotes
     ];
 
     /**
@@ -56,6 +57,7 @@ class Client extends Model
     ];
 
     protected $casts = [
+        'archived_at'     => 'datetime',
         'first_name'      => EncryptedPii::class,
         'last_name'       => EncryptedPii::class,
         'email'           => EncryptedPii::class,

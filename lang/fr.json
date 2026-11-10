@@ -1934,5 +1934,6 @@
     "Choose my new password": "Choisir mon nouveau mot de passe",
     "View quote": "Voir le devis",
     "View invitation": "Voir l’invitation",
-    "Activate account": "Activer mon compte"
+    "Activate account": "Activer mon compte",
+    "Client removed. Their quotes are kept.": "Client retiré. Ses devis sont conservés."
 }
