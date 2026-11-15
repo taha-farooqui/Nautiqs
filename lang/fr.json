@@ -1938,5 +1938,13 @@
     "Client removed. Their quotes are kept.": "Client retiré. Ses devis sont conservés.",
     "Brand :name deleted.": "Marque :name supprimée.",
     "Nautiqs sets up your brands. Contact your account manager to add one.": "Nautiqs configure vos marques. Contactez votre chargé de compte pour en ajouter une.",
-    "Delete the brand «:name»? Its catalogue is removed and it is detached from your dealers. Dealers keep what they already received and quotes are not affected.": "Supprimer la marque « :name » ? Son catalogue est supprimé et elle est détachée de vos concessions. Les concessions conservent ce qu’elles ont déjà reçu et les devis ne sont pas affectés."
+    "Delete the brand «:name»? Its catalogue is removed and it is detached from your dealers. Dealers keep what they already received and quotes are not affected.": "Supprimer la marque « :name » ? Son catalogue est supprimé et elle est détachée de vos concessions. Les concessions conservent ce qu’elles ont déjà reçu et les devis ne sont pas affectés.",
+    "Quote expiries": "Échéances des devis",
+    "Overdue": "En retard",
+    "Soon": "Bientôt",
+    "Later": "Plus tard",
+    "No quote expiring": "Aucun devis à échéance",
+    "Sent quotes with a validity date show up here so you can follow up before they lapse.": "Les devis envoyés avec une date de validité apparaissent ici pour que vous puissiez relancer avant qu’ils n’expirent.",
+    "Nothing expires on this day.": "Rien n’expire ce jour-là.",
+    "Today": "Aujourd'hui"
 }

@@ -46,6 +46,23 @@ class DashboardController extends Controller
             ->limit(5)
             ->get(['number', 'client_snapshot', 'model_snapshot', 'totals', 'status', 'tracking', 'sent_at', 'created_at']);
 
+        // Expiry calendar: every open (sent) quote with a deadline, so the
+        // dealer can follow up before it lapses. Live, not tied to the period
+        // filter — a deadline is always relevant.
+        $data['expiring'] = Quote::where('status', Quote::STATUS_SENT)
+            ->whereNotNull('expires_at')
+            ->orderBy('expires_at')
+            ->get(['number', 'client_snapshot', 'model_snapshot', 'totals', 'expires_at'])
+            ->map(fn (Quote $q) => [
+                'id'     => (string) $q->_id,
+                'number' => $q->number,
+                'client' => trim(($q->client_snapshot['first_name'] ?? '') . ' ' . ($q->client_snapshot['last_name'] ?? ''))
+                    ?: ($q->client_snapshot['company_name'] ?? __('Guest')),
+                'boat'   => $q->boatLabel() ?: '—',
+                'amount' => (float) ($q->totals['total_ht'] ?? 0),
+                'date'   => $q->expires_at->format('Y-m-d'),
+            ])->values();
+
         // Toolbar options: brands quoted by this dealership, and its team.
         $data['brandOptions'] = Quote::query()->get(['model_snapshot'])
             ->pluck('model_snapshot.brand')->filter()->unique()->sort(SORT_NATURAL | SORT_FLAG_CASE)->values();
