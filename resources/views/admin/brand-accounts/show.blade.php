@@ -128,6 +128,12 @@
                                     <span class="block text-xs text-gray-500">{{ trans_choice($account->isEngine() ? '{0}No engine|{1}:count engine|[2,*]:count engines' : '{0}No model|{1}:count model|[2,*]:count models', $itemCounts[(string) $b->_id] ?? 0, ['count' => $itemCounts[(string) $b->_id] ?? 0]) }}</span>
                                 </span>
                                 <button type="button" @click="edit = true" class="w-8 h-8 inline-flex items-center justify-center text-gray-400 opacity-0 group-hover:opacity-100 hover:text-primary-800 hover:bg-gray-100 rounded-lg transition" title="{{ __('Rename') }}"><i class="ri-pencil-line"></i></button>
+                                <form method="POST" action="{{ route('admin.brand-accounts.brands.delete', [$account->_id, $b->_id]) }}"
+                                    data-confirm="{{ __('Delete the brand «:name»? Its catalogue is removed and it is detached from your dealers. Dealers keep what they already received and quotes are not affected.', ['name' => $b->name]) }}"
+                                    data-confirm-danger="1">
+                                    @csrf @method('DELETE')
+                                    <button type="submit" class="w-8 h-8 inline-flex items-center justify-center text-gray-400 opacity-0 group-hover:opacity-100 hover:text-red-600 hover:bg-red-50 rounded-lg transition" title="{{ __('Delete') }}"><i class="ri-delete-bin-line"></i></button>
+                                </form>
                             </div>
                             <form x-show="edit" x-cloak method="POST" action="{{ route('admin.brand-accounts.brands.rename', [$account->_id, $b->_id]) }}" class="flex gap-2">
                                 @csrf @method('PATCH')

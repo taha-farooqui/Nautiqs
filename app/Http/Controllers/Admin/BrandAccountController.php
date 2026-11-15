@@ -148,6 +148,36 @@ class BrandAccountController extends Controller
         return back()->with('status', __('Brand renamed.'));
     }
 
+    /**
+     * Delete a brand from an account. Its own catalogue (models, variants,
+     * options or engines) is removed and it is detached from every dealer
+     * link. Dealers keep the copies they already received and quotes keep
+     * their snapshots, so history is never affected.
+     */
+    public function deleteBrand(string $id, string $brandId)
+    {
+        $brand = ManagedBrand::withoutGlobalScopes()->where('brand_account_id', $id)->where('_id', $brandId)->firstOrFail();
+        $name  = $brand->name;
+
+        foreach ([
+            \App\Models\BrandModel::class, \App\Models\BrandVariant::class, \App\Models\BrandOption::class,
+            \App\Models\BrandEngine::class, \App\Models\BrandEngineAccessory::class,
+        ] as $model) {
+            $model::withoutGlobalScopes()->where('managed_brand_id', $brandId)->delete();
+        }
+
+        foreach (\App\Models\BrandAccess::withoutGlobalScopes()->where('brand_account_id', $id)->get() as $access) {
+            $kept = array_values(array_filter((array) $access->managed_brand_ids, fn ($x) => (string) $x !== $brandId));
+            if (count($kept) !== count((array) $access->managed_brand_ids)) {
+                $access->update(['managed_brand_ids' => $kept]);
+            }
+        }
+
+        $brand->delete();
+
+        return back()->with('status', __('Brand :name deleted.', ['name' => $name]));
+    }
+
     public function inviteManager(string $id, Request $request)
     {
         $account = BrandAccount::findOrFail($id);

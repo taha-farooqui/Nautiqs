@@ -401,6 +401,7 @@ Route::middleware(['auth', 'verified', 'maintenance', 'brand.contain', 'managed.
         Route::patch('/brand-accounts/{id}',                           [$ba, 'update'])->name('brand-accounts.update');
         Route::post('/brand-accounts/{id}/toggle',                     [$ba, 'toggle'])->name('brand-accounts.toggle');
         Route::post('/brand-accounts/{id}/brands',                     [$ba, 'addBrand'])->name('brand-accounts.brands.add');
+        Route::delete('/brand-accounts/{id}/brands/{brandId}',         [$ba, 'deleteBrand'])->name('brand-accounts.brands.delete');
         Route::patch('/brand-accounts/{id}/brands/{brandId}',          [$ba, 'renameBrand'])->name('brand-accounts.brands.rename');
         Route::post('/brand-accounts/{id}/managers',                   [$ba, 'inviteManager'])->name('brand-accounts.managers.invite');
         Route::post('/brand-accounts/{id}/invites/{inviteId}/resend',  [$ba, 'resendInvite'])->name('brand-accounts.invites.resend');

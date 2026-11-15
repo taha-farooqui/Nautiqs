@@ -35,29 +35,9 @@ class BrandsController extends Controller
 
     public function store(Request $request)
     {
-        $data = $request->validate(['name' => 'required|string|max:120', 'share' => 'nullable|boolean']);
-        $name = trim($data['name']);
-        if ($this->taken($name)) {
-            return back()->withInput()->withErrors(['name' => __('":name" is already managed on Nautiqs. Contact Nautiqs if it is yours.', ['name' => $name])]);
-        }
-
-        $brand = ManagedBrand::create(ManagedBrand::fromName($name) + ['position' => ManagedBrand::count(), 'is_active' => true]);
-        $name = $brand->name;
-
-        // Add it to the dealers already connected, so its catalogue reaches them as it is built.
-        $shared = 0;
-        if ($request->boolean('share')) {
-            $sync = app(BrandSync::class);
-            foreach ($this->accesses()->where('status', BrandAccess::STATUS_ACTIVE)->get() as $access) {
-                $access->update(['managed_brand_ids' => array_values(array_unique(array_merge($access->brandIds(), [(string) $brand->_id])))]);
-                $sync->syncAccess($access, $this->account());
-                $shared++;
-            }
-        }
-
-        return redirect()->route('brand.brands.index')->with('status', $shared
-            ? trans_choice('{1}Brand :name added and shared with your connected dealer.|[2,*]Brand :name added and shared with your :count connected dealers.', $shared, ['name' => $name, 'count' => $shared])
-            : __('Brand :name added.', ['name' => $name]));
+        // Brands are created by Nautiqs (superadmin) only — a brand manager
+        // can no longer add one from their portal.
+        abort(403);
     }
 
     public function update(string $id, Request $request)

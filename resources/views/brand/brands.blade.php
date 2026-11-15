@@ -4,8 +4,8 @@
 
     <p class="mb-5 text-sm text-gray-600 max-w-2xl">{{ __('The brands you manage on Nautiqs. Each one has its own catalogue; you choose which brands each dealer receives.') }}</p>
 
-    <div class="grid grid-cols-1 xl:grid-cols-3 gap-5">
-        <div class="xl:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 content-start">
+    <div class="grid grid-cols-1 gap-5">
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 content-start">
             @forelse ($brands as $b)
                 @php $id = (string) $b->_id; $items = $itemCounts[$id] ?? 0; $dealers = $dealerCounts[$id] ?? 0; @endphp
                 <div x-data="{ edit: false }" class="rise lift bg-white rounded-2xl border border-gray-200 p-5" style="--d: {{ min($loop->index, 8) }}">
@@ -34,30 +34,9 @@
                 </div>
             @empty
                 <div class="md:col-span-2 bg-white rounded-2xl border border-gray-200">
-                    <x-app.empty-state icon="ri-building-4-line" :title="__('No brands yet')" :message="__('Add your first brand to start your catalogue.')" />
+                    <x-app.empty-state icon="ri-building-4-line" :title="__('No brands yet')" :message="__('Nautiqs sets up your brands. Contact your account manager to add one.')" />
                 </div>
             @endforelse
         </div>
-
-        <section class="rise bg-white rounded-2xl border border-gray-200 p-5 self-start" style="--d: 2">
-            <span class="w-11 h-11 rounded-xl bg-primary-50 text-primary-800 flex items-center justify-center mb-3"><i class="ri-add-line text-xl"></i></span>
-            <h3 class="font-semibold text-gray-900 mb-1">{{ __('Add a brand') }}</h3>
-            <p class="text-sm text-gray-500 mb-4">{{ __('Pick it from the Nautiqs brand list. Once it is yours, dealers receive it only from you.') }}</p>
-            <form method="POST" action="{{ route('brand.brands.store') }}" class="space-y-3">
-                @csrf
-                <div class="relative"><i class="ri-building-4-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                    <input name="name" required maxlength="120" value="{{ old('name') }}" placeholder="{{ __('Search the brand list…') }}" aria-label="{{ __('Brand name') }}"
-                        list="global-brand-list" autocomplete="off"
-                        class="w-full pl-9 rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800"></div>
-                <datalist id="global-brand-list">@foreach ($globalBrands as $g)<option value="{{ $g }}">@endforeach</datalist>
-                @if ($connected > 0)
-                    <label class="flex items-start gap-2.5 rounded-lg bg-gray-50 p-3 text-sm cursor-pointer">
-                        <input type="checkbox" name="share" value="1" checked class="mt-0.5 rounded border-gray-300 text-primary-800 focus:ring-primary-800">
-                        <span class="text-gray-700">{{ trans_choice('{1}Share it with my connected dealer|[2,*]Share it with my :count connected dealers', $connected, ['count' => $connected]) }}</span>
-                    </label>
-                @endif
-                <button class="w-full inline-flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-semibold bg-primary-800 hover:bg-primary-900 text-white rounded-lg"><i class="ri-add-line"></i> {{ __('Add brand') }}</button>
-            </form>
-        </section>
     </div>
 </x-app-layout>
