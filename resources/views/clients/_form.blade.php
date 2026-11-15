@@ -98,14 +98,12 @@
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Navigation area') }}</label>
                 <input type="text" name="navigation_area" value="{{ old('navigation_area', $client->navigation_area) }}"
-                    placeholder="{{ __('e.g. Golfe du Morbihan, Méditerranée') }}"
                     class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />
                 <x-input-error :messages="$errors->get('navigation_area')" class="mt-1" />
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Current boat') }}</label>
                 <input type="text" name="current_boat" value="{{ old('current_boat', $client->current_boat) }}"
-                    placeholder="{{ __('e.g. Antares 7.80 (2018)') }}"
                     class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />
                 <x-input-error :messages="$errors->get('current_boat')" class="mt-1" />
             </div>
@@ -127,7 +125,6 @@
                      flash on load. Alpine clears it when x-show turns true. --}}
                 <div x-show="adding" x-cloak style="display:none" class="mt-2">
                     <input type="text" name="lead_source_custom" maxlength="100"
-                        placeholder="{{ __('e.g. Pakistan Auto Show (PAPS) 2026') }}"
                         class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />
                     <span class="block text-xs text-gray-500 mt-1">
                         {{ __('Saved to your list — you can pick it again for other clients.') }}
@@ -146,8 +143,7 @@
             </span>
         </div>
         <textarea name="internal_notes" rows="4"
-            class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800"
-            placeholder="{{ __('Any notes about this client — preferences, history, context. Only visible to your team.') }}">{{ old('internal_notes', $client->internal_notes) }}</textarea>
+            class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800">{{ old('internal_notes', $client->internal_notes) }}</textarea>
         <x-input-error :messages="$errors->get('internal_notes')" class="mt-1" />
     </div>
 

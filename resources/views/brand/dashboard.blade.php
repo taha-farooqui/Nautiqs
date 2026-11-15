@@ -408,8 +408,8 @@
                     draw() {
                         const ctx = this.$refs.canvas.getContext('2d');
                         const hatch = document.createElement('canvas'); hatch.width = hatch.height = 7;
-                        const h = hatch.getContext('2d'); h.fillStyle = '#f0f0f2'; h.fillRect(0, 0, 7, 7);
-                        h.strokeStyle = '#e4e4e7'; h.lineWidth = 1.5; h.beginPath(); h.moveTo(0, 7); h.lineTo(7, 0); h.stroke();
+                        const h = hatch.getContext('2d'); h.fillStyle = '#e4e4e7'; h.fillRect(0, 0, 7, 7);
+                        h.strokeStyle = '#c2c2c9'; h.lineWidth = 1.5; h.beginPath(); h.moveTo(0, 7); h.lineTo(7, 0); h.stroke();
                         const pattern = ctx.createPattern(hatch, 'repeat');
                         const data = this.series.map(s => s[this.tab]);
                         const last = data.length - 1;
@@ -438,7 +438,7 @@
                             type: 'bar',
                             data: { labels: this.series.map(s => s.label), datasets: [{ data,
                                 backgroundColor: data.map((_, i) => i === last ? '#0e4f79' : pattern),
-                                hoverBackgroundColor: data.map((_, i) => i === last ? '#093a5c' : '#e8e8eb'),
+                                hoverBackgroundColor: data.map((_, i) => i === last ? '#093a5c' : '#d4d4d9'),
                                 borderRadius: 8, borderSkipped: false, maxBarThickness: 84, categoryPercentage: 0.8, barPercentage: 0.95 }] },
                             options: {
                                 responsive: true, maintainAspectRatio: false, layout: { padding: { top: 38 } },

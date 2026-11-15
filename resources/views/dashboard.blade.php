@@ -103,12 +103,6 @@
             <div class="flex flex-col gap-1">
                 <div class="flex flex-wrap items-center gap-3">
                     <h2 class="text-2xl leading-8 font-semibold tracking-[-0.24px] text-nq-text">{{ __('Hello :name', ['name' => $firstName]) }}</h2>
-                    @if ($awaitingResponse > 0)
-                        <span class="h-6 inline-flex items-center gap-1.5 px-2 rounded-md bg-nq-success-bg border border-nq-success-border text-xs leading-5 font-medium text-nq-success-text">
-                            <span class="w-1.5 h-1.5 rounded-full bg-nq-success"></span>
-                            {{ $awaitingResponse }} {{ mb_strtolower(__('Awaiting response')) }}
-                        </span>
-                    @endif
                 </div>
                 <p class="text-sm leading-[22px] text-nq-text-2">{{ now()->translatedFormat('l j F Y') }}</p>
             </div>
@@ -371,8 +365,8 @@
                     const data = trend.map(d => d.sent);
                     const last = data.length - 1;
                     const hatch = document.createElement('canvas'); hatch.width = hatch.height = 7;
-                    const h = hatch.getContext('2d'); h.fillStyle = '#f0f0f2'; h.fillRect(0, 0, 7, 7);
-                    h.strokeStyle = '#e4e4e7'; h.lineWidth = 1.5; h.beginPath(); h.moveTo(0, 7); h.lineTo(7, 0); h.stroke();
+                    const h = hatch.getContext('2d'); h.fillStyle = '#e4e4e7'; h.fillRect(0, 0, 7, 7);
+                    h.strokeStyle = '#c2c2c9'; h.lineWidth = 1.5; h.beginPath(); h.moveTo(0, 7); h.lineTo(7, 0); h.stroke();
                     const pattern = el.getContext('2d').createPattern(hatch, 'repeat');
                     const valuePill = {
                         id: 'valuePill',
@@ -389,7 +383,7 @@
                         type: 'bar',
                         data: { labels: trend.map(d => d.label), datasets: [{ label: @js(__('Quotes')), data,
                             backgroundColor: data.map((_, i) => i === last ? '#0e4f79' : pattern),
-                            hoverBackgroundColor: data.map((_, i) => i === last ? '#093a5c' : '#e8e8eb'),
+                            hoverBackgroundColor: data.map((_, i) => i === last ? '#093a5c' : '#d4d4d9'),
                             borderRadius: 8, borderSkipped: false, maxBarThickness: 84, categoryPercentage: 0.8, barPercentage: 0.95 }] },
                         options: {
                             responsive: true, maintainAspectRatio: false, layout: { padding: { top: 38 } },

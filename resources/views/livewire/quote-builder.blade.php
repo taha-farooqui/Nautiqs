@@ -748,7 +748,7 @@
                 <div class="space-y-3">
                     <div class="flex items-center gap-3">
                         <label class="text-sm text-gray-700 w-28 shrink-0">{{ __('Trade-in name') }}</label>
-                        <input type="text" placeholder="{{ __('e.g. Quicksilver 605 (2019)') }}"
+                        <input type="text"
                             wire:model.live.debounce.500ms="trade_in_label"
                             class="flex-1 max-w-md rounded border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
                     </div>

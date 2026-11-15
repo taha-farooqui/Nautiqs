@@ -116,7 +116,7 @@ class QuoteBuilder extends Component
     // holds "" on clear, and vatRateValue() coerces a blank/null rate to 0
     // so an empty VAT field means 0%, not the 20% default.
     public $vat_rate = 20.0;
-    public string $display_mode = 'TTC';
+    public string $display_mode = 'HT';
     // Off by default — when on, each option's individual VAT rate (from
     // the TVA column at import) is applied per line instead of the
     // quote-wide rate. Old quotes stay unchanged.
@@ -146,7 +146,7 @@ class QuoteBuilder extends Component
         } else {
             $this->valid_until  = $this->thirtyDaysFromToday();
             $this->vat_rate     = (float) (auth()->user()->company?->default_vat_rate ?? 20);
-            $this->display_mode = auth()->user()->company?->default_display_mode ?? 'TTC';
+            $this->display_mode = auth()->user()->company?->default_display_mode ?? 'HT';
             if ($preselectedClientId) {
                 $this->client_id = $preselectedClientId;
             }
@@ -225,7 +225,7 @@ class QuoteBuilder extends Component
         $this->exchange_rate       = $quote->exchange_rate;
         $this->vat_rate            = (float) ($quote->vat_rate ?? 20);
         $this->per_option_vat      = (bool) ($quote->per_option_vat ?? false);
-        $this->display_mode        = $quote->display_mode ?? 'TTC';
+        $this->display_mode        = $quote->display_mode ?? 'HT';
         $this->internal_notes      = $quote->internal_notes ?? '';
         $this->terms_payment       = $quote->terms['payment']  ?? '';
         $this->terms_delivery      = $quote->terms['delivery'] ?? '';
