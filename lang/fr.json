@@ -1946,5 +1946,8 @@
     "No quote expiring": "Aucun devis à échéance",
     "Sent quotes with a validity date show up here so you can follow up before they lapse.": "Les devis envoyés avec une date de validité apparaissent ici pour que vous puissiez relancer avant qu’ils n’expirent.",
     "Nothing expires on this day.": "Rien n’expire ce jour-là.",
-    "Today": "Aujourd'hui"
+    "Today": "Aujourd'hui",
+    "more": "de plus",
+    "Expiring soon": "Bientôt expiré",
+    "Upcoming": "À venir"
 }

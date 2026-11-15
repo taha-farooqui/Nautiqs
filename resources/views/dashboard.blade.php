@@ -236,29 +236,111 @@
             </section>
         </div>
 
-        {{-- Top models + quick actions --}}
-        <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
-            <section class="rise {{ $card }} p-4 flex flex-col gap-2" style="--d: 6">
-                <div class="flex items-center justify-between gap-2">
-                    <h3 class="{{ $cardTitle }}">{{ __('Top quoted models') }}</h3>
-                    <span class="text-xs leading-5 text-nq-text-3">{{ $periods[$period] }}</span>
+        {{-- Expiry calendar (Google-style) + quick actions --}}
+        @php
+            $weekdays = collect(range(0, 6))->map(fn ($i) => \Illuminate\Support\Carbon::now()->startOfWeek()->addDays($i)->isoFormat('dd'));
+        @endphp
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+            <section class="rise xl:col-span-2 {{ $card }} p-4 flex flex-col gap-4" style="--d: 6"
+                x-data="expiryCalendar(@js($expiring), @js(app()->getLocale()))">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <h3 class="{{ $cardTitle }}">{{ __('Quote expiries') }}</h3>
+                    <div class="flex items-center gap-1">
+                        <button type="button" @click="prevMonth()" class="w-8 h-8 inline-flex items-center justify-center rounded-lg text-nq-text-2 hover:bg-nq-muted" aria-label="{{ __('Previous') }}"><i class="ph-bold ph-caret-left text-base"></i></button>
+                        <span class="min-w-[136px] text-center text-sm leading-[22px] font-medium text-nq-text capitalize" x-text="monthLabel()"></span>
+                        <button type="button" @click="nextMonth()" class="w-8 h-8 inline-flex items-center justify-center rounded-lg text-nq-text-2 hover:bg-nq-muted" aria-label="{{ __('Next') }}"><i class="ph-bold ph-caret-right text-base"></i></button>
+                        <button type="button" @click="goToday()" class="ml-1 h-8 px-2.5 rounded-lg border border-nq-border text-xs font-medium text-nq-text-2 hover:bg-nq-subtle">{{ __('Today') }}</button>
+                    </div>
                 </div>
-                <div>
-                    @forelse ($topModels as $i => $m)
-                        <div class="flex items-center gap-3 py-2">
-                            <span class="w-8 h-8 shrink-0 rounded-full text-xs font-semibold flex items-center justify-center {{ $i % 3 === 2 ? 'bg-nq-accent-bg text-nq-accent-text' : 'bg-nq-primary-bg text-primary-800' }}">{{ $initials($m['name']) }}</span>
-                            <div class="flex-1 min-w-0">
-                                <p class="text-sm leading-[22px] font-medium text-nq-text truncate">{{ $m['name'] }}</p>
-                                <p class="text-xs leading-5 text-nq-text-3 truncate">{{ $m['brand'] }}</p>
+
+                @if (collect($expiring)->isEmpty())
+                    <x-app.empty-state icon="ri-calendar-check-line" size="sm" :title="__('No quote expiring')"
+                        :message="__('Sent quotes with a validity date show up here so you can follow up before they lapse.')" />
+                @else
+                    {{-- Weekday header --}}
+                    <div class="grid grid-cols-7">
+                        @foreach ($weekdays as $wd)
+                            <div class="pb-2 text-center text-[11px] leading-4 font-medium text-nq-text-3 uppercase">{{ $wd }}</div>
+                        @endforeach
+                    </div>
+                    {{-- Month grid: bordered cells, event chips --}}
+                    <div class="grid grid-cols-7 border-l border-t border-nq-border-2 rounded-lg overflow-hidden">
+                        <template x-for="cell in cells()" :key="cell.key">
+                            <div class="min-h-[92px] border-r border-b border-nq-border-2 p-1.5 flex flex-col gap-1"
+                                :class="!cell.date ? 'bg-nq-subtle' : (cell.date === todayKey ? 'bg-nq-primary-bg/40' : 'bg-white')">
+                                <template x-if="cell.date">
+                                    <div class="flex flex-col gap-1">
+                                        <span class="self-start w-6 h-6 inline-flex items-center justify-center rounded-full text-xs leading-none"
+                                            :class="cell.date === todayKey ? 'bg-primary-800 text-white font-semibold' : 'text-nq-text-2'" x-text="cell.day"></span>
+                                        <div class="flex flex-col gap-1">
+                                            <template x-for="q in visibleEvents(cell.date)" :key="q.id">
+                                                <button type="button" @click="openEvent(q)"
+                                                    class="w-full text-left px-1.5 py-0.5 rounded text-[11px] leading-4 font-medium truncate transition" :class="chipClass(q.date)"
+                                                    x-text="q.boat"></button>
+                                            </template>
+                                            <template x-if="count(cell.date) > 3">
+                                                <button type="button" @click="openDay(cell.date)" class="px-1.5 text-left text-[11px] leading-4 text-nq-text-3 hover:text-nq-text"
+                                                    x-text="'+' + (count(cell.date) - 3) + ' {{ __('more') }}'"></button>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </template>
                             </div>
-                            <span class="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-nq-subtle border border-nq-border text-xs leading-5 font-medium text-nq-text-2 whitespace-nowrap"><i class="ph-bold ph-check text-xs"></i>{{ trans_choice('{1}:count quote|[2,*]:count quotes', $m['count'], ['count' => $m['count']]) }}</span>
+                        </template>
+                    </div>
+                @endif
+
+                {{-- Event / day modal (Google-style popup) --}}
+                <template x-teleport="body">
+                    <div x-show="open" x-cloak @keydown.escape.window="closeModal()" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        <div @click="closeModal()" class="absolute inset-0 bg-gray-900/40"></div>
+                        <div class="relative w-full max-w-sm bg-white rounded-2xl shadow-xl overflow-hidden" x-transition>
+                            {{-- Single event --}}
+                            <template x-if="event">
+                                <div>
+                                    <div class="h-1.5" :class="accentClass(event.date)"></div>
+                                    <div class="p-5 flex flex-col gap-4">
+                                        <div class="flex items-start justify-between gap-3">
+                                            <h4 class="text-lg leading-6 font-semibold text-nq-text" x-text="event.boat"></h4>
+                                            <button type="button" @click="closeModal()" class="w-8 h-8 shrink-0 inline-flex items-center justify-center rounded-lg text-nq-text-3 hover:bg-nq-muted hover:text-nq-text"><i class="ph-bold ph-x text-base"></i></button>
+                                        </div>
+                                        <div class="flex flex-col gap-2.5 text-sm leading-[22px]">
+                                            <div class="flex items-center gap-2.5 text-nq-text-2"><i class="ph-bold ph-calendar-blank text-base text-nq-text-3"></i>
+                                                <span class="capitalize" x-text="fullDate(event.date)"></span>
+                                                <span class="px-1.5 py-0.5 rounded-md border text-xs font-medium" :class="tagClass(event.date)" x-text="urgencyLabel(event.date)"></span></div>
+                                            <div class="flex items-center gap-2.5 text-nq-text-2"><i class="ph-bold ph-user text-base text-nq-text-3"></i><span x-text="event.client"></span></div>
+                                            <div class="flex items-center gap-2.5 text-nq-text-2"><i class="ph-bold ph-file-text text-base text-nq-text-3"></i><span x-text="event.number"></span></div>
+                                            <div class="flex items-center gap-2.5 text-nq-text-2"><i class="ph-bold ph-currency-eur text-base text-nq-text-3"></i><span class="font-medium text-nq-text" x-text="eur(event.amount)"></span></div>
+                                        </div>
+                                        <a :href="'{{ url('quotes') }}/' + event.id" class="h-10 inline-flex items-center justify-center gap-2 rounded-lg bg-primary-800 text-white text-sm font-medium hover:bg-nq-active transition-colors">{{ __('View quote') }} <i class="ph-bold ph-arrow-right text-base"></i></a>
+                                    </div>
+                                </div>
+                            </template>
+                            {{-- Day list (from "+N more") --}}
+                            <template x-if="dayDate">
+                                <div class="p-5 flex flex-col gap-3">
+                                    <div class="flex items-start justify-between gap-3">
+                                        <h4 class="text-base leading-6 font-semibold text-nq-text capitalize" x-text="fullDate(dayDate)"></h4>
+                                        <button type="button" @click="closeModal()" class="w-8 h-8 shrink-0 inline-flex items-center justify-center rounded-lg text-nq-text-3 hover:bg-nq-muted hover:text-nq-text"><i class="ph-bold ph-x text-base"></i></button>
+                                    </div>
+                                    <ul class="flex flex-col gap-1.5 max-h-72 overflow-y-auto">
+                                        <template x-for="q in (byDate[dayDate] || [])" :key="q.id">
+                                            <li>
+                                                <button type="button" @click="openEvent(q)" class="w-full text-left rounded-lg border border-nq-border px-3 py-2 hover:border-primary-800 transition-colors">
+                                                    <div class="flex items-center justify-between gap-2"><span class="text-sm leading-[22px] font-medium text-nq-text truncate" x-text="q.boat"></span><span class="text-xs leading-5 font-medium text-nq-text tabular-nums shrink-0" x-text="eur(q.amount)"></span></div>
+                                                    <div class="text-xs leading-5 text-nq-text-3 truncate"><span x-text="q.client"></span> · <span x-text="q.number"></span></div>
+                                                </button>
+                                            </li>
+                                        </template>
+                                    </ul>
+                                </div>
+                            </template>
                         </div>
-                    @empty
-                        <x-app.empty-state icon="ri-trophy-line" size="sm" :title="__('No quotes this month')" :message="__('Top models will appear here as you build quotes.')" />
-                    @endforelse
-                </div>
+                    </div>
+                </template>
             </section>
 
+            {{-- Quick actions --}}
             <section class="rise {{ $card }} p-4 flex flex-col gap-2" style="--d: 7">
                 <h3 class="{{ $cardTitle }}">{{ __('Quick actions') }}</h3>
                 <ul>
@@ -278,87 +360,8 @@
             </section>
         </div>
 
-        {{-- Quote expiries calendar --}}
-        @php
-            $weekdays = collect(range(0, 6))->map(fn ($i) => \Illuminate\Support\Carbon::now()->startOfWeek()->addDays($i)->isoFormat('dd'));
-        @endphp
-        <section class="rise {{ $card }} p-4 flex flex-col gap-4" style="--d: 8"
-            x-data="expiryCalendar(@js($expiring), @js(app()->getLocale()))">
-            <div class="flex flex-wrap items-center justify-between gap-2">
-                <h3 class="{{ $cardTitle }}">{{ __('Quote expiries') }}</h3>
-                <div class="flex items-center gap-3 text-xs leading-5 text-nq-text-3">
-                    <span class="inline-flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-nq-error"></span>{{ __('Overdue') }}</span>
-                    <span class="inline-flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-nq-chart3"></span>{{ __('Soon') }}</span>
-                    <span class="inline-flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-primary-800"></span>{{ __('Later') }}</span>
-                </div>
-            </div>
-
-            @if (collect($expiring)->isEmpty())
-                <x-app.empty-state icon="ri-calendar-check-line" size="sm" :title="__('No quote expiring')"
-                    :message="__('Sent quotes with a validity date show up here so you can follow up before they lapse.')" />
-            @else
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                {{-- Month grid --}}
-                <div class="lg:col-span-2 flex flex-col gap-3">
-                    <div class="flex items-center justify-between">
-                        <button type="button" @click="prevMonth()" class="w-8 h-8 inline-flex items-center justify-center rounded-lg text-nq-text-2 hover:bg-nq-muted" aria-label="{{ __('Previous') }}"><i class="ph-bold ph-caret-left text-base"></i></button>
-                        <div class="flex items-center gap-2">
-                            <span class="text-sm leading-[22px] font-medium text-nq-text capitalize" x-text="monthLabel()"></span>
-                            <button type="button" @click="goToday()" class="h-7 px-2 rounded-lg border border-nq-border text-xs font-medium text-nq-text-2 hover:bg-nq-subtle">{{ __('Today') }}</button>
-                        </div>
-                        <button type="button" @click="nextMonth()" class="w-8 h-8 inline-flex items-center justify-center rounded-lg text-nq-text-2 hover:bg-nq-muted" aria-label="{{ __('Next') }}"><i class="ph-bold ph-caret-right text-base"></i></button>
-                    </div>
-                    <div class="grid grid-cols-7 gap-1">
-                        @foreach ($weekdays as $wd)
-                            <div class="h-7 flex items-center justify-center text-[11px] leading-4 font-medium text-nq-text-3 uppercase">{{ $wd }}</div>
-                        @endforeach
-                        <template x-for="cell in cells()" :key="cell.key">
-                            <div>
-                                <template x-if="cell.date">
-                                    <button type="button" @click="select(cell.date)"
-                                        class="w-full aspect-square rounded-lg flex flex-col items-center justify-center gap-0.5 border transition-colors"
-                                        :class="cellClass(cell.date)">
-                                        <span class="text-xs leading-none" x-text="cell.day"></span>
-                                        <template x-if="count(cell.date) > 0">
-                                            <span class="min-w-[16px] h-[16px] px-1 rounded-full text-white text-[10px] leading-none font-medium inline-flex items-center justify-center" :class="dotClass(cell.date)" x-text="count(cell.date)"></span>
-                                        </template>
-                                    </button>
-                                </template>
-                                <template x-if="!cell.date"><div class="aspect-square"></div></template>
-                            </div>
-                        </template>
-                    </div>
-                </div>
-
-                {{-- Selected day's quotes --}}
-                <div class="flex flex-col gap-2 rounded-[10px] bg-nq-subtle p-3">
-                    <p class="text-sm leading-[22px] font-medium text-nq-text" x-text="selectedLabel()"></p>
-                    <template x-if="selectedQuotes().length === 0">
-                        <p class="text-xs leading-5 text-nq-text-3">{{ __('Nothing expires on this day.') }}</p>
-                    </template>
-                    <ul class="flex flex-col gap-1.5">
-                        <template x-for="q in selectedQuotes()" :key="q.id">
-                            <li>
-                                <a :href="'{{ url('quotes') }}/' + q.id" class="block rounded-lg border border-nq-border bg-white px-3 py-2 hover:border-primary-800 transition-colors">
-                                    <div class="flex items-center justify-between gap-2">
-                                        <span class="text-sm leading-[22px] font-medium text-nq-text truncate" x-text="q.boat"></span>
-                                        <span class="text-xs leading-5 font-medium text-nq-text tabular-nums shrink-0" x-text="eur(q.amount)"></span>
-                                    </div>
-                                    <div class="flex items-center justify-between gap-2">
-                                        <span class="text-xs leading-5 text-nq-text-3 truncate" x-text="q.client"></span>
-                                        <span class="text-xs leading-5 text-nq-text-3 shrink-0" x-text="q.number"></span>
-                                    </div>
-                                </a>
-                            </li>
-                        </template>
-                    </ul>
-                </div>
-            </div>
-            @endif
-        </section>
-
         {{-- Recent quotes --}}
-        <section class="rise {{ $card }} overflow-hidden" style="--d: 9">
+        <section class="rise {{ $card }} overflow-hidden" style="--d: 8">
             <div class="p-4 flex items-center justify-between gap-2">
                 <h3 class="{{ $cardTitle }}">{{ __('Recent quotes') }}</h3>
                 <a href="{{ route('quotes.index') }}" class="{{ $link }}">{{ __('View all') }} <i class="ph-bold ph-arrow-right text-base"></i></a>
@@ -432,8 +435,8 @@
 
     @push('scripts')
         <script>
-            // Quote-expiry calendar. Monday-first month grid; each day shows how
-            // many sent quotes expire then, coloured by urgency (overdue / soon).
+            // Quote-expiry calendar, Google-style. Monday-first month grid with
+            // event chips per day (coloured by urgency); click a chip for a modal.
             function expiryCalendar(quotes, locale) {
                 const loc = locale === 'fr' ? 'fr-FR' : 'en-US';
                 const key = (y, m, d) => `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
@@ -448,7 +451,8 @@
                 const [iy, im] = initial.split('-').map(Number);
                 return {
                     byDate, todayKey, soonKey, loc,
-                    viewYear: iy, viewMonth: im - 1, selected: initial,
+                    viewYear: iy, viewMonth: im - 1,
+                    open: false, event: null, dayDate: null,
                     cells() {
                         const first = new Date(this.viewYear, this.viewMonth, 1);
                         const offset = (first.getDay() + 6) % 7; // Monday-first
@@ -456,24 +460,25 @@
                         const out = [];
                         for (let i = 0; i < offset; i++) out.push({ key: 'b' + i, date: null });
                         for (let d = 1; d <= days; d++) out.push({ key: 'd' + d, day: d, date: key(this.viewYear, this.viewMonth, d) });
+                        // Pad the tail so the last row is complete (full Google-style grid).
+                        while (out.length % 7 !== 0) out.push({ key: 't' + out.length, date: null });
                         return out;
                     },
                     count(date) { return (this.byDate[date] || []).length; },
+                    visibleEvents(date) { return (this.byDate[date] || []).slice(0, 3); },
                     urgency(date) { return date < this.todayKey ? 'over' : (date <= this.soonKey ? 'soon' : 'later'); },
-                    cellClass(date) {
-                        if (date === this.selected) return 'border-primary-800 bg-nq-primary-bg text-nq-text font-medium' + (date === this.todayKey ? ' ring-1 ring-primary-800' : '');
-                        let c = this.count(date) > 0 ? 'border-nq-border hover:bg-nq-subtle text-nq-text font-medium' : 'border-nq-border-2 hover:bg-nq-subtle text-nq-text-2';
-                        if (date === this.todayKey) c += ' ring-1 ring-primary-800';
-                        return c;
-                    },
-                    dotClass(date) { const u = this.urgency(date); return u === 'over' ? 'bg-nq-error' : u === 'soon' ? 'bg-nq-chart3' : 'bg-primary-800'; },
+                    chipClass(date) { const u = this.urgency(date); return u === 'over' ? 'bg-nq-error-bg text-nq-error-text hover:brightness-95' : u === 'soon' ? 'bg-nq-warning-bg text-[#8a5a12] hover:brightness-95' : 'bg-nq-primary-bg text-primary-800 hover:brightness-95'; },
+                    accentClass(date) { const u = this.urgency(date); return u === 'over' ? 'bg-nq-error' : u === 'soon' ? 'bg-nq-chart3' : 'bg-primary-800'; },
+                    tagClass(date) { const u = this.urgency(date); return u === 'over' ? 'bg-nq-error-bg border-nq-error text-nq-error-text' : u === 'soon' ? 'bg-nq-warning-bg border-[#fbe5bd] text-[#8a5a12]' : 'bg-nq-primary-bg border-[#d9e6ef] text-primary-800'; },
+                    urgencyLabel(date) { const u = this.urgency(date); return u === 'over' ? @js(__('Overdue')) : u === 'soon' ? @js(__('Expiring soon')) : @js(__('Upcoming')); },
                     monthLabel() { return new Date(this.viewYear, this.viewMonth, 1).toLocaleDateString(this.loc, { month: 'long', year: 'numeric' }); },
-                    selectedLabel() { const [y, m, d] = this.selected.split('-').map(Number); return new Date(y, m - 1, d).toLocaleDateString(this.loc, { weekday: 'long', day: 'numeric', month: 'long' }); },
-                    selectedQuotes() { return this.byDate[this.selected] || []; },
-                    select(date) { this.selected = date; },
+                    fullDate(date) { const [y, m, d] = date.split('-').map(Number); return new Date(y, m - 1, d).toLocaleDateString(this.loc, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }); },
+                    openEvent(q) { this.event = q; this.dayDate = null; this.open = true; },
+                    openDay(date) { this.dayDate = date; this.event = null; this.open = true; },
+                    closeModal() { this.open = false; this.event = null; this.dayDate = null; },
                     prevMonth() { if (--this.viewMonth < 0) { this.viewMonth = 11; this.viewYear--; } },
                     nextMonth() { if (++this.viewMonth > 11) { this.viewMonth = 0; this.viewYear++; } },
-                    goToday() { const n = new Date(); this.viewYear = n.getFullYear(); this.viewMonth = n.getMonth(); this.selected = this.todayKey; },
+                    goToday() { const n = new Date(); this.viewYear = n.getFullYear(); this.viewMonth = n.getMonth(); },
                     eur(v) { return new Intl.NumberFormat(this.loc, { maximumFractionDigits: 0 }).format(Math.round(v)) + ' €'; },
                 };
             }
