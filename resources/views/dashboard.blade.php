@@ -511,8 +511,8 @@
                     new Chart(el, {
                         type: 'bar',
                         data: { labels: trend.map(d => d.label), datasets: [{ label: @js(__('Quotes')), data,
-                            backgroundColor: data.map((_, i) => i === last ? '#0e4f79' : pattern),
-                            hoverBackgroundColor: data.map((_, i) => i === last ? '#093a5c' : '#d4d4d9'),
+                            backgroundColor: data.map((_, i) => i === last ? '#0e4f79' : '#9cbad0'),
+                            hoverBackgroundColor: data.map((_, i) => i === last ? '#093a5c' : '#7fa3c4'),
                             borderRadius: 8, borderSkipped: false, maxBarThickness: 84, categoryPercentage: 0.8, barPercentage: 0.95 }] },
                         options: {
                             responsive: true, maintainAspectRatio: false, layout: { padding: { top: 38 } },
