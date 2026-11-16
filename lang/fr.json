@@ -1972,5 +1972,8 @@
     "Unnamed lead": "Prospect sans nom",
     "{0}no lead|{1}:count lead|[2,*]:count leads": "{0}aucun prospect|{1}:count prospect|[2,*]:count prospects",
     "Emails": "E-mails",
-    "How quote emails behave when you send them.": "Comportement des e-mails de devis à l’envoi."
+    "How quote emails behave when you send them.": "Comportement des e-mails de devis à l’envoi.",
+    "Highlight": "Mettre en avant",
+    "Remove highlight": "Retirer la mise en avant",
+    "Try another search or filter.": "Essayez une autre recherche ou un autre filtre."
 }

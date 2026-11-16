@@ -41,11 +41,13 @@ class SalesLead extends Model
         'phone',
         'note',                 // free text: what they want, context
         'status',               // new | contacted | qualified | lost
+        'is_flagged',           // starred/highlighted by the salesperson
         'converted_client_id',  // set when turned into a Client
         'converted_at',
     ];
 
     protected $casts = [
+        'is_flagged'   => 'boolean',
         'converted_at' => 'datetime',
         'first_name'   => EncryptedPii::class,
         'last_name'    => EncryptedPii::class,

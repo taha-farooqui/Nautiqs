@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Client;
 use App\Models\SalesLead;
+use App\Services\Xlsx;
 use App\Support\Pii\Search;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 /**
  * Sales leads: a lightweight list of potential clients a salesperson is
@@ -17,17 +19,63 @@ class SalesLeadController extends Controller
 {
     public function index(Request $request)
     {
-        $q = trim((string) $request->query('q', ''));
+        $q      = trim((string) $request->query('q', ''));
+        $status = in_array($request->query('status'), SalesLead::STATUSES, true) ? $request->query('status') : null;
+
+        $all = SalesLead::whereNull('converted_at')->get();
+
+        // Pipeline counters for the filter chips.
+        $counts = ['all' => $all->count()] + collect(SalesLead::STATUSES)
+            ->mapWithKeys(fn ($s) => [$s => $all->where('status', $s)->count()])->all();
 
         $leads = Search::filter(
-            SalesLead::whereNull('converted_at')->get(),
+            $status ? $all->where('status', $status)->values() : $all,
+            $q,
+            fn (SalesLead $l) => [$l->first_name, $l->last_name, $l->company_name, $l->email, $l->phone],
+        )
+            // Flagged leads float to the top, then most recent first.
+            ->sortByDesc(fn (SalesLead $l) => [$l->is_flagged ? 1 : 0, (string) ($l->created_at ?? '')])
+            ->values();
+
+        $leads = Search::paginate($leads, $request, 20);
+
+        return view('leads.index', ['leads' => $leads, 'q' => $q, 'status' => $status, 'counts' => $counts]);
+    }
+
+    /** Star / unstar a lead to highlight it at the top of the list. */
+    public function flag(string $id)
+    {
+        $lead = SalesLead::findOrFail($id);
+        $lead->update(['is_flagged' => ! $lead->is_flagged]);
+
+        return back();
+    }
+
+    /** Export the (optionally filtered) leads as an Excel file. */
+    public function export(Request $request)
+    {
+        $q      = trim((string) $request->query('q', ''));
+        $status = in_array($request->query('status'), SalesLead::STATUSES, true) ? $request->query('status') : null;
+        $labels = SalesLead::statusLabels();
+
+        $leads = Search::filter(
+            SalesLead::whereNull('converted_at')->get()->when($status, fn ($c) => $c->where('status', $status)->values()),
             $q,
             fn (SalesLead $l) => [$l->first_name, $l->last_name, $l->company_name, $l->email, $l->phone],
         )->sortByDesc('created_at')->values();
 
-        $leads = Search::paginate($leads, $request, 20);
+        $path = Xlsx::write(['PROSPECTS' => [
+            'headers' => [__('First name'), __('Last name'), __('Company'), __('Email'), __('Phone'), __('Status'), __('Note'), __('Added')],
+            'rows' => $leads->map(fn (SalesLead $l) => [
+                $l->first_name, $l->last_name, $l->company_name, $l->email, $l->phone,
+                $labels[$l->status] ?? $l->status, $l->note, $l->created_at?->format('d/m/Y'),
+            ])->all(),
+            'widths' => [18, 18, 22, 26, 16, 14, 40, 12],
+        ]], 'nautiqs-prospects-');
 
-        return view('leads.index', ['leads' => $leads, 'q' => $q]);
+        return response()->download($path, 'nautiqs-prospects-' . now()->format('Y-m-d') . '.xlsx', [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ])->deleteFileAfterSend(true);
     }
 
     public function create()

@@ -111,7 +111,9 @@ Route::middleware(['auth', 'verified', 'maintenance', 'brand.contain', 'managed.
     Route::resource('clients', ClientController::class);
 
     // Sales leads — potential clients a salesperson tracks before conversion.
+    Route::get('leads/export', [\App\Http\Controllers\SalesLeadController::class, 'export'])->name('leads.export');
     Route::post('leads/{id}/convert', [\App\Http\Controllers\SalesLeadController::class, 'convert'])->name('leads.convert');
+    Route::post('leads/{id}/flag', [\App\Http\Controllers\SalesLeadController::class, 'flag'])->name('leads.flag');
     Route::resource('leads', \App\Http\Controllers\SalesLeadController::class)->except(['show']);
 
     // Quotes — §11, §16.2
