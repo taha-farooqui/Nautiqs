@@ -763,22 +763,16 @@
                         contenteditable="true"
                         class="w-full max-h-48 overflow-y-auto rounded-lg border border-gray-300 focus:border-primary-800 focus:ring-primary-800 focus:outline-none px-3 py-2 text-sm bg-white prose prose-sm max-w-none">{!! $emailBodyHtml ?? '' !!}</div>
                     <input type="hidden" name="message" x-ref="messageInput" value="{{ $emailBodyHtml ?? '' }}" />
-                    <p class="text-xs text-gray-500 mt-1">
-                        {{ __('Edit visually — formatting and the logo are preserved. Variables already substituted from the saved template.') }}
-                    </p>
                 </div>
 
                 {{-- Per-quote open tracking — only when the dealership enabled it in
                      settings. GDPR: tick only if the client agreed to be tracked. --}}
                 @if ($quote->company?->track_email_opens && ($sendType ?? 'quote') !== 'order_confirmation')
-                    <label class="flex items-start gap-3 rounded-lg border border-gray-200 p-3 cursor-pointer hover:border-primary-300 transition">
+                    <label class="flex items-center gap-3 rounded-lg border border-gray-200 p-3 cursor-pointer hover:border-primary-300 transition">
                         <input type="hidden" name="track_opens" value="0" />
                         <input type="checkbox" name="track_opens" value="1" @checked(old('track_opens', $quote->track_opens))
-                            class="mt-0.5 rounded border-gray-300 text-primary-800 focus:ring-primary-800" />
-                        <span>
-                            <span class="block text-sm font-medium text-gray-700">{{ __('Track when the client opens this email') }}</span>
-                            <span class="block text-xs text-gray-500 mt-0.5">{{ __('Check this if you want to track whether the client has opened the quotation.') }}</span>
-                        </span>
+                            class="rounded border-gray-300 text-primary-800 focus:ring-primary-800" />
+                        <span class="text-sm font-medium text-gray-700">{{ __('Track when the client opens this email') }}</span>
                     </label>
                 @endif
 
