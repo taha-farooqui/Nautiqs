@@ -93,9 +93,8 @@
                                     $flagged = (bool) $lead->is_flagged;
                                 @endphp
                                 <tr class="group relative {{ $flagged ? 'bg-nq-warning-bg/40' : 'hover:bg-nq-subtle' }}">
-                                    {{-- Status left accent + flag --}}
-                                    <td class="h-16 pl-3 relative {{ $rowBorder }}">
-                                        <span class="absolute left-0 top-2 bottom-2 w-1 rounded-r {{ $m[2] }}"></span>
+                                    {{-- Flag / highlight --}}
+                                    <td class="h-16 pl-3 {{ $rowBorder }}">
                                         <form method="POST" action="{{ route('leads.flag', $lead->_id) }}">
                                             @csrf
                                             <button type="submit" class="{{ $iconBtn }} {{ $flagged ? 'text-nq-chart3' : 'text-nq-border-strong hover:text-nq-text-3' }}" title="{{ $flagged ? __('Remove highlight') : __('Highlight') }}"><i class="ph-bold ph-star text-base"></i></button>
