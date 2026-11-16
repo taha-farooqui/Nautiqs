@@ -276,7 +276,7 @@
                                             <template x-for="q in visibleEvents(cell.date)" :key="q.id">
                                                 <button type="button" @click="openEvent(q)"
                                                     class="w-full text-left px-1.5 py-0.5 rounded text-[11px] leading-4 font-medium truncate transition" :class="chipClass(q.date)"
-                                                    x-text="q.boat"></button>
+                                                    x-text="q.client"></button>
                                             </template>
                                             <template x-if="count(cell.date) > 3">
                                                 <button type="button" @click="openDay(cell.date)" class="px-1.5 text-left text-[11px] leading-4 text-nq-text-3 hover:text-nq-text"
@@ -301,14 +301,14 @@
                                     <div class="h-1.5" :class="accentClass(event.date)"></div>
                                     <div class="p-5 flex flex-col gap-4">
                                         <div class="flex items-start justify-between gap-3">
-                                            <h4 class="text-lg leading-6 font-semibold text-nq-text" x-text="event.boat"></h4>
+                                            <h4 class="text-lg leading-6 font-semibold text-nq-text" x-text="event.client"></h4>
                                             <button type="button" @click="closeModal()" class="w-8 h-8 shrink-0 inline-flex items-center justify-center rounded-lg text-nq-text-3 hover:bg-nq-muted hover:text-nq-text"><i class="ph-bold ph-x text-base"></i></button>
                                         </div>
                                         <div class="flex flex-col gap-2.5 text-sm leading-[22px]">
                                             <div class="flex items-center gap-2.5 text-nq-text-2"><i class="ph-bold ph-calendar-blank text-base text-nq-text-3"></i>
                                                 <span class="capitalize" x-text="fullDate(event.date)"></span>
                                                 <span class="px-1.5 py-0.5 rounded-md border text-xs font-medium" :class="tagClass(event.date)" x-text="urgencyLabel(event.date)"></span></div>
-                                            <div class="flex items-center gap-2.5 text-nq-text-2"><i class="ph-bold ph-user text-base text-nq-text-3"></i><span x-text="event.client"></span></div>
+                                            <div class="flex items-center gap-2.5 text-nq-text-2"><i class="ph-bold ph-sailboat text-base text-nq-text-3"></i><span x-text="event.boat"></span></div>
                                             <div class="flex items-center gap-2.5 text-nq-text-2"><i class="ph-bold ph-file-text text-base text-nq-text-3"></i><span x-text="event.number"></span></div>
                                             <div class="flex items-center gap-2.5 text-nq-text-2"><i class="ph-bold ph-currency-eur text-base text-nq-text-3"></i><span class="font-medium text-nq-text" x-text="eur(event.amount)"></span></div>
                                         </div>
@@ -327,8 +327,8 @@
                                         <template x-for="q in (byDate[dayDate] || [])" :key="q.id">
                                             <li>
                                                 <button type="button" @click="openEvent(q)" class="w-full text-left rounded-lg border border-nq-border px-3 py-2 hover:border-primary-800 transition-colors">
-                                                    <div class="flex items-center justify-between gap-2"><span class="text-sm leading-[22px] font-medium text-nq-text truncate" x-text="q.boat"></span><span class="text-xs leading-5 font-medium text-nq-text tabular-nums shrink-0" x-text="eur(q.amount)"></span></div>
-                                                    <div class="text-xs leading-5 text-nq-text-3 truncate"><span x-text="q.client"></span> · <span x-text="q.number"></span></div>
+                                                    <div class="flex items-center justify-between gap-2"><span class="text-sm leading-[22px] font-medium text-nq-text truncate" x-text="q.client"></span><span class="text-xs leading-5 font-medium text-nq-text tabular-nums shrink-0" x-text="eur(q.amount)"></span></div>
+                                                    <div class="text-xs leading-5 text-nq-text-3 truncate"><span x-text="q.boat"></span> · <span x-text="q.number"></span></div>
                                                 </button>
                                             </li>
                                         </template>
