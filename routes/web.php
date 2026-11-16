@@ -110,6 +110,10 @@ Route::middleware(['auth', 'verified', 'maintenance', 'brand.contain', 'managed.
     // Clients — §16.1
     Route::resource('clients', ClientController::class);
 
+    // Sales leads — potential clients a salesperson tracks before conversion.
+    Route::post('leads/{id}/convert', [\App\Http\Controllers\SalesLeadController::class, 'convert'])->name('leads.convert');
+    Route::resource('leads', \App\Http\Controllers\SalesLeadController::class)->except(['show']);
+
     // Quotes — §11, §16.2
     Route::get('/quotes',                   [QuoteController::class, 'index'])->name('quotes.index');
     Route::get('/quotes/create',            [QuoteController::class, 'create'])->name('quotes.create');
