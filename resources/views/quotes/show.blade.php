@@ -777,7 +777,7 @@
                             class="mt-0.5 rounded border-gray-300 text-primary-800 focus:ring-primary-800" />
                         <span>
                             <span class="block text-sm font-medium text-gray-700">{{ __('Track when the client opens this email') }}</span>
-                            <span class="block text-xs text-gray-500 mt-0.5">{{ __('Only tick this if the client has agreed to it (GDPR). Leave off and no open is tracked for this quote.') }}</span>
+                            <span class="block text-xs text-gray-500 mt-0.5">{{ __('Check this if you want to track whether the client has opened the quotation.') }}</span>
                         </span>
                     </label>
                 @endif

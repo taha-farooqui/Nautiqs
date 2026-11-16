@@ -1977,5 +1977,5 @@
     "Remove highlight": "Retirer la mise en avant",
     "Try another search or filter.": "Essayez une autre recherche ou un autre filtre.",
     "Track when the client opens this email": "Suivre l’ouverture de cet e-mail par le client",
-    "Only tick this if the client has agreed to it (GDPR). Leave off and no open is tracked for this quote.": "Ne cochez que si le client a donné son accord (RGPD). Laissez décoché et aucune ouverture n’est suivie pour ce devis."
+    "Check this if you want to track whether the client has opened the quotation.": "Cochez pour suivre si le client a ouvert le devis."
 }
