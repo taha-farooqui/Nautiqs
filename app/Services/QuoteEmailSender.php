@@ -66,27 +66,32 @@ class QuoteEmailSender
         $subject  = filled($overrides['subject'] ?? null) ? $overrides['subject'] : $rendered['subject'];
         $bodyHtml = filled($overrides['body'] ?? null)    ? $overrides['body']    : $rendered['body'];
 
-        // Email open-tracking pixel. Mint a per-quote token on first send and
-        // re-use it for every follow-up so the open-count keeps accumulating
-        // against the same quote. EMAIL_TRACKING_BASE_URL can override the
-        // route host so local test sends still emit public URLs.
-        $trackingToken = $quote->tracking_token;
-        if (empty($trackingToken)) {
-            $trackingToken = Str::random(40);
-            $quote->update(['tracking_token' => $trackingToken]);
+        // Email open-tracking pixel — opt-in per company (Company settings).
+        // When off, no pixel is embedded and opens are never tracked.
+        if ($company->track_email_opens) {
+            // Mint a per-quote token on first send and re-use it for every
+            // follow-up so the open-count keeps accumulating against the same
+            // quote. EMAIL_TRACKING_BASE_URL can override the route host so
+            // local test sends still emit public URLs.
+            $trackingToken = $quote->tracking_token;
+            if (empty($trackingToken)) {
+                $trackingToken = Str::random(40);
+                $quote->update(['tracking_token' => $trackingToken]);
+            }
+            $trackingBase = rtrim(config('app.tracking_base_url') ?: '', '/');
+            $pixelUrl = $trackingBase !== ''
+                ? $trackingBase . '/e/p/' . $trackingToken
+                : route('email.pixel', $trackingToken);
+
+            // Cache-buster, unique per SEND. Gmail/Outlook proxy and cache
+            // remote images by URL, so without this a follow-up re-using the
+            // quote's tracking token could be served from the cached copy of
+            // the first email and never register an open. The controller
+            // ignores the param.
+            $pixelUrl .= (str_contains($pixelUrl, '?') ? '&' : '?') . 's=' . Str::random(10);
+
+            $bodyHtml .= '<img src="' . e($pixelUrl) . '" width="1" height="1" alt="" style="display:block;width:1px;height:1px;border:0;" />';
         }
-        $trackingBase = rtrim(config('app.tracking_base_url') ?: '', '/');
-        $pixelUrl = $trackingBase !== ''
-            ? $trackingBase . '/e/p/' . $trackingToken
-            : route('email.pixel', $trackingToken);
-
-        // Cache-buster, unique per SEND. Gmail/Outlook proxy and cache remote
-        // images by URL, so without this a follow-up re-using the quote's
-        // tracking token could be served from the cached copy of the first
-        // email and never register an open. The controller ignores the param.
-        $pixelUrl .= (str_contains($pixelUrl, '?') ? '&' : '?') . 's=' . Str::random(10);
-
-        $bodyHtml .= '<img src="' . e($pixelUrl) . '" width="1" height="1" alt="" style="display:block;width:1px;height:1px;border:0;" />';
 
         // Order-confirmation emails attach the BC PDF; everything else
         // (quote + follow-up) attaches the quote PDF.

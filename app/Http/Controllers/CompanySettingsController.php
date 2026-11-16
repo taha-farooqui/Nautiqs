@@ -44,11 +44,8 @@ class CompanySettingsController extends Controller
             'address'           => ['nullable', 'string', 'max:500'],
             'logo'              => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:2048'],
             'terms_pdf'         => ['nullable', 'file', 'mimes:pdf', 'max:' . Company::TERMS_MAX_KB],
-            // §17.2
-            'salesperson_name'  => ['nullable', 'string', 'max:100'],
-            'salesperson_phone' => ['nullable', 'string', 'max:30'],
-            'salesperson_email' => ['nullable', 'email', 'max:150'],
             // §17.3
+            'track_email_opens'    => ['nullable', 'boolean'],
             'default_vat_rate'     => ['required', 'numeric', 'min:0', 'max:100'],
             'default_margin_pct'   => ['required', 'numeric', 'min:0', 'max:100'],
             'default_display_mode' => ['required', 'in:HT,TTC'],
@@ -104,6 +101,9 @@ class CompanySettingsController extends Controller
         if (($validated['follow_up_enabled'] ?? false) && ! $company->follow_up_enabled) {
             $validated['follow_up_enabled_at'] = now();
         }
+
+        // Checkbox: absent when unchecked, so set it explicitly.
+        $validated['track_email_opens'] = $request->boolean('track_email_opens');
 
         $company->update($validated);
 

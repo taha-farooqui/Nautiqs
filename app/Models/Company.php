@@ -32,6 +32,7 @@ class Company extends Model
         'default_vat_rate',      // e.g. 20.0
         'default_margin_pct',    // fallback margin
         'default_display_mode',  // HT | TTC
+        'track_email_opens',     // opt-in: embed the open-tracking pixel in quote emails
         'timezone',              // IANA tz, e.g. Europe/Paris — overrides app TZ for date display
 
         // §17.4 Margin Presets
@@ -65,6 +66,7 @@ class Company extends Model
         'default_margin_pct'    => 'float',
         'margin_presets'        => 'array',
         'onboarded_at'          => 'datetime',
+        'track_email_opens'     => 'boolean',
         'follow_up_enabled'     => 'boolean',
         'follow_up_delay_value' => 'integer',
         'follow_up_enabled_at'  => 'datetime',

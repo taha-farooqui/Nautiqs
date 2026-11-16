@@ -10,7 +10,6 @@
         // declared tabs below.
         $errorMap = [
             'profile'  => ['name','legal_form','siren','vat_number','address','logo'],
-            'sales'    => ['salesperson_name','salesperson_phone','salesperson_email'],
             'defaults' => ['default_vat_rate','default_margin_pct','default_display_mode','timezone'],
             'margins'  => ['margin_presets.hull','margin_presets.engine','margin_presets.options','margin_presets.custom_items'],
             'followup' => ['follow_up_enabled','follow_up_delay_value','follow_up_delay_unit','follow_up_condition'],
@@ -35,11 +34,6 @@
                 :class="tab === 'profile' ? 'border-primary-800 text-primary-900' : 'border-transparent text-gray-500 hover:text-gray-900'"
                 class="px-4 py-2.5 text-sm font-semibold border-b-2 transition whitespace-nowrap">
                 <i class="ri-building-line"></i> {{ __('Profile') }}
-            </button>
-            <button type="button" @click="tab = 'sales'"
-                :class="tab === 'sales' ? 'border-primary-800 text-primary-900' : 'border-transparent text-gray-500 hover:text-gray-900'"
-                class="px-4 py-2.5 text-sm font-semibold border-b-2 transition whitespace-nowrap">
-                <i class="ri-user-star-line"></i> {{ __('Salesperson') }}
             </button>
             <button type="button" @click="tab = 'defaults'"
                 :class="tab === 'defaults' ? 'border-primary-800 text-primary-900' : 'border-transparent text-gray-500 hover:text-gray-900'"
@@ -128,29 +122,6 @@
             </div>
         </section>
 
-        {{-- ============================== SALESPERSON ============================== --}}
-        <section x-show="tab === 'sales'" x-cloak class="bg-white rounded-2xl border border-gray-200 p-6">
-            <h3 class="font-semibold text-gray-900 mb-1">{{ __('Salesperson') }}</h3>
-            <p class="text-xs text-gray-500 mb-4">{{ __('Appears in PDF header and email signature.') }}</p>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Name') }}</label>
-                    <input type="text" name="salesperson_name" value="{{ old('salesperson_name', $company->salesperson_name) }}"
-                        class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Phone') }}</label>
-                    <input type="tel" name="salesperson_phone" value="{{ old('salesperson_phone', $company->salesperson_phone) }}"
-                        class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Email') }}</label>
-                    <input type="email" name="salesperson_email" value="{{ old('salesperson_email', $company->salesperson_email) }}"
-                        class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />
-                </div>
-            </div>
-        </section>
-
         {{-- ============================== DEFAULTS ============================== --}}
         <section x-show="tab === 'defaults'" x-cloak class="bg-white rounded-2xl border border-gray-200 p-6">
             <h3 class="font-semibold text-gray-900 mb-1">{{ __('Defaults') }}</h3>
@@ -235,6 +206,19 @@
                 <p class="text-xs text-gray-500 mt-1">
                     {{ __('Read-only. Fetched automatically from a live API (European Central Bank daily rates) and used to convert USD prices to EUR in quotes.') }}
                 </p>
+            </div>
+
+            {{-- Email open tracking — opt-in. Off = no pixel, no open tracking. --}}
+            <div class="mt-6 pt-5 border-t border-gray-100">
+                <label class="flex items-start gap-3 cursor-pointer">
+                    <input type="hidden" name="track_email_opens" value="0" />
+                    <input type="checkbox" name="track_email_opens" value="1" @checked(old('track_email_opens', $company->track_email_opens))
+                        class="mt-0.5 rounded border-gray-300 text-primary-800 focus:ring-primary-800" />
+                    <span>
+                        <span class="block text-sm font-medium text-gray-700">{{ __('Track email opens') }}</span>
+                        <span class="block text-xs text-gray-500 mt-0.5">{{ __('Adds an invisible pixel to quote emails to count when the client opens them. Off by default — when off, no opens are tracked.') }}</span>
+                    </span>
+                </label>
             </div>
         </section>
 

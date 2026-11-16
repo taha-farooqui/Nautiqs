@@ -1949,5 +1949,7 @@
     "Today": "Aujourd'hui",
     "more": "de plus",
     "Expiring soon": "Bientôt expiré",
-    "Upcoming": "À venir"
+    "Upcoming": "À venir",
+    "Track email opens": "Suivre l’ouverture des e-mails",
+    "Adds an invisible pixel to quote emails to count when the client opens them. Off by default — when off, no opens are tracked.": "Ajoute un pixel invisible aux e-mails de devis pour compter les ouvertures du client. Désactivé par défaut : aucune ouverture n’est suivie lorsqu’il est désactivé."
 }
