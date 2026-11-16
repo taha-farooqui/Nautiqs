@@ -66,9 +66,9 @@ class QuoteEmailSender
         $subject  = filled($overrides['subject'] ?? null) ? $overrides['subject'] : $rendered['subject'];
         $bodyHtml = filled($overrides['body'] ?? null)    ? $overrides['body']    : $rendered['body'];
 
-        // Email open-tracking pixel — opt-in per company (Company settings).
-        // When off, no pixel is embedded and opens are never tracked.
-        if ($company->track_email_opens) {
+        // Email open-tracking pixel. Needs the dealership to have tracking on
+        // (Company settings) AND this quote opted in (GDPR: per-client consent).
+        if ($company->track_email_opens && $quote->track_opens) {
             // Mint a per-quote token on first send and re-use it for every
             // follow-up so the open-count keeps accumulating against the same
             // quote. EMAIL_TRACKING_BASE_URL can override the route host so

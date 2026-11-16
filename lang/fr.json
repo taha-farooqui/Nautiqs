@@ -1975,5 +1975,7 @@
     "How quote emails behave when you send them.": "Comportement des e-mails de devis à l’envoi.",
     "Highlight": "Mettre en avant",
     "Remove highlight": "Retirer la mise en avant",
-    "Try another search or filter.": "Essayez une autre recherche ou un autre filtre."
+    "Try another search or filter.": "Essayez une autre recherche ou un autre filtre.",
+    "Track when the client opens this email": "Suivre l’ouverture de cet e-mail par le client",
+    "Only tick this if the client has agreed to it (GDPR). Leave off and no open is tracked for this quote.": "Ne cochez que si le client a donné son accord (RGPD). Laissez décoché et aucune ouverture n’est suivie pour ce devis."
 }

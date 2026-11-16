@@ -452,6 +452,12 @@ class QuoteController extends Controller
         $toName = trim(($request->input('first_name') ?? ($quote->client_snapshot['first_name'] ?? '')) . ' ' .
                        ($request->input('last_name')  ?? ($quote->client_snapshot['last_name']  ?? ''))) ?: null;
 
+        // Per-quote open tracking — only offered when the dealership enabled it,
+        // and chosen here per client for GDPR consent. Remembered for follow-ups.
+        if ($quote->company?->track_email_opens) {
+            $quote->update(['track_opens' => $request->boolean('track_opens')]);
+        }
+
         $log = $sender->send($quote, $type, $to, auth()->user(), [
             'subject' => $request->input('subject'),
             'body'    => $request->input('message'),

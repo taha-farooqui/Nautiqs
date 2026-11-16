@@ -768,6 +768,20 @@
                     </p>
                 </div>
 
+                {{-- Per-quote open tracking — only when the dealership enabled it in
+                     settings. GDPR: tick only if the client agreed to be tracked. --}}
+                @if ($quote->company?->track_email_opens && ($sendType ?? 'quote') !== 'order_confirmation')
+                    <label class="flex items-start gap-3 rounded-lg border border-gray-200 p-3 cursor-pointer hover:border-primary-300 transition">
+                        <input type="hidden" name="track_opens" value="0" />
+                        <input type="checkbox" name="track_opens" value="1" @checked(old('track_opens', $quote->track_opens))
+                            class="mt-0.5 rounded border-gray-300 text-primary-800 focus:ring-primary-800" />
+                        <span>
+                            <span class="block text-sm font-medium text-gray-700">{{ __('Track when the client opens this email') }}</span>
+                            <span class="block text-xs text-gray-500 mt-0.5">{{ __('Only tick this if the client has agreed to it (GDPR). Leave off and no open is tracked for this quote.') }}</span>
+                        </span>
+                    </label>
+                @endif
+
                 {{-- Attachments. The quote PDF is generated and attached on its
                      own; these are the extras a dealer adds by hand — photos of
                      the boat, a brochure, a spec sheet.

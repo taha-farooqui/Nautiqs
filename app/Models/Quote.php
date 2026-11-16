@@ -119,6 +119,7 @@ class Quote extends Model
         // counter survives across follow-ups and re-sends.
         'tracking_token',
         'tracking',           // [open_count: int, first_opened_at, last_opened_at]
+        'track_opens',        // per-quote GDPR opt-in: embed the open pixel for this quote
 
         // Lifecycle
         'sent_at',
@@ -150,6 +151,7 @@ class Quote extends Model
      * dropping the cast both fixes the queries and keeps reads identical.
      */
     protected $casts = [
+        'track_opens'        => 'boolean',
         'trashed_at'         => 'datetime',
         'boat_discount_pct'    => 'float',
         'options_discount_pct' => 'float',
