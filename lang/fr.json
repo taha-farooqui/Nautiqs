@@ -1977,5 +1977,6 @@
     "Remove highlight": "Retirer la mise en avant",
     "Try another search or filter.": "Essayez une autre recherche ou un autre filtre.",
     "Track when the client opens this email": "Suivre l’ouverture de cet e-mail par le client",
-    "Check this if you want to track whether the client has opened the quotation.": "Cochez pour suivre si le client a ouvert le devis."
+    "Check this if you want to track whether the client has opened the quotation.": "Cochez pour suivre si le client a ouvert le devis.",
+    "Track opening": "Suivre l’ouverture"
 }

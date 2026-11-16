@@ -772,7 +772,7 @@
                         <input type="hidden" name="track_opens" value="0" />
                         <input type="checkbox" name="track_opens" value="1" @checked(old('track_opens', $quote->track_opens))
                             class="rounded border-gray-300 text-primary-800 focus:ring-primary-800" />
-                        <span class="text-sm font-medium text-gray-700">{{ __('Track when the client opens this email') }}</span>
+                        <span class="text-sm font-medium text-gray-700">{{ __('Track opening') }}</span>
                     </label>
                 @endif
 

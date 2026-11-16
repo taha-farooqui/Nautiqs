@@ -25,7 +25,8 @@
                 ['label' => 'Dashboard',         'icon' => 'squares-four',        'route' => 'dashboard',       'active' => 'dashboard'],
                 ['label' => 'Quotes',            'icon' => 'file-text',        'route' => 'quotes.index',    'active' => 'quotes.*'],
                 ['label' => 'Clients',           'icon' => 'address-book',        'route' => 'clients.index',   'active' => 'clients.*'],
-                ['label' => 'Sales leads',       'icon' => 'user-list',           'route' => 'leads.index',     'active' => 'leads.*'],
+                // Sales leads hidden from the sidebar at the client's request (page and routes still exist).
+                // ['label' => 'Sales leads',    'icon' => 'user-list',           'route' => 'leads.index',     'active' => 'leads.*'],
             ],
         ],
         [
