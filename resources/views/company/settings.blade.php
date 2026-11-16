@@ -13,6 +13,7 @@
             'defaults' => ['default_vat_rate','default_margin_pct','default_display_mode','timezone'],
             'margins'  => ['margin_presets.hull','margin_presets.engine','margin_presets.options','margin_presets.custom_items'],
             'followup' => ['follow_up_enabled','follow_up_delay_value','follow_up_delay_unit','follow_up_condition'],
+            'emails'   => ['track_email_opens'],
             'terms'    => ['terms_pdf'],
         ];
         // ?tab= lets the quote page's "add your terms" link land on the right tab.
@@ -49,6 +50,11 @@
                 :class="tab === 'followup' ? 'border-primary-800 text-primary-900' : 'border-transparent text-gray-500 hover:text-gray-900'"
                 class="px-4 py-2.5 text-sm font-semibold border-b-2 transition whitespace-nowrap">
                 <i class="ri-mail-send-line"></i> {{ __('Follow-ups') }}
+            </button>
+            <button type="button" @click="tab = 'emails'"
+                :class="tab === 'emails' ? 'border-primary-800 text-primary-900' : 'border-transparent text-gray-500 hover:text-gray-900'"
+                class="px-4 py-2.5 text-sm font-semibold border-b-2 transition whitespace-nowrap">
+                <i class="ri-mail-line"></i> {{ __('Emails') }}
             </button>
             <button type="button" @click="tab = 'terms'"
                 :class="tab === 'terms' ? 'border-primary-800 text-primary-900' : 'border-transparent text-gray-500 hover:text-gray-900'"
@@ -207,19 +213,23 @@
                     {{ __('Read-only. Fetched automatically from a live API (European Central Bank daily rates) and used to convert USD prices to EUR in quotes.') }}
                 </p>
             </div>
+        </section>
+
+        {{-- ============================== EMAILS ============================== --}}
+        <section x-show="tab === 'emails'" x-cloak class="bg-white rounded-2xl border border-gray-200 p-6">
+            <h3 class="font-semibold text-gray-900 mb-1">{{ __('Emails') }}</h3>
+            <p class="text-xs text-gray-500 mb-4">{{ __('How quote emails behave when you send them.') }}</p>
 
             {{-- Email open tracking — opt-in. Off = no pixel, no open tracking. --}}
-            <div class="mt-6 pt-5 border-t border-gray-100">
-                <label class="flex items-start gap-3 cursor-pointer">
-                    <input type="hidden" name="track_email_opens" value="0" />
-                    <input type="checkbox" name="track_email_opens" value="1" @checked(old('track_email_opens', $company->track_email_opens))
-                        class="mt-0.5 rounded border-gray-300 text-primary-800 focus:ring-primary-800" />
-                    <span>
-                        <span class="block text-sm font-medium text-gray-700">{{ __('Track email opens') }}</span>
-                        <span class="block text-xs text-gray-500 mt-0.5">{{ __('Adds an invisible pixel to quote emails to count when the client opens them. Off by default — when off, no opens are tracked.') }}</span>
-                    </span>
-                </label>
-            </div>
+            <label class="flex items-start gap-3 rounded-xl border border-gray-200 p-4 cursor-pointer hover:border-primary-300 transition">
+                <input type="hidden" name="track_email_opens" value="0" />
+                <input type="checkbox" name="track_email_opens" value="1" @checked(old('track_email_opens', $company->track_email_opens))
+                    class="mt-0.5 rounded border-gray-300 text-primary-800 focus:ring-primary-800" />
+                <span>
+                    <span class="block text-sm font-medium text-gray-700">{{ __('Track email opens') }}</span>
+                    <span class="block text-xs text-gray-500 mt-0.5">{{ __('Adds an invisible pixel to quote emails to count when the client opens them. Off by default — when off, no opens are tracked.') }}</span>
+                </span>
+            </label>
         </section>
 
         {{-- ============================== MARGIN PRESETS ============================== --}}
