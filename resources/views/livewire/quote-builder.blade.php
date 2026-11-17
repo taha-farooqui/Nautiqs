@@ -328,21 +328,28 @@
                                         </div>
                                     @endif
                                     @php
-                                        // Options in the catalogue are already stored in EUR
-                                        // (the import + manual edit both convert), so the
-                                        // EUR figure is just $opt->price. Show original
-                                        // beneath when the row was originally a foreign-
-                                        // currency import so the dealer can audit it.
-                                        $optWasFx = ! empty($opt->original_price_currency)
-                                            && $opt->original_price_currency !== 'EUR'
-                                            && ! empty($opt->original_price);
+                                        // Convert to EUR live from the option's own currency,
+                                        // exactly like a boat version. USD options are stored
+                                        // as the raw USD price + currency=USD and converted here
+                                        // (and in the calculator), never silently kept as EUR.
+                                        // Older rows imported in a foreign currency already hold
+                                        // EUR in ->price with the original kept in original_price.
+                                        $optCcy = $opt->currency ?: 'EUR';
+                                        $optEur = $optCcy === 'USD'
+                                            ? (app(\App\Services\FxRateService::class)->convert((float) $opt->price, 'USD', 'EUR') ?? (float) $opt->price)
+                                            : (float) $opt->price;
+                                        if ($optCcy === 'USD') {
+                                            $optOrig = (float) $opt->price; $optOrigSym = '$';
+                                        } elseif (! empty($opt->original_price_currency) && $opt->original_price_currency !== 'EUR' && ! empty($opt->original_price)) {
+                                            $optOrig = (float) $opt->original_price; $optOrigSym = $opt->original_price_currency === 'USD' ? '$' : $opt->original_price_currency;
+                                        } else {
+                                            $optOrig = null; $optOrigSym = null;
+                                        }
                                     @endphp
                                     <div class="w-24 sm:w-28 text-right shrink-0">
-                                        <div class="text-sm font-medium text-gray-900">{{ number_format($opt->price, 0, ',', ' ') }} €</div>
-                                        @if ($optWasFx)
-                                            <div class="text-[10px] text-gray-500">
-                                                ({{ number_format($opt->original_price, 0, ',', ' ') }} {{ $opt->original_price_currency === 'USD' ? '$' : $opt->original_price_currency }})
-                                            </div>
+                                        <div class="text-sm font-medium text-gray-900">{{ number_format($optEur, 0, ',', ' ') }} €</div>
+                                        @if ($optOrig !== null)
+                                            <div class="text-[10px] text-gray-500">({{ number_format($optOrig, 0, ',', ' ') }} {{ $optOrigSym }})</div>
                                         @endif
                                     </div>
                                 </div>
