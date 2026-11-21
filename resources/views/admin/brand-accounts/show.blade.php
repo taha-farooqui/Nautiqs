@@ -46,7 +46,7 @@
                         @if ($account->hasTerritory())
                             <span class="inline-flex items-center gap-1 rounded-full bg-indigo-50 text-indigo-700 px-2.5 py-0.5 font-medium"><i class="ri-map-pin-line"></i> {{ $account->territoryName() }}</span>
                         @endif
-                        <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 text-amber-700 px-2.5 py-0.5 font-medium"><i class="ri-money-euro-circle-line"></i> {{ $account->currency() }}</span>
+                        <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 text-amber-700 px-2.5 py-0.5 font-medium"><i class="ri-money-euro-circle-line"></i> {{ $account->currencyCode() }}</span>
                         @if ($account->created_at) <span class="text-gray-500"><i class="ri-calendar-line"></i> {{ __('since :date', ['date' => $account->created_at->format('d/m/Y')]) }}</span> @endif
                     </div>
                 </div>
@@ -144,7 +144,7 @@
                         <label class="block text-xs font-medium text-gray-500 mb-1">{{ __('Currency') }}</label>
                         <select name="currency" class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800">
                             @foreach ($currencies as $c)
-                                <option value="{{ $c }}" @selected($account->currency() === $c)>{{ $c }}</option>
+                                <option value="{{ $c }}" @selected($account->currencyCode() === $c)>{{ $c }}</option>
                             @endforeach
                         </select>
                     </div>

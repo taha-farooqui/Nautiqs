@@ -172,7 +172,7 @@ class EngineController extends Controller
             'fuel' => $d['fuel'] ?? null, 'description' => $d['description'] ?? null,
             'price' => round((float) $d['price'], 2),
             'vat_rate' => isset($d['vat_rate']) && $d['vat_rate'] !== '' ? (float) $d['vat_rate'] : 20,
-            'currency' => ($d['currency'] ?? null) ?: $this->account()->currency(),
+            'currency' => ($d['currency'] ?? null) ?: $this->account()->currencyCode(),
             'level_prices' => BrandEngine::cleanLevelPrices($d['levels'] ?? [], $this->account()->levelCount()),
             'accessory_ids' => array_values(array_intersect(array_map('strval', $d['accessory_ids'] ?? []), $own)),
         ];
@@ -201,7 +201,7 @@ class EngineController extends Controller
             'managed_brand_id' => $d['managed_brand_id'], 'type' => $d['type'], 'label' => trim($d['label']),
             'reference' => $d['reference'] ?? null, 'price' => round((float) $d['price'], 2),
             'vat_rate' => isset($d['vat_rate']) && $d['vat_rate'] !== '' ? (float) $d['vat_rate'] : 20,
-            'currency' => ($d['currency'] ?? null) ?: $this->account()->currency(),
+            'currency' => ($d['currency'] ?? null) ?: $this->account()->currencyCode(),
             'level_prices' => BrandEngineAccessory::cleanLevelPrices($d['levels'] ?? [], $this->account()->levelCount()),
         ];
     }

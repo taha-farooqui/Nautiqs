@@ -256,7 +256,7 @@
             const n = levels.length;
             const lv = r => { const a = Array.isArray(r) ? r.slice(0, n) : []; while (a.length < n) a.push(''); return a; };
             const blank = () => Array(n).fill('');
-            const defCur = @js($account->currency());
+            const defCur = @js($account->currencyCode());
             return {
                 tab: (new URLSearchParams(window.location.search)).get('tab') || 'boat',
                 levels, exact,

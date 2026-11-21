@@ -100,7 +100,7 @@ class BrandTransfer
     {
         $book = Xlsx::read($path);
         $this->levelCount = $account->levelCount();
-        $this->defaultCurrency = $account->currency();
+        $this->defaultCurrency = $account->currencyCode();
         $this->brands = ManagedBrand::all()->mapWithKeys(fn ($b) => [$this->key($b->name) => $b]);
         $this->out = ['created' => 0, 'updated' => 0, 'errors' => []];
 

@@ -45,7 +45,7 @@
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Currency') }}</label>
                     <select name="currency" class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800">
-                        @foreach (['EUR', 'USD'] as $c) <option value="{{ $c }}" @selected(old('currency', $acc->currency ?? $account->currency()) === $c)>{{ $c }}</option> @endforeach
+                        @foreach (['EUR', 'USD'] as $c) <option value="{{ $c }}" @selected(old('currency', $acc->currency ?? $account->currencyCode()) === $c)>{{ $c }}</option> @endforeach
                     </select>
                 </div>
             </div>

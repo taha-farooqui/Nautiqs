@@ -79,8 +79,12 @@ class BrandAccount extends Model
         return $this->kind === self::KIND_ENGINE;
     }
 
-    /** The account's selling currency, always a supported one. */
-    public function currency(): string
+    /**
+     * The account's selling currency, always a supported one. Named
+     * currencyCode() on purpose: a method called currency() would collide with
+     * the `currency` attribute and Eloquent would treat it as a relationship.
+     */
+    public function currencyCode(): string
     {
         return in_array($this->currency, self::CURRENCIES, true) ? $this->currency : 'EUR';
     }

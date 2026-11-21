@@ -55,7 +55,7 @@
                                     @if ($a->hasTerritory())
                                         <span class="inline-flex items-center gap-0.5 text-indigo-600"><i class="ri-map-pin-line"></i> {{ $a->territoryLabel() }}</span>
                                     @endif
-                                    <span class="text-gray-400">· {{ $a->currency() }}</span>
+                                    <span class="text-gray-400">· {{ $a->currencyCode() }}</span>
                                 </div>
                             </div>
                         </div>

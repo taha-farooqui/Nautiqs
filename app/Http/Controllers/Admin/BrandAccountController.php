@@ -92,7 +92,7 @@ class BrandAccountController extends Controller
         }
         $this->invite($account, $data['manager_name'], $email);
 
-        AuditLogger::record('brand_account.create', target: $account, after: ['name' => $account->name, 'kind' => $account->kind, 'brands' => $brandNames, 'territory' => $account->territoryLabel(), 'currency' => $account->currency()]);
+        AuditLogger::record('brand_account.create', target: $account, after: ['name' => $account->name, 'kind' => $account->kind, 'brands' => $brandNames, 'territory' => $account->territoryLabel(), 'currency' => $account->currencyCode()]);
 
         return redirect()->route('admin.brand-accounts.show', $account->_id)
             ->with('status', __('Brand account created. Invitation sent to :email.', ['email' => $email]));
@@ -146,7 +146,7 @@ class BrandAccountController extends Controller
             }
             $update['country']  = $country;
             $update['region']   = $region;
-            $update['currency'] = in_array($data['currency'] ?? null, BrandAccount::CURRENCIES, true) ? $data['currency'] : $account->currency();
+            $update['currency'] = in_array($data['currency'] ?? null, BrandAccount::CURRENCIES, true) ? $data['currency'] : $account->currencyCode();
         }
 
         $account->update($update);

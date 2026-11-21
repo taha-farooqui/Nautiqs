@@ -171,7 +171,7 @@ class CatalogueController extends Controller
         $base = ['brand_model_id' => $modelId, 'managed_brand_id' => (string) $model->managed_brand_id];
 
         $levels = $this->account()->levelCount();
-        $defaultCurrency = $this->account()->currency();
+        $defaultCurrency = $this->account()->currencyCode();
         $keep = [];
         foreach (array_values($data['versions'] ?? []) as $i => $row) {
             $equipment = $row['equipment'] ?? [];
