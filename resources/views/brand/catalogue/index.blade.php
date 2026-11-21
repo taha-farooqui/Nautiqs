@@ -19,10 +19,6 @@
             <div class="flex flex-col gap-1">
                 <div class="flex flex-wrap items-center gap-3">
                     <h2 class="text-2xl leading-8 font-semibold tracking-[-0.24px] text-nq-text">{{ __('Catalogue') }}</h2>
-                    <span class="h-6 inline-flex items-center gap-1.5 px-2 rounded-md bg-nq-success-bg border border-nq-success-border text-xs leading-5 font-medium text-nq-success-text">
-                        <span class="w-1.5 h-1.5 rounded-full bg-nq-success"></span>
-                        {{ trans_choice('{0}no active boat|{1}:count active boat|[2,*]:count active boats', $activeCount, ['count' => $activeCount]) }}
-                    </span>
                 </div>
                 <p class="text-sm leading-[22px] text-nq-text-2">{{ __('Your boats, versions, options and prices.') }}</p>
             </div>
