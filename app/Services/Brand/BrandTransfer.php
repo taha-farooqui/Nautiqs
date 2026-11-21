@@ -100,6 +100,7 @@ class BrandTransfer
     {
         $book = Xlsx::read($path);
         $this->levelCount = $account->levelCount();
+        $this->defaultCurrency = $account->currency();
         $this->brands = ManagedBrand::all()->mapWithKeys(fn ($b) => [$this->key($b->name) => $b]);
         $this->out = ['created' => 0, 'updated' => 0, 'errors' => []];
 
@@ -121,6 +122,7 @@ class BrandTransfer
     private $brands;
     private array $out;
     private int $levelCount = 3;
+    private string $defaultCurrency = 'EUR';   // the account's currency; a create with no DEVISE column falls back to it
 
     private function importBoats(array $rows): void
     {
@@ -147,7 +149,7 @@ class BrandTransfer
             if ($v) {
                 $v->update($fields); $this->out['updated']++;
             } else {
-                BrandVariant::create($fields + ['brand_model_id' => $mid, 'managed_brand_id' => (string) $brand->_id, 'currency' => 'EUR', 'position' => $pos[$mid], 'included_equipment' => $fields['included_equipment'] ?? []]);
+                BrandVariant::create($fields + ['brand_model_id' => $mid, 'managed_brand_id' => (string) $brand->_id, 'currency' => $this->defaultCurrency, 'position' => $pos[$mid], 'included_equipment' => $fields['included_equipment'] ?? []]);
                 $this->out['created']++;
             }
         }
@@ -175,7 +177,7 @@ class BrandTransfer
             if ($o) {
                 $o->update($fields); $this->out['updated']++;
             } else {
-                BrandOption::create($fields + ['brand_model_id' => $mid, 'managed_brand_id' => (string) $brand->_id, 'currency' => 'EUR', 'vat_rate' => 20,
+                BrandOption::create($fields + ['brand_model_id' => $mid, 'managed_brand_id' => (string) $brand->_id, 'currency' => $this->defaultCurrency, 'vat_rate' => 20,
                     'position' => BrandOption::where('brand_model_id', $mid)->count()]);
                 $this->out['created']++;
             }
@@ -201,7 +203,7 @@ class BrandTransfer
             if ($e) {
                 $e->update($fields); $this->out['updated']++;
             } else {
-                BrandEngine::create($fields + ['currency' => 'EUR', 'vat_rate' => 20, 'accessory_ids' => []]);
+                BrandEngine::create($fields + ['currency' => $this->defaultCurrency, 'vat_rate' => 20, 'accessory_ids' => []]);
                 $this->out['created']++;
             }
         }
@@ -226,7 +228,7 @@ class BrandTransfer
             if ($a) {
                 $a->update($fields); $this->out['updated']++;
             } else {
-                $a = BrandEngineAccessory::create($fields + ['currency' => 'EUR', 'vat_rate' => 20]);
+                $a = BrandEngineAccessory::create($fields + ['currency' => $this->defaultCurrency, 'vat_rate' => 20]);
                 $this->out['created']++;
             }
 

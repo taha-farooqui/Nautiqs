@@ -50,7 +50,13 @@
                             <span class="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-800 to-primary-600 text-white font-bold flex items-center justify-center shrink-0">{{ mb_strtoupper($initials) }}</span>
                             <div class="min-w-0">
                                 <div class="font-semibold text-gray-900 truncate group-hover:text-primary-800">{{ $a->name }}</div>
-                                <div class="text-xs text-gray-500"><i class="{{ $a->isEngine() ? 'ri-settings-3-line' : 'ri-sailboat-line' }}"></i> {{ $a->isEngine() ? __('Engine brand') : __('Boat brands') }}</div>
+                                <div class="text-xs text-gray-500 flex items-center gap-1.5 flex-wrap">
+                                    <span><i class="{{ $a->isEngine() ? 'ri-settings-3-line' : 'ri-sailboat-line' }}"></i> {{ $a->isEngine() ? __('Engine brand') : __('Boat brands') }}</span>
+                                    @if ($a->hasTerritory())
+                                        <span class="inline-flex items-center gap-0.5 text-indigo-600"><i class="ri-map-pin-line"></i> {{ $a->territoryLabel() }}</span>
+                                    @endif
+                                    <span class="text-gray-400">· {{ $a->currency() }}</span>
+                                </div>
                             </div>
                         </div>
                         @if (! $a->is_active)

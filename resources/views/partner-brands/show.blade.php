@@ -13,6 +13,9 @@
                 <div>
                     <p class="text-sm text-white/70">{{ __('Sent by :name on :date', ['name' => $access->invited_by_name ?: $account->name, 'date' => $access->invited_at?->format('d/m/Y')]) }}</p>
                     <h2 class="text-2xl font-bold">{{ __(':brand wants to share its catalogue with you', ['brand' => $account->name]) }}</h2>
+                    @if ($account->hasTerritory())
+                        <div class="mt-1 inline-flex items-center gap-1 text-sm text-white/80"><i class="ri-map-pin-line"></i> {{ $account->territoryName() }}</div>
+                    @endif
                     <div class="mt-3 flex flex-wrap gap-1.5">
                         @foreach ($brandNames as $n) <span class="text-sm rounded-lg bg-white/15 px-2.5 py-1">{{ $n }}</span> @endforeach
                     </div>

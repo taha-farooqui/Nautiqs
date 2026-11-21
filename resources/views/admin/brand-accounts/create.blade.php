@@ -6,6 +6,7 @@
 
     <form method="POST" action="{{ route('admin.brand-accounts.store') }}" class="max-w-3xl space-y-4"
         x-data="{ kind: @js(old('kind', 'boat')), brands: @js($oldBrands), draft: '', list: @js($globalBrands), open: false, hi: 0,
+                  country: @js(old('country', '')), region: @js(old('region', '')), currency: @js(old('currency', 'EUR')), currencyTouched: false,
                   add(v = null) { v = (v ?? this.draft).trim(); if (v && !this.brands.some(b => b.toLowerCase() === v.toLowerCase())) this.brands.push(v); this.draft = ''; this.hi = 0; },
                   get matches() { const q = this.draft.trim().toLowerCase(); return this.list.filter(n => !this.brands.some(b => b.toLowerCase() === n.toLowerCase()) && (q === '' || n.toLowerCase().includes(q))).slice(0, 8); },
                   enter() { this.open && this.matches[this.hi] ? this.add(this.matches[this.hi]) : this.add(); } }"
@@ -74,6 +75,38 @@
                 <input type="hidden" name="brands" x-ref="brandsField" :value="brands.join('\n')">
                 <p class="text-xs text-gray-500 mt-1">{{ __('Pick from the brand list. Once a brand belongs to this account, dealers can no longer add it themselves — they receive it from the brand.') }}</p>
                 <x-input-error :messages="$errors->get('brands')" class="mt-1" />
+            </div>
+
+            <div class="pt-2 border-t border-gray-100 space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                        <label for="country" class="block text-sm font-medium text-gray-700 mb-1">{{ __('Country') }}</label>
+                        <select id="country" name="country" x-model="country"
+                            @change="if (!currencyTouched) currency = (country === 'US' ? 'USD' : 'EUR'); if (!country) region = ''"
+                            class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800">
+                            <option value="">{{ __('No territory') }}</option>
+                            @foreach ($countries as $code => $label)
+                                <option value="{{ $code }}">{{ $label }} ({{ $code }})</option>
+                            @endforeach
+                        </select>
+                        <x-input-error :messages="$errors->get('country')" class="mt-1" />
+                    </div>
+                    <div x-show="country" x-cloak>
+                        <label for="region" class="block text-sm font-medium text-gray-700 mb-1">{{ __('Region') }} <span class="text-gray-400 font-normal">({{ __('optional') }})</span></label>
+                        <input id="region" name="region" x-model="region" maxlength="40" placeholder="{{ __('e.g. South') }}"
+                            class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />
+                        <x-input-error :messages="$errors->get('region')" class="mt-1" />
+                    </div>
+                    <div>
+                        <label for="currency" class="block text-sm font-medium text-gray-700 mb-1">{{ __('Currency') }} <span class="text-red-500">*</span></label>
+                        <select id="currency" name="currency" x-model="currency" @change="currencyTouched = true"
+                            class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800">
+                            @foreach ($currencies as $c)
+                                <option value="{{ $c }}">{{ $c }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
             </div>
         </section>
 

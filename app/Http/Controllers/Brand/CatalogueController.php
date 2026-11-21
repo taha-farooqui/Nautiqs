@@ -171,13 +171,14 @@ class CatalogueController extends Controller
         $base = ['brand_model_id' => $modelId, 'managed_brand_id' => (string) $model->managed_brand_id];
 
         $levels = $this->account()->levelCount();
+        $defaultCurrency = $this->account()->currency();
         $keep = [];
         foreach (array_values($data['versions'] ?? []) as $i => $row) {
             $equipment = $row['equipment'] ?? [];
             $equipment = is_array($equipment) ? $equipment : preg_split('/\r\n|\r|\n/', (string) $equipment);
             $fields = [
                 'name' => trim($row['name']), 'price' => round((float) $row['price'], 2),
-                'currency' => $row['currency'] ?? 'EUR',
+                'currency' => ($row['currency'] ?? null) ?: $defaultCurrency,
                 'level_prices' => BrandVariant::cleanLevelPrices($row['levels'] ?? [], $levels),
                 'included_equipment' => collect($equipment)
                     ->map(fn ($l) => trim((string) $l))->filter()->unique()->values()->map(fn ($l) => ['label' => $l, 'type' => 'standard'])->all(),
@@ -201,7 +202,7 @@ class CatalogueController extends Controller
                 'category' => trim((string) ($row['category'] ?? '')) ?: 'Options', 'label' => trim($row['label']),
                 'description' => $row['description'] ?? null, 'price' => round((float) $row['price'], 2),
                 'vat_rate' => isset($row['vat_rate']) && $row['vat_rate'] !== '' ? (float) $row['vat_rate'] : 20,
-                'currency' => $row['currency'] ?? 'EUR', 'level_prices' => BrandOption::cleanLevelPrices($row['levels'] ?? [], $levels),
+                'currency' => ($row['currency'] ?? null) ?: $defaultCurrency, 'level_prices' => BrandOption::cleanLevelPrices($row['levels'] ?? [], $levels),
                 'position' => $i, 'is_archived' => false,
             ];
             $existing = ! empty($row['id']) ? BrandOption::where('brand_model_id', $modelId)->where('_id', $row['id'])->first() : null;

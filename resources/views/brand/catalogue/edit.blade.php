@@ -256,11 +256,12 @@
             const n = levels.length;
             const lv = r => { const a = Array.isArray(r) ? r.slice(0, n) : []; while (a.length < n) a.push(''); return a; };
             const blank = () => Array(n).fill('');
+            const defCur = @js($account->currency());
             return {
                 tab: (new URLSearchParams(window.location.search)).get('tab') || 'boat',
                 levels, exact,
                 versions: versions.map(v => ({ ...v, key: k++, levels: lv(v.levels), equipment: Array.isArray(v.equipment) ? v.equipment : [] })),
-                options: options.map(o => ({ ...o, key: k++, currency: o.currency || 'EUR', levels: lv(o.levels) })),
+                options: options.map(o => ({ ...o, key: k++, currency: o.currency || defCur, levels: lv(o.levels) })),
                 modal: { open: false, index: null, list: [], paste: '' },
 
                 // Exact-price mode: no % estimate; an empty level box is a price still to fill in.
@@ -269,8 +270,8 @@
                 missing(val) { return this.exact && (val === '' || val === null); },
                 calc(price, pct) { const p = parseFloat(price); return isNaN(p) ? '' : (p * (1 - (parseFloat(pct) || 0) / 100)).toFixed(2); },
 
-                addVersion() { this.versions.push({ key: k++, id: '', name: '', price: '', currency: 'EUR', levels: blank(), equipment: [] }); },
-                addOption() { this.options.push({ key: k++, id: '', category: '', label: '', description: '', price: '', currency: 'EUR', vat_rate: 20, levels: blank() }); },
+                addVersion() { this.versions.push({ key: k++, id: '', name: '', price: '', currency: defCur, levels: blank(), equipment: [] }); },
+                addOption() { this.options.push({ key: k++, id: '', category: '', label: '', description: '', price: '', currency: defCur, vat_rate: 20, levels: blank() }); },
 
                 openModal(i) {
                     this.modal = { open: true, index: i, paste: '', list: this.versions[i].equipment.map(label => ({ label, checked: true })) };

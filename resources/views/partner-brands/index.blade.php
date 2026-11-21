@@ -28,6 +28,9 @@
                         <div class="min-w-0 flex-1">
                             <div class="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-200"><span class="w-1.5 h-1.5 rounded-full bg-amber-300 animate-pulse"></span>{{ __('New invitation') }}</div>
                             <div class="text-lg font-bold">{{ $acc?->name ?? '—' }}</div>
+                            @if ($acc?->hasTerritory())
+                                <div class="inline-flex items-center gap-1 text-xs text-white/75"><i class="ri-map-pin-line"></i> {{ $acc->territoryName() }}</div>
+                            @endif
                             <div class="mt-1 flex flex-wrap gap-1">
                                 @foreach ($invitations->brandNames($a) as $n) <span class="text-xs rounded-md bg-white/15 px-2 py-0.5">{{ $n }}</span> @endforeach
                             </div>
@@ -51,6 +54,9 @@
                         <span class="w-12 h-12 rounded-xl bg-primary-50 text-primary-800 font-bold flex items-center justify-center shrink-0">{{ $initials($acc?->name) }}</span>
                         <div class="min-w-0 flex-1">
                             <div class="font-semibold text-gray-900 truncate">{{ $acc?->name ?? '—' }}</div>
+                            @if ($acc?->hasTerritory())
+                                <div class="inline-flex items-center gap-1 text-xs text-indigo-600"><i class="ri-map-pin-line"></i> {{ $acc->territoryName() }}</div>
+                            @endif
                             <div class="inline-flex items-center gap-1.5 text-xs text-emerald-700"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>{{ __('Connected since :date', ['date' => $a->responded_at?->format('d/m/Y')]) }}</div>
                         </div>
                     </div>

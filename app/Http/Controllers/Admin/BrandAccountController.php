@@ -38,7 +38,11 @@ class BrandAccountController extends Controller
 
     public function create()
     {
-        return view('admin.brand-accounts.create', ['globalBrands' => ManagedBrand::availableGlobalNames()]);
+        return view('admin.brand-accounts.create', [
+            'globalBrands' => ManagedBrand::globalBrandNames(),
+            'countries'    => BrandAccount::COUNTRIES,
+            'currencies'   => BrandAccount::CURRENCIES,
+        ]);
     }
 
     public function store(Request $request)
@@ -47,6 +51,9 @@ class BrandAccountController extends Controller
             'name'          => 'required|string|max:160',
             'kind'          => ['required', Rule::in(BrandAccount::KINDS)],
             'brands'        => 'required|string|max:2000',
+            'country'       => ['nullable', Rule::in(array_keys(BrandAccount::COUNTRIES))],
+            'region'        => ['nullable', 'string', 'max:40'],
+            'currency'      => ['required', Rule::in(BrandAccount::CURRENCIES)],
             'manager_name'  => 'required|string|max:120',
             'manager_email' => 'required|email|max:200',
         ]);
@@ -55,9 +62,16 @@ class BrandAccountController extends Controller
         if (! $brandNames) {
             return back()->withInput()->withErrors(['brands' => __('Enter at least one brand.')]);
         }
-        if ($taken = $this->takenBrandNames($brandNames)) {
-            return back()->withInput()->withErrors(['brands' => trans_choice('{1}:names is already being managed.|[2,*]:names are already being managed.', count($taken), ['names' => implode(', ', $taken)])]);
+
+        $country = $data['country'] ?? null;
+        $region  = ManagedBrand::normalizeRegion($data['region'] ?? null);
+        if ($region !== null && ! $country) {
+            return back()->withInput()->withErrors(['region' => __('Choose a country before setting a region.')]);
         }
+        if ($conflicts = ManagedBrand::territoryConflicts($brandNames, $country, $region)) {
+            return back()->withInput()->withErrors(['brands' => implode(' ', $conflicts)]);
+        }
+
         $email = mb_strtolower(trim($data['manager_email']));
         if (User::where('email', $email)->exists()) {
             return back()->withInput()->withErrors(['manager_email' => __('An account with this email already exists.')]);
@@ -67,6 +81,9 @@ class BrandAccountController extends Controller
             'name'               => trim($data['name']),
             'kind'               => $data['kind'],
             'levels'             => BrandAccount::defaultLevels($data['kind']),
+            'country'            => $country,
+            'region'             => $region,
+            'currency'           => $data['currency'],
             'is_active'          => true,
             'created_by_user_id' => (string) auth()->id(),
         ]);
@@ -75,7 +92,7 @@ class BrandAccountController extends Controller
         }
         $this->invite($account, $data['manager_name'], $email);
 
-        AuditLogger::record('brand_account.create', target: $account, after: ['name' => $account->name, 'kind' => $account->kind, 'brands' => $brandNames]);
+        AuditLogger::record('brand_account.create', target: $account, after: ['name' => $account->name, 'kind' => $account->kind, 'brands' => $brandNames, 'territory' => $account->territoryLabel(), 'currency' => $account->currency()]);
 
         return redirect()->route('admin.brand-accounts.show', $account->_id)
             ->with('status', __('Brand account created. Invitation sent to :email.', ['email' => $email]));
@@ -96,16 +113,43 @@ class BrandAccountController extends Controller
             ->get(['managed_brand_id'])->countBy(fn ($m) => (string) $m->managed_brand_id);
         $quoteCount = \App\Models\Quote::withoutGlobalScopes()->where('brand_account_ids', $id)->count();
 
-        $globalBrands = ManagedBrand::availableGlobalNames();
+        $globalBrands = ManagedBrand::globalBrandNames();
+        $countries    = BrandAccount::COUNTRIES;
+        $currencies   = BrandAccount::CURRENCIES;
 
-        return view('admin.brand-accounts.show', compact('account', 'brands', 'managers', 'invites', 'accesses', 'companies', 'itemCounts', 'quoteCount', 'globalBrands'));
+        return view('admin.brand-accounts.show', compact('account', 'brands', 'managers', 'invites', 'accesses', 'companies', 'itemCounts', 'quoteCount', 'globalBrands', 'countries', 'currencies'));
     }
 
     public function update(string $id, Request $request)
     {
         $account = BrandAccount::findOrFail($id);
-        $data = $request->validate(['name' => 'required|string|max:160']);
-        $account->update(['name' => trim($data['name'])]);
+        $data = $request->validate([
+            'name'     => 'required|string|max:160',
+            'country'  => ['sometimes', 'nullable', Rule::in(array_keys(BrandAccount::COUNTRIES))],
+            'region'   => ['sometimes', 'nullable', 'string', 'max:40'],
+            'currency' => ['sometimes', Rule::in(BrandAccount::CURRENCIES)],
+        ]);
+
+        $update = ['name' => trim($data['name'])];
+
+        // The territory card sends this marker; the inline rename does not, so
+        // renaming never disturbs the territory.
+        if ($request->boolean('_territory')) {
+            $country = ($data['country'] ?? null) ? strtoupper($data['country']) : null;
+            $region  = ManagedBrand::normalizeRegion($data['region'] ?? null);
+            if ($region !== null && ! $country) {
+                return back()->withErrors(['territory' => __('Choose a country before setting a region.')]);
+            }
+            $names = ManagedBrand::withoutGlobalScopes()->where('brand_account_id', $id)->pluck('name')->all();
+            if ($conflicts = ManagedBrand::territoryConflicts($names, $country, $region, $id)) {
+                return back()->withErrors(['territory' => implode(' ', $conflicts)]);
+            }
+            $update['country']  = $country;
+            $update['region']   = $region;
+            $update['currency'] = in_array($data['currency'] ?? null, BrandAccount::CURRENCIES, true) ? $data['currency'] : $account->currency();
+        }
+
+        $account->update($update);
 
         return back()->with('status', __('Brand account updated.'));
     }
@@ -124,8 +168,11 @@ class BrandAccountController extends Controller
         $account = BrandAccount::findOrFail($id);
         $data = $request->validate(['brand' => 'required|string|max:120']);
         $name = trim($data['brand']);
-        if ($this->takenBrandNames([$name])) {
-            return back()->withErrors(['brand' => __(':names is already being managed.', ['names' => $name])]);
+        if ($this->brandInAccount($id, $name)) {
+            return back()->withErrors(['brand' => __('":name" is already in this account.', ['name' => $name])]);
+        }
+        if ($conflicts = ManagedBrand::territoryConflicts([$name], $account->country, $account->region, $id)) {
+            return back()->withErrors(['brand' => reset($conflicts)]);
         }
         $count = ManagedBrand::withoutGlobalScopes()->where('brand_account_id', $id)->count();
         ManagedBrand::create(ManagedBrand::fromName($name) + ['brand_account_id' => $id, 'position' => $count, 'is_active' => true]);
@@ -135,15 +182,21 @@ class BrandAccountController extends Controller
 
     public function renameBrand(string $id, string $brandId, Request $request)
     {
+        $account = BrandAccount::findOrFail($id);
         $brand = ManagedBrand::withoutGlobalScopes()->where('brand_account_id', $id)->where('_id', $brandId)->firstOrFail();
         $data = $request->validate(['name' => 'required|string|max:120']);
         $name = trim($data['name']);
-        if (mb_strtolower($name) !== mb_strtolower((string) $brand->name) && $this->takenBrandNames([$name])) {
-            return back()->withErrors(['brand' => __(':names is already being managed.', ['names' => $name])]);
+        if (mb_strtolower($name) !== mb_strtolower((string) $brand->name)) {
+            if ($this->brandInAccount($id, $name, $brandId)) {
+                return back()->withErrors(['brand' => __('":name" is already in this account.', ['name' => $name])]);
+            }
+            if ($conflicts = ManagedBrand::territoryConflicts([$name], $account->country, $account->region, $id)) {
+                return back()->withErrors(['brand' => reset($conflicts)]);
+            }
         }
         $brand->update(['name' => $name]);
         // Dealers see the new name on their next sync.
-        app(\App\Services\Brand\BrandSync::class)->syncAccount(BrandAccount::findOrFail($id), notify: false);
+        app(\App\Services\Brand\BrandSync::class)->syncAccount($account, notify: false);
 
         return back()->with('status', __('Brand renamed.'));
     }
@@ -246,11 +299,13 @@ class BrandAccountController extends Controller
         return $names;
     }
 
-    /** Names already managed by some account (case-insensitive). */
-    private function takenBrandNames(array $names): array
+    /** Whether this account already carries a brand of that name (case-insensitive). */
+    private function brandInAccount(string $accountId, string $name, ?string $exceptBrandId = null): bool
     {
-        $existing = ManagedBrand::withoutGlobalScopes()->get(['name'])->map(fn ($b) => mb_strtolower(trim((string) $b->name)))->all();
+        $key = mb_strtolower(trim($name));
 
-        return array_values(array_filter($names, fn ($n) => in_array(mb_strtolower(trim($n)), $existing, true)));
+        return ManagedBrand::withoutGlobalScopes()->where('brand_account_id', $accountId)
+            ->get(['name', '_id'])
+            ->contains(fn ($b) => (string) $b->_id !== (string) $exceptBrandId && mb_strtolower(trim((string) $b->name)) === $key);
     }
 }

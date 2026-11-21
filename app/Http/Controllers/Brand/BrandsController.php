@@ -29,7 +29,7 @@ class BrandsController extends Controller
             'dealerCounts' => $this->accesses()->where('status', BrandAccess::STATUS_ACTIVE)->get()
                 ->flatMap(fn ($a) => $a->brandIds())->countBy(),
             'connected' => $this->accesses()->where('status', BrandAccess::STATUS_ACTIVE)->count(),
-            'globalBrands' => ManagedBrand::availableGlobalNames(),
+            'globalBrands' => ManagedBrand::globalBrandNames(),
         ]);
     }
 
@@ -42,24 +42,25 @@ class BrandsController extends Controller
 
     public function update(string $id, Request $request)
     {
+        $account = $this->account();
         $brand = ManagedBrand::findOrFail($id);
         $data = $request->validate(['name' => 'required|string|max:120']);
         $name = trim($data['name']);
-        if (mb_strtolower($name) !== mb_strtolower((string) $brand->name) && $this->taken($name)) {
-            return back()->withErrors(['name' => __('":name" is already managed on Nautiqs. Contact Nautiqs if it is yours.', ['name' => $name])]);
+        if (mb_strtolower($name) !== mb_strtolower((string) $brand->name)) {
+            // Already on this account?
+            $key = mb_strtolower($name);
+            if (ManagedBrand::where('_id', '!=', $id)->get(['name'])->contains(fn ($b) => mb_strtolower(trim((string) $b->name)) === $key)) {
+                return back()->withErrors(['name' => __('You already manage a brand named ":name".', ['name' => $name])]);
+            }
+            // Taken by another account in an overlapping territory?
+            if (ManagedBrand::territoryConflicts([$name], $account->country, $account->region, (string) $account->_id)) {
+                return back()->withErrors(['name' => __('":name" is already managed on Nautiqs for this territory. Contact Nautiqs if it is yours.', ['name' => $name])]);
+            }
         }
         $brand->update(['name' => $name]);
-        app(BrandSync::class)->syncAccount($this->account(), notify: false);
+        app(BrandSync::class)->syncAccount($account, notify: false);
 
         return back()->with('status', __('Brand renamed.'));
-    }
-
-    /** Taken by any account (this one included), case-insensitive. */
-    private function taken(string $name): bool
-    {
-        $key = mb_strtolower(trim($name));
-
-        return ManagedBrand::withoutGlobalScopes()->get(['name'])->contains(fn ($b) => mb_strtolower(trim((string) $b->name)) === $key);
     }
 
     private function accesses()

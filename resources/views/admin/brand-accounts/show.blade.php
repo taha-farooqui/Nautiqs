@@ -43,6 +43,10 @@
                             <i class="{{ $account->isEngine() ? 'ri-settings-3-line' : 'ri-sailboat-line' }}"></i> {{ $account->isEngine() ? __('Engine brand') : __('Boat brands') }}</span>
                         <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 font-medium {{ $account->is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700' }}">
                             <span class="w-1.5 h-1.5 rounded-full {{ $account->is_active ? 'bg-emerald-500' : 'bg-red-500' }}"></span>{{ $account->is_active ? __('Active') : __('Suspended') }}</span>
+                        @if ($account->hasTerritory())
+                            <span class="inline-flex items-center gap-1 rounded-full bg-indigo-50 text-indigo-700 px-2.5 py-0.5 font-medium"><i class="ri-map-pin-line"></i> {{ $account->territoryName() }}</span>
+                        @endif
+                        <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 text-amber-700 px-2.5 py-0.5 font-medium"><i class="ri-money-euro-circle-line"></i> {{ $account->currency() }}</span>
                         @if ($account->created_at) <span class="text-gray-500"><i class="ri-calendar-line"></i> {{ __('since :date', ['date' => $account->created_at->format('d/m/Y')]) }}</span> @endif
                     </div>
                 </div>
@@ -115,6 +119,42 @@
         </section>
 
         <div class="space-y-5">
+            {{-- Territory & currency --}}
+            <section class="rise bg-white rounded-2xl border border-gray-200 p-5" style="--d: 1"
+                x-data="{ country: @js($account->country ?? ''), region: @js($account->region ?? '') }">
+                <h3 class="font-semibold text-gray-900 flex items-center gap-2 mb-3"><i class="ri-map-pin-line text-gray-400"></i> {{ __('Territory & currency') }}</h3>
+                <form method="POST" action="{{ route('admin.brand-accounts.update', $account->_id) }}" class="space-y-3">
+                    @csrf @method('PATCH')
+                    <input type="hidden" name="name" value="{{ $account->name }}">
+                    <input type="hidden" name="_territory" value="1">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">{{ __('Country') }}</label>
+                        <select name="country" x-model="country" @change="if (!country) region = ''" class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800">
+                            <option value="">{{ __('No territory') }}</option>
+                            @foreach ($countries as $code => $label)
+                                <option value="{{ $code }}" @selected(($account->country ?? '') === $code)>{{ $label }} ({{ $code }})</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div x-show="country" x-cloak>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">{{ __('Region') }} <span class="text-gray-400 font-normal">({{ __('optional') }})</span></label>
+                        <input name="region" x-model="region" maxlength="40" placeholder="{{ __('e.g. South') }}" class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">{{ __('Currency') }}</label>
+                        <select name="currency" class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800">
+                            @foreach ($currencies as $c)
+                                <option value="{{ $c }}" @selected($account->currency() === $c)>{{ $c }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <x-input-error :messages="$errors->get('territory')" class="mt-1" />
+                    <div class="flex justify-end">
+                        <button class="inline-flex items-center gap-1 px-3 py-2 text-sm font-semibold bg-primary-800 hover:bg-primary-900 text-white rounded-lg"><i class="ri-save-line"></i> {{ __('Save') }}</button>
+                    </div>
+                </form>
+            </section>
+
             {{-- Brands --}}
             <section class="rise bg-white rounded-2xl border border-gray-200 p-5" style="--d: 2">
                 <h3 class="font-semibold text-gray-900 flex items-center gap-2 mb-3"><i class="ri-building-4-line text-gray-400"></i> {{ __('Brands managed') }}</h3>
