@@ -30,6 +30,8 @@ class CompanyBoatVariant extends Model
         'name',
         'base_price',
         'cost',
+        'cost_mode',          // 'amount' (typed €) | 'pct' (% of base_price)
+        'cost_pct',           // the % when cost_mode = pct; cost tracks base_price
         'currency',
         'included_equipment', // [{label, type: standard|free_text}]
         'is_active',          // false = hidden from quote builder
@@ -39,6 +41,7 @@ class CompanyBoatVariant extends Model
     protected $casts = [
         'base_price'         => 'float',
         'cost'               => 'float',
+        'cost_pct'           => 'float',
         'included_equipment' => 'array',
         'is_active'          => 'boolean',
         'is_archived'        => 'boolean',

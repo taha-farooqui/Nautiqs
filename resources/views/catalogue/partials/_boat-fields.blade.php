@@ -63,6 +63,14 @@
         class="w-full max-w-xl rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />
 </div>
 
+<div>
+    <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Code') }}</label>
+    <input type="text" name="code" value="{{ old('code', $model->code ?? '') }}"
+        placeholder="{{ __('Auto-generated if left blank') }}"
+        class="w-full max-w-xs rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />
+    <p class="text-xs text-gray-500 mt-1">{{ __('Your internal reference for this boat. Leave blank to auto-generate.') }}</p>
+</div>
+
 {{-- Default margin field removed: margin is derived automatically from the
      cost + selling price entered on each version/option, so a per-boat
      default is no longer needed. The DB column stays for legacy quotes. --}}

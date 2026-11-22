@@ -486,6 +486,8 @@ class CatalogueController extends Controller
             'versions.*.name'           => 'required_with:versions|string|max:200',
             'versions.*.base_price'     => 'required_with:versions|numeric|min:0',
             'versions.*.cost'           => 'nullable|numeric|min:0',
+            'versions.*.cost_mode'      => 'nullable|in:amount,pct',
+            'versions.*.cost_pct'       => 'nullable|numeric|min:0|max:100',
             'versions.*.currency'       => 'nullable|in:EUR,USD',
             'versions.*.equipment'      => 'nullable|array',
             'versions.*.equipment.*'    => 'string|max:200',
@@ -495,6 +497,9 @@ class CatalogueController extends Controller
             'new_options.*.label'          => 'required_with:new_options|string',
             'new_options.*.price'          => 'required_with:new_options|numeric',
             'new_options.*.cost'           => 'nullable|numeric',
+            'new_options.*.cost_mode'      => 'nullable|in:amount,pct',
+            'new_options.*.cost_pct'       => 'nullable|numeric|min:0|max:100',
+            'new_options.*.code'           => 'nullable|string|max:120',
 
             'library_option_ids'      => 'nullable|array',
             'library_option_ids.*'    => 'string',
@@ -535,6 +540,7 @@ class CatalogueController extends Controller
 
         // Versions
         foreach ($versions as $v) {
+            $c = $this->resolveCost($v, round((float) $v['base_price'], 2));
             CompanyBoatVariant::create([
                 'company_id'         => auth()->user()->company_id,
                 'company_model_id'   => (string) $model->_id,
@@ -542,7 +548,9 @@ class CatalogueController extends Controller
                 'source'             => 'private',
                 'name'               => $v['name'],
                 'base_price'         => round((float) $v['base_price'], 2),
-                'cost'               => round((float) ($v['cost'] ?? 0), 2),
+                'cost'               => $c['cost'],
+                'cost_mode'          => $c['cost_mode'],
+                'cost_pct'           => $c['cost_pct'],
                 'currency'           => $v['currency'] ?? 'EUR',
                 'included_equipment' => $this->normaliseEquipmentList($v['equipment'] ?? []),
                 'is_active'          => true,
@@ -552,6 +560,7 @@ class CatalogueController extends Controller
 
         // Custom options
         foreach ($newOptions as $o) {
+            $c = $this->resolveCost($o, round((float) $o['price'], 2));
             CompanyOption::create([
                 'company_id'        => auth()->user()->company_id,
                 'company_model_id'  => (string) $model->_id,
@@ -559,8 +568,11 @@ class CatalogueController extends Controller
                 'source'            => 'private',
                 'category'          => $o['category'],
                 'label'             => $o['label'],
+                'code'              => trim((string) ($o['code'] ?? '')) ?: null,
                 'price'             => round((float) $o['price'], 2),
-                'cost'              => round((float) ($o['cost'] ?? 0), 2),
+                'cost'              => $c['cost'],
+                'cost_mode'         => $c['cost_mode'],
+                'cost_pct'          => $c['cost_pct'],
                 'currency'          => $o['currency'] ?? 'EUR',
                 'position'          => 0,
                 'is_archived'       => false,
@@ -824,10 +836,17 @@ class CatalogueController extends Controller
         $keptIds   = [];
 
         foreach ($rows as $row) {
+            $c = $this->resolveCost($row, round((float) $row['base_price'], 2));
             $payload = [
                 'name'               => $row['name'],
                 'base_price'         => round((float) $row['base_price'], 2),
-                'cost'               => round((float) ($row['cost'] ?? 0), 2),
+                'cost'               => $c['cost'],
+                'cost_mode'          => $c['cost_mode'],
+                'cost_pct'           => $c['cost_pct'],
+                // A % or a typed cost is the dealer's own purchase price — mark
+                // it so a partner brand's catalogue sync keeps it (and, for a %,
+                // recomputes it against the brand's new selling price).
+                'cost_override'      => $c['cost_mode'] === 'pct' || $c['cost'] > 0,
                 'currency'           => $row['currency'] ?? 'EUR',
                 'included_equipment' => $this->normaliseEquipmentList($row['equipment'] ?? []),
             ];
@@ -871,13 +890,16 @@ class CatalogueController extends Controller
     {
         CompanyBoatModel::findOrFail($modelId);
         $data = $request->validate([
-            'options'            => 'nullable|array',
-            'options.*.id'       => 'nullable|string',
-            'options.*.category' => 'required|string|max:100',
-            'options.*.label'    => 'required|string',
-            'options.*.price'    => 'required|numeric',
-            'options.*.cost'     => 'nullable|numeric',
-            'options.*.currency' => 'nullable|in:EUR,USD',
+            'options'             => 'nullable|array',
+            'options.*.id'        => 'nullable|string',
+            'options.*.category'  => 'required|string|max:100',
+            'options.*.label'     => 'required|string',
+            'options.*.code'      => 'nullable|string|max:120',
+            'options.*.price'     => 'required|numeric',
+            'options.*.cost'      => 'nullable|numeric',
+            'options.*.cost_mode' => 'nullable|in:amount,pct',
+            'options.*.cost_pct'  => 'nullable|numeric|min:0|max:100',
+            'options.*.currency'  => 'nullable|in:EUR,USD',
         ]);
 
         $this->syncOptionRows($modelId, $data['options'] ?? []);
@@ -898,19 +920,23 @@ class CatalogueController extends Controller
 
         foreach ($rows as $i => $row) {
             $priceIn = round((float) $row['price'], 2);
-            $costIn  = round((float) ($row['cost'] ?? 0), 2);
+            $c       = $this->resolveCost($row, $priceIn);
             $ccy     = $row['currency'] ?? 'EUR';
 
             $payload = [
                 'category'                => $row['category'],
                 'label'                   => $row['label'],
+                'code'                    => trim((string) ($row['code'] ?? '')) ?: null,
                 'description'             => $row['description'] ?? null,
                 'price'                   => $priceIn,
-                'cost'                    => $costIn,
+                'cost'                    => $c['cost'],
+                'cost_mode'               => $c['cost_mode'],
+                'cost_pct'                => $c['cost_pct'],
+                'cost_override'           => $c['cost_mode'] === 'pct' || $c['cost'] > 0,
                 'currency'                => $ccy,
                 'original_price'          => $priceIn,
                 'original_price_currency' => $ccy,
-                'original_cost'           => $costIn,
+                'original_cost'           => $c['cost'],
                 'original_cost_currency'  => $ccy,
                 'fx_rate_used'            => null,
                 'fx_rate_date'            => null,
@@ -957,6 +983,7 @@ class CatalogueController extends Controller
             // Boat
             'company_brand_id'       => 'nullable',
             'name'                   => 'required|string|max:200',
+            'code'                   => 'nullable|string|max:60',
             'default_margin_pct'     => 'nullable|numeric|min:0|max:100',
             'is_active'              => 'nullable|boolean',
             // Versions
@@ -965,6 +992,8 @@ class CatalogueController extends Controller
             'versions.*.name'        => 'required|string|max:200',
             'versions.*.base_price'  => 'required|numeric|min:0',
             'versions.*.cost'        => 'nullable|numeric|min:0',
+            'versions.*.cost_mode'   => 'nullable|in:amount,pct',
+            'versions.*.cost_pct'    => 'nullable|numeric|min:0|max:100',
             'versions.*.currency'    => 'nullable|in:EUR,USD',
             'versions.*.equipment'   => 'nullable|array',
             'versions.*.equipment.*' => 'string|max:200',
@@ -973,10 +1002,13 @@ class CatalogueController extends Controller
             'options.*.id'           => 'nullable|string',
             'options.*.category'     => 'required|string|max:100',
             'options.*.label'        => 'required|string',
+            'options.*.code'         => 'nullable|string|max:120',
             // No length cap: dealers paste full pack contents in here.
             'options.*.description'  => 'nullable|string',
             'options.*.price'        => 'required|numeric',
             'options.*.cost'         => 'nullable|numeric',
+            'options.*.cost_mode'    => 'nullable|in:amount,pct',
+            'options.*.cost_pct'     => 'nullable|numeric|min:0|max:100',
             'options.*.currency'     => 'nullable|in:EUR,USD',
             'active_tab'             => 'nullable|in:boat,versions,options',
         ]);
@@ -986,6 +1018,10 @@ class CatalogueController extends Controller
             'name'      => $data['name'],
             'is_active' => (bool) ($data['is_active'] ?? false),
         ];
+        // Keep the existing code (auto-generated at creation) when left blank.
+        if (filled($data['code'] ?? null)) {
+            $boat['code'] = trim($data['code']);
+        }
         if (array_key_exists('default_margin_pct', $data)) {
             $boat['default_margin_pct'] = $data['default_margin_pct'];
         }
@@ -1086,6 +1122,24 @@ class CatalogueController extends Controller
             ->map(fn ($l) => ['label' => $l, 'type' => 'standard'])
             ->values()
             ->all();
+    }
+
+    /**
+     * Resolve the purchase price (cost) for a version/option row. The dealer
+     * types either an absolute € amount, or a % that is taken off the selling
+     * price (cost = price × (1 − %)). The % is stored so the cost keeps
+     * tracking the selling price whenever it changes.
+     *
+     * @return array{cost: float, cost_mode: string, cost_pct: ?float}
+     */
+    private function resolveCost(array $row, float $price): array
+    {
+        if (($row['cost_mode'] ?? 'amount') === 'pct') {
+            $pct = max(0.0, min(100.0, (float) ($row['cost_pct'] ?? 0)));
+            return ['cost' => round($price * (1 - $pct / 100), 2), 'cost_mode' => 'pct', 'cost_pct' => $pct];
+        }
+
+        return ['cost' => round((float) ($row['cost'] ?? 0), 2), 'cost_mode' => 'amount', 'cost_pct' => null];
     }
 
     public function destroyVariant(string $variantId)

@@ -39,7 +39,7 @@
                     'activeAny' => ['engines.*', 'engine-accessories.*'],
                     'children'  => [
                         ['label' => 'Engines',     'icon' => 'fan', 'route' => 'engines.index',            'active' => 'engines.*'],
-                        ['label' => 'Kits & propellers', 'icon' => 'wrench', 'route' => 'engine-accessories.index', 'active' => 'engine-accessories.*'],
+                        ['label' => 'Engine equipment', 'icon' => 'wrench', 'route' => 'engine-accessories.index', 'active' => 'engine-accessories.*'],
                     ],
                 ],
                 // Third-party add-ons (GPS, audio, fishing gear) sold on any quote.

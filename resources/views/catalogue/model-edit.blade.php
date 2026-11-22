@@ -105,8 +105,7 @@
                             </div>
                             <div class="md:col-span-2">
                                 <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Cost') }}</label>
-                                <input type="number" step="0.01" min="0" :name="`versions[${i}][cost]`" x-model="v.cost"
-                                    class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
+                                <x-catalogue.cost-field row="v" index="i" price="base_price" prefix="versions" />
                             </div>
                             <div class="md:col-span-2">
                                 <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Currency') }}</label>
@@ -252,33 +251,39 @@
                     <h3 class="text-sm font-semibold text-gray-900 mb-3">{{ __('Custom options') }}</h3>
 
                     <template x-for="(o, i) in newOptions" :key="i">
-                        <div class="border border-gray-200 rounded-lg p-3 mb-2 grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
-                            <div class="md:col-span-3">
-                                <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Category') }} *</label>
-                                <input type="text" :name="`new_options[${i}][category]`" x-model="o.category"
-                                    placeholder="{{ __('e.g. Electronics') }}"
-                                    class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
+                        <div class="border border-gray-200 rounded-lg p-3 mb-2">
+                            <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+                                <div class="md:col-span-3">
+                                    <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Category') }} *</label>
+                                    <input type="text" :name="`new_options[${i}][category]`" x-model="o.category"
+                                        placeholder="{{ __('e.g. Electronics') }}"
+                                        class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
+                                </div>
+                                <div class="md:col-span-4">
+                                    <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Label') }} *</label>
+                                    <input type="text" :name="`new_options[${i}][label]`" x-model="o.label"
+                                        class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Public HT') }} *</label>
+                                    <input type="number" step="0.01" :name="`new_options[${i}][price]`" x-model="o.price"
+                                        class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Cost') }}</label>
+                                    <x-catalogue.cost-field row="o" index="i" price="price" prefix="new_options" />
+                                </div>
+                                <div class="md:col-span-1">
+                                    <button type="button" @click="newOptions.splice(i, 1)"
+                                        class="w-full inline-flex items-center justify-center px-3 py-2 text-xs font-medium bg-red-50 hover:bg-red-100 text-red-700 rounded-lg">
+                                        <i class="ri-delete-bin-line"></i>
+                                    </button>
+                                </div>
                             </div>
-                            <div class="md:col-span-4">
-                                <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Label') }} *</label>
-                                <input type="text" :name="`new_options[${i}][label]`" x-model="o.label"
-                                    class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
-                            </div>
-                            <div class="md:col-span-2">
-                                <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Public HT') }} *</label>
-                                <input type="number" step="0.01" :name="`new_options[${i}][price]`" x-model="o.price"
-                                    class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
-                            </div>
-                            <div class="md:col-span-2">
-                                <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Cost') }}</label>
-                                <input type="number" step="0.01" :name="`new_options[${i}][cost]`" x-model="o.cost"
-                                    class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
-                            </div>
-                            <div class="md:col-span-1">
-                                <button type="button" @click="newOptions.splice(i, 1)"
-                                    class="w-full inline-flex items-center justify-center px-3 py-2 text-xs font-medium bg-red-50 hover:bg-red-100 text-red-700 rounded-lg">
-                                    <i class="ri-delete-bin-line"></i>
-                                </button>
+                            <div class="mt-2 flex items-center gap-2">
+                                <label class="text-xs font-medium text-gray-500 shrink-0">{{ __('Reference') }}</label>
+                                <input type="text" :name="`new_options[${i}][code]`" x-model="o.code" placeholder="{{ __('optional code') }}"
+                                    class="w-full max-w-xs rounded-lg border-gray-300 text-sm py-1.5 focus:border-primary-800 focus:ring-primary-800" />
                             </div>
                         </div>
                     </template>
@@ -395,6 +400,8 @@
                 'name'       => $v->name,
                 'base_price' => (float) $v->base_price,
                 'cost'       => (float) ($v->cost ?? 0),
+                'cost_mode'  => $v->cost_mode ?? 'amount',
+                'cost_pct'   => $v->cost_pct !== null ? (float) $v->cost_pct : '',
                 'currency'   => $v->currency ?? 'EUR',
                 'equipment'  => collect($v->included_equipment ?? [])
                     ->map(fn ($e) => is_array($e) ? ($e['label'] ?? '') : (string) $e)
@@ -424,8 +431,7 @@
                                 </div>
                                 <div class="md:col-span-2">
                                     <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Cost') }}</label>
-                                    <input type="number" step="0.01" min="0" :name="`versions[${i}][cost]`" x-model="v.cost"
-                                        class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
+                                    <x-catalogue.cost-field row="v" index="i" price="base_price" prefix="versions" />
                                 </div>
                                 <div class="md:col-span-2">
                                     <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Currency') }}</label>
@@ -699,9 +705,12 @@
                     'id'          => (string) $o->_id,
                     'category'    => $o->category,
                     'label'       => $o->label,
+                    'code'        => $o->code ?? '',
                     'description' => $o->description ?? '',
                     'price'       => (float) $o->price,
                     'cost'        => (float) ($o->cost ?? 0),
+                    'cost_mode'   => $o->cost_mode ?? 'amount',
+                    'cost_pct'    => $o->cost_pct !== null ? (float) $o->cost_pct : '',
                     'currency'    => $o->currency ?? 'EUR',
                 ])->values();
             @endphp
@@ -757,8 +766,7 @@
                                 </div>
                                 <div class="md:col-span-2">
                                     <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Cost') }}</label>
-                                    <input type="number" step="0.01" :name="`options[${i}][cost]`" x-model="o.cost"
-                                        class="w-full rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
+                                    <x-catalogue.cost-field row="o" index="i" price="price" prefix="options" />
                                 </div>
                                 <div class="md:col-span-1">
                                     <label class="block text-xs font-medium text-gray-700 mb-1">{{ __('Currency') }}</label>
@@ -775,6 +783,12 @@
                                         <i class="ri-delete-bin-line"></i>
                                     </button>
                                 </div>
+                            </div>
+
+                            <div class="mt-2 flex items-center gap-2">
+                                <label class="text-xs font-medium text-gray-500 shrink-0">{{ __('Reference') }}</label>
+                                <input type="text" :name="`options[${i}][code]`" x-model="o.code" placeholder="{{ __('optional code') }}"
+                                    class="w-full max-w-xs rounded-lg border-gray-300 text-sm py-1.5 focus:border-primary-800 focus:ring-primary-800" />
                             </div>
 
                             {{-- Per-row description toggle. Most options don't
@@ -938,10 +952,16 @@
                 csrfToken: @js(csrf_token()),
 
                 addVersion() {
-                    this.versions.push({ name: '', base_price: '', cost: '', currency: 'EUR', equipment: [] });
+                    this.versions.push({ name: '', base_price: '', cost: '', cost_mode: 'amount', cost_pct: '', currency: 'EUR', equipment: [] });
                 },
                 addOption() {
-                    this.newOptions.push({ category: '', label: '', price: '', cost: '' });
+                    this.newOptions.push({ category: '', label: '', code: '', price: '', cost: '', cost_mode: 'amount', cost_pct: '' });
+                },
+                // Live preview of a %-based cost: selling price × (1 − %).
+                costPreview(r) {
+                    const p = parseFloat(r.base_price) || parseFloat(r.price) || 0;
+                    const pct = parseFloat(r.cost_pct) || 0;
+                    return (p * (1 - pct / 100)).toFixed(2);
                 },
 
                 openImport() {
@@ -975,9 +995,12 @@
                         (data.rows || []).forEach(r => this.newOptions.push({
                             category:    r.category ?? '',
                             label:       r.label ?? '',
+                            code:        r.code ?? '',
                             description: r.description ?? '',
                             price:       r.price ?? '',
                             cost:        r.cost ?? '',
+                            cost_mode:   'amount',
+                            cost_pct:    '',
                         }));
                         // Keep the good rows; surface any per-row problems.
                         this.importErrors = (data.errors || []).map(e => `{{ __('Row') }} ${e.row}: ${e.message}`);
@@ -1090,9 +1113,17 @@
                     name: v.name ?? '',
                     base_price: v.base_price ?? '',
                     cost: v.cost ?? '',
+                    cost_mode: v.cost_mode || 'amount',
+                    cost_pct: v.cost_pct ?? '',
                     currency: v.currency || 'EUR',
                     equipment: Array.isArray(v.equipment) ? v.equipment : [],
                 })),
+
+                costPreview(r) {
+                    const p = parseFloat(r.base_price) || parseFloat(r.price) || 0;
+                    const pct = parseFloat(r.cost_pct) || 0;
+                    return (p * (1 - pct / 100)).toFixed(2);
+                },
 
                 // Shared equipment modal state.
                 modalOpen: false,
@@ -1102,7 +1133,7 @@
                 sortable: null,
 
                 addVersion() {
-                    this.versions.push({ id: '', name: '', base_price: '', cost: '', currency: 'EUR', equipment: [] });
+                    this.versions.push({ id: '', name: '', base_price: '', cost: '', cost_mode: 'amount', cost_pct: '', currency: 'EUR', equipment: [] });
                 },
                 removeVersion(i) {
                     this.versions.splice(i, 1);
@@ -1181,12 +1212,21 @@
                     id: o.id || '',
                     category: o.category ?? '',
                     label: o.label ?? '',
+                    code: o.code ?? '',
                     description: o.description ?? '',
                     price: o.price ?? '',
                     cost: o.cost ?? '',
+                    cost_mode: o.cost_mode || 'amount',
+                    cost_pct: o.cost_pct ?? '',
                     currency: o.currency || 'EUR',
                 })),
                 sortable: null,
+
+                costPreview(r) {
+                    const p = parseFloat(r.base_price) || parseFloat(r.price) || 0;
+                    const pct = parseFloat(r.cost_pct) || 0;
+                    return (p * (1 - pct / 100)).toFixed(2);
+                },
 
                 // Mass-select / delete. `selected` holds the `_k` of ticked rows.
                 selected: [],
@@ -1234,7 +1274,7 @@
                     this.selected = [];
                 },
                 addOption() {
-                    this.options.push({ _k: k++, _showDesc: false, id: '', category: '', label: '', description: '', price: '', cost: '', currency: 'EUR' });
+                    this.options.push({ _k: k++, _showDesc: false, id: '', category: '', label: '', code: '', description: '', price: '', cost: '', cost_mode: 'amount', cost_pct: '', currency: 'EUR' });
                 },
                 removeOption(i) {
                     this.options.splice(i, 1);

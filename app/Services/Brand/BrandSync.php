@@ -181,6 +181,10 @@ class BrandSync
             $copy = $vCopies[(string) $v->_id] ?? null;
             if (! $copy || ! $copy->cost_override) {
                 $fields['cost'] = $pricing->purchasePrice($v, 'versions', $level, $brand);
+            } elseif (($copy->cost_mode ?? 'amount') === 'pct' && $copy->cost_pct !== null) {
+                // Dealer's purchase price is a % off the selling price — keep it
+                // a % of the brand's (now updated) public price.
+                $fields['cost'] = round((float) $fields['base_price'] * (1 - (float) $copy->cost_pct / 100), 2);
             }
             if (! $copy) {
                 CompanyBoatVariant::create($fields + [
@@ -221,6 +225,8 @@ class BrandSync
             $copy = $oCopies[(string) $o->_id] ?? null;
             if (! $copy || ! $copy->cost_override) {
                 $fields['cost'] = $pricing->purchasePrice($o, 'options', $level, $brand);
+            } elseif (($copy->cost_mode ?? 'amount') === 'pct' && $copy->cost_pct !== null) {
+                $fields['cost'] = round((float) $fields['price'] * (1 - (float) $copy->cost_pct / 100), 2);
             }
             if (! $copy) {
                 CompanyOption::create($fields + [

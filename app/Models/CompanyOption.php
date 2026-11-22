@@ -32,6 +32,8 @@ class CompanyOption extends Model
         'code',               // dealer SKU — e.g. ANT7OB_TRA_0001 (upsert key)
         'price',              // EUR (post-conversion)
         'cost',               // EUR (post-conversion)
+        'cost_mode',          // 'amount' (typed €) | 'pct' (% of price)
+        'cost_pct',           // the % when cost_mode = pct; cost tracks price
         'vat_rate',
         'currency',           // always 'EUR' going forward (display + storage)
         'position',
@@ -51,6 +53,7 @@ class CompanyOption extends Model
     protected $casts = [
         'price'         => 'float',
         'cost'          => 'float',
+        'cost_pct'      => 'float',
         'vat_rate'      => 'float',
         'position'      => 'integer',
         'yard_option'   => 'boolean',
