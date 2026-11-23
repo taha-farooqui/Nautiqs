@@ -31,7 +31,6 @@
                     <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Brand') }}</label>
                     <x-combobox name="brand" :value="old('brand', $accessory->brand ?? '')" :options="$brandOptions"
                         :placeholder="__('e.g. Garmin — pick or type')" icon="ri-award-line" />
-                    <p class="text-xs text-gray-500 mt-1">{{ __('The accessory manufacturer (not the boat brand).') }}</p>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Category') }}</label>
