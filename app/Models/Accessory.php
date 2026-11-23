@@ -23,6 +23,23 @@ class Accessory extends Model
 
     public const CURRENCIES = ['EUR', 'USD'];
 
+    // Suggested marine-accessory manufacturers (France / Germany / Europe).
+    // These are only dropdown suggestions — the dealer can type any brand.
+    public const BRANDS = [
+        'Garmin', 'Raymarine', 'Simrad', 'Lowrance', 'B&G', 'Furuno', 'Fusion',
+        'Plastimo', 'Osculati', 'Vetus', 'Lewmar', 'Quick', 'Victron Energy',
+        'Mastervolt', 'Webasto', 'Fischer Panda', 'Hella Marine', 'Lalizas',
+    ];
+
+    // Suggested categories (English keys, translated for display). Free text
+    // allowed too — the dealer can type their own.
+    public const CATEGORIES = [
+        'Navigation', 'Audio & multimedia', 'Safety', 'Comfort', 'Lighting',
+        'Anchoring & mooring', 'Electrical & power', 'Water & plumbing',
+        'Heating & AC', 'Covers & upholstery', 'Fishing', 'Water sports',
+        'Maintenance', 'Deck hardware',
+    ];
+
     protected $connection = 'mongodb';
 
     // $table, not $collection: this driver ignores $collection.
@@ -31,6 +48,8 @@ class Accessory extends Model
     protected $fillable = [
         'company_id',
         'label',     // "Sound system Bose"
+        'brand',     // e.g. Garmin — a marine-accessory brand, not a boat brand
+        'category',  // e.g. Navigation — free text, suggestions in CATEGORIES
         'cost',      // purchase price HT
         'price',     // selling price HT
         'vat_rate',  // %

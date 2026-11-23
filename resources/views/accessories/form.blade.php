@@ -26,6 +26,20 @@
                     class="w-full rounded-lg border-gray-300 focus:border-primary-800 focus:ring-primary-800" />
             </div>
 
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Brand') }}</label>
+                    <x-combobox name="brand" :value="old('brand', $accessory->brand ?? '')" :options="$brandOptions"
+                        :placeholder="__('e.g. Garmin — pick or type')" icon="ri-award-line" />
+                    <p class="text-xs text-gray-500 mt-1">{{ __('The accessory manufacturer (not the boat brand).') }}</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Category') }}</label>
+                    <x-combobox name="category" :value="old('category', $accessory->category ?? '')" :options="$categoryOptions"
+                        :placeholder="__('e.g. Navigation — pick or type')" icon="ri-price-tag-3-line" />
+                </div>
+            </div>
+
             <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('Purchase price HT') }}</label>

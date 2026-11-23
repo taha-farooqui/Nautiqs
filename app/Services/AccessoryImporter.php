@@ -23,6 +23,8 @@ class AccessoryImporter
     /** Accepted header spellings per field, compared accent- and case-blind. */
     private const ALIASES = [
         'label'    => ['nom', 'name', 'label', 'libelle', 'designation', 'accessoire', 'accessory', 'article'],
+        'brand'    => ['marque', 'brand', 'fabricant', 'manufacturer', 'maker'],
+        'category' => ['categorie', 'category', 'famille', 'type', 'rubrique'],
         'cost'     => ['prix achat ht', 'prix achat', 'pa ht', 'pa', 'cout', 'cost', 'purchase price', 'prix d achat'],
         'price'    => ['prix vente ht', 'prix vente', 'pv ht', 'pv', 'prix', 'price', 'selling price', 'prix de vente'],
         'vat_rate' => ['tva', 'vat', 'vat rate', 'taux tva', 'tva %', 'vat %'],
@@ -96,6 +98,8 @@ class AccessoryImporter
 
             $fields = [
                 'label'    => $label,
+                'brand'    => ($b = $cell('brand')) !== '' ? mb_substr($b, 0, 120) : null,
+                'category' => ($c = $cell('category')) !== '' ? mb_substr($c, 0, 120) : null,
                 'cost'     => $cost !== null ? round($cost, 2) : null,
                 'price'    => round($price, 2),
                 'vat_rate' => round($vat, 2),

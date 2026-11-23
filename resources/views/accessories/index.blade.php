@@ -30,7 +30,8 @@
         <form method="GET" action="{{ route('accessories.index') }}" class="w-full lg:max-w-md">
             <div class="relative">
                 <i class="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                <input type="text" name="q" value="{{ $q }}" placeholder="{{ __('Search by name…') }}"
+                @if ($category !== '')<input type="hidden" name="category" value="{{ $category }}">@endif
+                <input type="text" name="q" value="{{ $q }}" placeholder="{{ __('Search by name or brand…') }}"
                     class="w-full pl-9 pr-3 py-2 rounded-lg border-gray-300 text-sm focus:border-primary-800 focus:ring-primary-800" />
             </div>
         </form>
@@ -100,6 +101,7 @@
                             <p class="font-semibold mb-1">{{ __('Expected columns') }}</p>
                             <ul class="space-y-0.5">
                                 <li><span class="font-mono">NOM</span>, <span class="font-mono">PRIX VENTE HT</span> — {{ __('required') }}</li>
+                                <li><span class="font-mono">MARQUE</span>, <span class="font-mono">CATEGORIE</span> — {{ __('optional, brand and category') }}</li>
                                 <li><span class="font-mono">PRIX ACHAT HT</span> — {{ __('optional, purchase cost') }}</li>
                                 <li><span class="font-mono">TVA</span> — {{ __('optional, your default VAT if empty') }}</li>
                                 <li><span class="font-mono">DEVISE</span> — {{ __('optional, EUR or USD (EUR if empty)') }}</li>
@@ -124,13 +126,28 @@
         </div>
     </div>
 
+    @if ($categories->isNotEmpty())
+        <div class="mb-4 flex flex-wrap items-center gap-1.5">
+            <a href="{{ route('accessories.index', array_filter(['q' => $q])) }}"
+                class="px-3 py-1.5 rounded-full text-xs font-medium border transition {{ $category === '' ? 'bg-primary-800 text-white border-primary-800' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50' }}">
+                {{ __('All') }}
+            </a>
+            @foreach ($categories as $cat)
+                <a href="{{ route('accessories.index', array_filter(['q' => $q, 'category' => $cat])) }}"
+                    class="px-3 py-1.5 rounded-full text-xs font-medium border transition {{ $category === $cat ? 'bg-primary-800 text-white border-primary-800' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50' }}">
+                    {{ $cat }}
+                </a>
+            @endforeach
+        </div>
+    @endif
+
     @if ($accessories->isEmpty())
         <div class="bg-white rounded-2xl border border-gray-200 px-6 py-12 text-center">
             <i class="ri-shopping-bag-3-line text-4xl text-gray-300"></i>
             <p class="text-sm font-medium text-gray-900 mt-3">
-                {{ $q !== '' ? __('No accessory matches.') : __('No accessories yet') }}
+                {{ ($q !== '' || $category !== '') ? __('No accessory matches.') : __('No accessories yet') }}
             </p>
-            @if ($q === '')
+            @if ($q === '' && $category === '')
                 <p class="text-sm text-gray-500 mt-1 max-w-md mx-auto">
                     {{ __('Add them one by one, or import your list from an Excel file.') }}
                 </p>
@@ -145,10 +162,11 @@
     @else
         <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
             <div class="overflow-x-auto">
-                <table class="w-full min-w-[720px] text-sm">
+                <table class="w-full min-w-[820px] text-sm">
                     <thead class="bg-gray-50 text-left text-xs uppercase text-gray-500 tracking-wide">
                         <tr>
-                            <th class="px-5 py-3 font-semibold">{{ __('Accessory') }} <span class="normal-case font-normal text-gray-400">({{ $accessories->count() }}{{ $q !== '' ? ' / ' . $total : '' }})</span></th>
+                            <th class="px-5 py-3 font-semibold">{{ __('Accessory') }} <span class="normal-case font-normal text-gray-400">({{ $accessories->count() }}{{ $q !== '' || $category !== '' ? ' / ' . $total : '' }})</span></th>
+                            <th class="px-5 py-3 font-semibold">{{ __('Brand') }}</th>
                             <th class="px-5 py-3 font-semibold text-right">{{ __('Cost') }}</th>
                             <th class="px-5 py-3 font-semibold text-right">{{ __('Public HT') }}</th>
                             <th class="px-5 py-3 font-semibold text-right">{{ __('VAT') }}</th>
@@ -167,12 +185,18 @@
                                         </span>
                                         <div class="min-w-0">
                                             <div class="font-medium text-gray-900 break-words">{{ $a->label }}</div>
-                                            @if ($ccy !== 'EUR')
-                                                <span class="text-[11px] font-semibold text-sky-700 bg-sky-50 rounded px-1.5 py-0.5">{{ $ccy }}</span>
-                                            @endif
+                                            <div class="flex flex-wrap items-center gap-1 mt-0.5">
+                                                @if ($a->category)
+                                                    <span class="text-[11px] text-gray-600 bg-gray-100 rounded px-1.5 py-0.5">{{ $a->category }}</span>
+                                                @endif
+                                                @if ($ccy !== 'EUR')
+                                                    <span class="text-[11px] font-semibold text-sky-700 bg-sky-50 rounded px-1.5 py-0.5">{{ $ccy }}</span>
+                                                @endif
+                                            </div>
                                         </div>
                                     </div>
                                 </td>
+                                <td class="px-5 py-3 text-gray-700 whitespace-nowrap">{{ $a->brand ?: '—' }}</td>
                                 <td class="px-5 py-3 text-right text-gray-500 whitespace-nowrap">
                                     {{ $a->cost !== null ? $money($a->cost, $ccy) : '—' }}
                                 </td>

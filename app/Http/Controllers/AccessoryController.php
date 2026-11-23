@@ -15,27 +15,35 @@ use Illuminate\Validation\Rule;
 class AccessoryController extends Controller
 {
     /** The import reads these; the export and template write them. */
-    private const SHEET_HEADERS = ['NOM', 'PRIX ACHAT HT', 'PRIX VENTE HT', 'TVA', 'DEVISE'];
-    private const SHEET_WIDTHS  = [48, 16, 16, 8, 10];
+    private const SHEET_HEADERS = ['NOM', 'MARQUE', 'CATEGORIE', 'PRIX ACHAT HT', 'PRIX VENTE HT', 'TVA', 'DEVISE'];
+    private const SHEET_WIDTHS  = [48, 18, 20, 16, 16, 8, 10];
 
     public function index(Request $request)
     {
-        $q = trim((string) $request->query('q', ''));
+        $q        = trim((string) $request->query('q', ''));
+        $category = trim((string) $request->query('category', ''));
 
-        $accessories = Accessory::orderBy('label')->get();
-        $total = $accessories->count();
+        $all   = Accessory::orderBy('label')->get();
+        $total = $all->count();
+        // Pills are built from the categories actually in use, so custom ones show too.
+        $categories = $all->pluck('category')->map(fn ($c) => trim((string) $c))->filter()->unique()->sort()->values();
 
+        $accessories = $all;
+        if ($category !== '') {
+            $accessories = $accessories->filter(fn ($a) => trim((string) $a->category) === $category)->values();
+        }
         if ($q !== '') {
             $needle = mb_strtolower($q);
-            $accessories = $accessories->filter(fn ($a) => str_contains(mb_strtolower((string) $a->label), $needle))->values();
+            $accessories = $accessories->filter(fn ($a) => str_contains(mb_strtolower((string) $a->label), $needle)
+                || str_contains(mb_strtolower((string) $a->brand), $needle))->values();
         }
 
-        return view('accessories.index', compact('accessories', 'total', 'q'));
+        return view('accessories.index', compact('accessories', 'total', 'q', 'category', 'categories'));
     }
 
     public function create()
     {
-        return view('accessories.form', ['accessory' => null]);
+        return view('accessories.form', ['accessory' => null, 'brandOptions' => $this->brandOptions(), 'categoryOptions' => $this->categoryOptions()]);
     }
 
     public function store(Request $request)
@@ -47,7 +55,24 @@ class AccessoryController extends Controller
 
     public function edit(string $id)
     {
-        return view('accessories.form', ['accessory' => Accessory::findOrFail($id)]);
+        return view('accessories.form', ['accessory' => Accessory::findOrFail($id), 'brandOptions' => $this->brandOptions(), 'categoryOptions' => $this->categoryOptions()]);
+    }
+
+    /** Suggested brands: the defaults plus any the dealer has already used. */
+    private function brandOptions(): array
+    {
+        $used = Accessory::get(['brand'])->pluck('brand')->map(fn ($b) => trim((string) $b))->filter();
+
+        return collect(Accessory::BRANDS)->merge($used)->unique()->values()->all();
+    }
+
+    /** Suggested categories: the translated defaults plus any already in use. */
+    private function categoryOptions(): array
+    {
+        $defaults = collect(Accessory::CATEGORIES)->map(fn ($c) => __($c));
+        $used     = Accessory::get(['category'])->pluck('category')->map(fn ($c) => trim((string) $c))->filter();
+
+        return $defaults->merge($used)->unique()->sort()->values()->all();
     }
 
     public function update(string $id, Request $request)
@@ -68,6 +93,8 @@ class AccessoryController extends Controller
     {
         $data = $request->validate([
             'label'    => 'required|string|max:500',
+            'brand'    => 'nullable|string|max:120',
+            'category' => 'nullable|string|max:120',
             'cost'     => 'nullable|numeric',
             'price'    => 'required|numeric',
             'vat_rate' => 'required|numeric|min:0|max:100',
@@ -76,6 +103,8 @@ class AccessoryController extends Controller
 
         return [
             'label'    => trim($data['label']),
+            'brand'    => trim((string) ($data['brand'] ?? '')) ?: null,
+            'category' => trim((string) ($data['category'] ?? '')) ?: null,
             'cost'     => isset($data['cost']) && $data['cost'] !== '' ? round((float) $data['cost'], 2) : null,
             'price'    => round((float) $data['price'], 2),
             'vat_rate' => (float) $data['vat_rate'],
@@ -89,6 +118,8 @@ class AccessoryController extends Controller
     {
         $rows = Accessory::orderBy('label')->get()->map(fn ($a) => [
             (string) $a->label,
+            (string) ($a->brand ?? ''),
+            (string) ($a->category ?? ''),
             $a->cost !== null ? round((float) $a->cost, 2) : '',
             round((float) $a->price, 2),
             $a->vat_rate !== null ? (float) $a->vat_rate : 20,
@@ -101,9 +132,9 @@ class AccessoryController extends Controller
     public function template()
     {
         return $this->download([
-            ['Système audio Bose', 80, 100, 20, 'EUR'],
-            ['GPS Garmin ECHOMAP UHD2 92sv', 1150, 1490, 20, 'EUR'],
-            ['Kit pêche Penn (canne + moulinet)', 210, 299, 20, 'USD'],
+            ['Système audio Fusion', 'Fusion', 'Audio & multimédia', 80, 100, 20, 'EUR'],
+            ['GPS Garmin ECHOMAP UHD2 92sv', 'Garmin', 'Navigation', 1150, 1490, 20, 'EUR'],
+            ['Kit pêche (canne + moulinet)', '', 'Pêche', 210, 299, 20, 'USD'],
         ], 'nautiqs-accessoires-modele.xlsx');
     }
 
