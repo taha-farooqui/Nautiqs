@@ -674,6 +674,7 @@ class QuoteBuilder extends Component
                     'id'       => $id,
                     'model'    => $a,
                     'label'    => $a->label,
+                    'brand'    => $a->brand ?: null,
                     'price'    => (float) $a->price,
                     'currency' => $a->currency ?: 'EUR',
                     'quantity' => (int) $qty,
@@ -905,6 +906,7 @@ class QuoteBuilder extends Component
                 'option_id'    => 'extra:' . $row->id,
                 'category'     => 'Accessory',
                 'label'        => $a->label,
+                'brand'        => $a->brand ?: null,
                 'unit_price'   => (float) $a->price,
                 // No purchase price typed → estimated from the options preset.
                 'unit_cost'    => $a->cost !== null ? (float) $a->cost : null,

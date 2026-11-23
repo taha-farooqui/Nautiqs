@@ -374,6 +374,9 @@
                                         {{-- A kit or propeller sits indented under its engine. --}}
                                         <td class="py-2 {{ $isAccessory ? 'pl-5' : '' }}">
                                             <div class="{{ $isAccessory ? 'text-gray-800' : 'font-medium text-gray-900' }}">{{ $opt['label'] ?? '' }}</div>
+                                            @if (! empty($opt['brand']))
+                                                <div class="text-xs text-gray-500">{{ $opt['brand'] }}</div>
+                                            @endif
                                             @if (! empty($opt['description']))
                                                 <div class="text-xs text-gray-600">{!! nl2br(e($opt['description'])) !!}</div>
                                             @endif

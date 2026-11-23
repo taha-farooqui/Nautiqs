@@ -261,6 +261,7 @@
             $saved = $withVat((float) ($opt['line_gross'] ?? 0) - (float) ($opt['line_after_cat'] ?? 0), $rate);
             $rows[] = [
                 'name' => $opt['label'] ?? '', 'desc' => $opt['description'] ?? null,
+                'brand' => $opt['brand'] ?? null,
                 'sub'  => ($opt['source'] ?? null) === 'accessory',
                 'disc' => $effPct > 0.05 ? __('Discount') . ' ' . $pct($effPct) . ($saved > 0.005 ? ' · −' . $eur($saved) : '') : null,
                 'qty'  => $opt['quantity'] ?? 1,
@@ -288,6 +289,7 @@
     // The four cells of an item line.
     $cells = function (array $r) use ($eur) {
         $html = '<td class="' . ($r['sub'] ? 'sub' : '') . '"><div class="it-name">' . e($r['name']) . '</div>';
+        if (! empty($r['brand'])) $html .= '<div class="it-desc">' . e($r['brand']) . '</div>';
         if (! empty($r['desc'])) $html .= '<div class="it-desc">' . nl2br(e($r['desc'])) . '</div>';
         if ($r['disc'])          $html .= '<div class="it-disc">' . e($r['disc']) . '</div>';
         return $html . '</td>'

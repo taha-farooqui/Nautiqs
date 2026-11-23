@@ -601,6 +601,7 @@
                             <i class="ri-shopping-bag-3-line text-primary-800 shrink-0"></i>
                             <div class="flex-1 min-w-0">
                                 <p class="text-sm font-medium text-gray-900 break-words">{{ $row->label }}</p>
+                                @if ($row->brand)<p class="text-xs text-gray-500">{{ $row->brand }}</p>@endif
                             </div>
                             <div class="flex w-full sm:w-auto flex-wrap items-center justify-end gap-x-3 gap-y-2">
                                 <div class="flex items-center gap-1.5 shrink-0">

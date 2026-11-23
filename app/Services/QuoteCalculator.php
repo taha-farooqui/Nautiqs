@@ -113,6 +113,9 @@ class QuoteCalculator
                 'parent_id'          => $opt['parent_id'] ?? null,
                 // Brand portal: which brand account's managed product this is.
                 'brand_account_id'   => $opt['brand_account_id'] ?? null,
+                // Accessory maker (e.g. Garmin), shown on the quote/PDF. Null for
+                // boat options and engines, which carry no accessory brand.
+                'brand'              => $opt['brand'] ?? null,
                 'category'           => $opt['category'] ?? 'Options',
                 'label'              => $opt['label'] ?? '',
                 'description'        => $opt['description'] ?? null,
